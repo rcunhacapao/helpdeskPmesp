@@ -7,5 +7,4 @@ public interface UsuarioRepository extends JpaRepository<UsuarioModel, Long> {
 
     Optional<UsuarioModel> findByRe(String re);
 
-    void deleteByRe(String re);
 }

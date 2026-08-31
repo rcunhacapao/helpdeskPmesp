@@ -11,9 +11,10 @@ public class UsuarioController {
 
     // Cadastrar usuario
     @PostMapping("/cadastrar")
-    public UsuarioModel cadastrarUsuario(@RequestBody UsuarioModel usuario) {
-        return usuarioServices.criar(usuario);
+    public UsuarioModel cadastrarUsuario(@RequestBody UsuarioDTO usuarioDTO) {
+        return usuarioServices.criar(usuarioDTO);
     }
+
 
     // Buscar por RE
     @GetMapping("/buscar/{re}")
@@ -21,11 +22,13 @@ public class UsuarioController {
         return usuarioServices.buscarPorRe(re);
     }
 
+
     // Atualizar dados
     @PutMapping("/atualizar-dados/{re}")
     public UsuarioModel atualizarUsuario(@PathVariable String re, @RequestBody UsuarioModel dadosAtualizados) {
         return usuarioServices.atualizarUsuario(re, dadosAtualizados);
     }
+
 
     // Inativar usuario (transferencia)
     @PatchMapping("/inativar/{re}")
@@ -33,9 +36,4 @@ public class UsuarioController {
          return usuarioServices.inativarPolicialPorRe(re);
     }
 
-    // Deletar usuario do BD
-    @DeleteMapping("/deletar/{re}")
-    public void deletarUsuario(@PathVariable String re) {
-        usuarioServices.deletarPolicial(re);
-    }
 }

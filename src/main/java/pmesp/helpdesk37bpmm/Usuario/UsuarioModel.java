@@ -1,9 +1,9 @@
 package pmesp.helpdesk37bpmm.Usuario;
+import com.fasterxml.jackson.annotation.JsonValue;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import pmesp.helpdesk37bpmm.Chamado.ChamadoModel;
 
 @Entity
 @Table(name = "tb_usuario")
@@ -29,5 +29,11 @@ public class UsuarioModel {
 
     @Column(name = "ativo", nullable = false)
     private boolean ativo = true;
+
+    // Mostrar identificacao ex: 3° SGT PM Fulano
+    @JsonValue
+    public String getIdentificacaoCompleta() {
+        return postoGraduacao.getDescricao() + " " + nome;
+    }
 
 }
