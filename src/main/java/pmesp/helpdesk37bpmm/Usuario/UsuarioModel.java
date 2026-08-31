@@ -17,18 +17,15 @@ public class UsuarioModel {
     @Column(name = "ID")
     private Long id;
 
-    @Column(name = "Posto/Grad", nullable = false)
+    @Column(name = "Posto_Graduacao", nullable = false)
+    @Enumerated(EnumType.STRING)
     private UsuarioPostoGraduacao postoGraduacao;
 
     @Column(name = "QRA", nullable = false)
     private String nome;
 
-    @Column(name = "RE", unique = true, nullable = false, length = 6)
-    private Long re;
-
-    @OneToMany
-    @JoinColumn(name = "tb_chamado")
-    private ChamadoModel chamado;
+    @Column(name = "RE", unique = true, nullable = false)
+    private String re;
 
     @Column(name = "ativo", nullable = false)
     private boolean ativo = true;

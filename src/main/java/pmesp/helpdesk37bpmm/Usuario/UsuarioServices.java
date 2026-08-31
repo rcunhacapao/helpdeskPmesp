@@ -10,21 +10,25 @@ import java.util.Optional;
 public class UsuarioServices {
 
     @Autowired
-    UsuarioRespository usuarioRespository;
+    UsuarioRepository usuarioRespository;
 
-    // Cadastrar novo policial
-    public UsuarioModel criar(@RequestBody UsuarioModel usuarioNovo) {
+    // Cadastrar novo usuario
+    public UsuarioModel criar(UsuarioModel usuarioNovo) {
+        if (usuarioNovo.getRe() != null && usuarioNovo.getRe().length() > 6) {
+            throw new IllegalArgumentException("Erro: Por favor, insira o RE sem o dígito e sem traços.");
+        }
+
         return usuarioRespository.save(usuarioNovo);
     }
 
-    // Pesquisar Policial por RE
-    public UsuarioModel buscarPorRe(Long re)  {
+    // Pesquisar usuario por RE
+    public UsuarioModel buscarPorRe(String re)  {
         Optional<UsuarioModel> buscarRe = usuarioRespository.findByRe(re);
         return buscarRe.orElse(null);
     }
 
-    // Inativar Policial por RE (Transferencia de BTL)
-    public boolean inativarPolicialPorRe(Long re) {
+    // Inativar usuario por RE (Transferencia de BTL)
+    public boolean inativarPolicialPorRe(String re) {
         Optional<UsuarioModel> policial = usuarioRespository.findByRe(re);
         if (policial.isPresent()) {
             UsuarioModel usuario = policial.get();
@@ -35,8 +39,8 @@ public class UsuarioServices {
         return false;
     }
 
-    // Atualizar dados do Policial
-    public UsuarioModel atualizarUsuario(Long re, UsuarioModel dadosAtualizados) {
+    // Atualizar dados do usuario
+    public UsuarioModel atualizarUsuario(String re, UsuarioModel dadosAtualizados) {
         Optional<UsuarioModel> usuarioAtual = usuarioRespository.findByRe(re);
         if (usuarioAtual.isPresent()) {
             UsuarioModel usuario = usuarioAtual.get();
@@ -48,8 +52,8 @@ public class UsuarioServices {
         return null;
     }
 
-    // Apagar policial do banco de dados
-       public void deletarPolicial(Long re) {
+    // Apagar usuario do banco de dados
+       public void deletarPolicial(String re) {
            usuarioRespository.deleteByRe(re);
        }
 }

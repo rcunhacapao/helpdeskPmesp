@@ -1,4 +1,7 @@
 package pmesp.helpdesk37bpmm.Chamado;
 
-public interface ChamadoRepository {
+import org.springframework.data.jpa.repository.JpaRepository;
+
+public interface ChamadoRepository extends JpaRepository<ChamadoModel, Long> {
+
 }
