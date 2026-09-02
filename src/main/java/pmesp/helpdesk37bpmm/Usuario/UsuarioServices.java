@@ -15,10 +15,14 @@ public class UsuarioServices {
     @Autowired
     ChamadoService chamadoService;
 
+    @Autowired
+    UsuarioMapper usuarioMapper;
+
     // Cadastrar novo usuario
-    public UsuarioModel criar(UsuarioDTO usuarioDTO) {
+    public UsuarioRespostaDTO criar(UsuarioDTO usuarioDTO) {
         // Aceitar apenas o RE sem o digito
         if (usuarioDTO == null || usuarioDTO.getRe() == null || !usuarioDTO.getRe().matches("[0-9]{1,6}")) {
+
             return null;
         }
 
@@ -26,20 +30,25 @@ public class UsuarioServices {
             return null;
         }
 
-        UsuarioModel usuarioNovo = new UsuarioModel();
-        usuarioNovo.setPostoGraduacao(usuarioDTO.getPostoGraduacao());
-        usuarioNovo.setNome(usuarioDTO.getNome());
-        usuarioNovo.setRe(usuarioDTO.getRe());
+
+        // Transformar os dados do cadastro em usuario para salvar no banco
+        UsuarioModel usuarioNovo = usuarioMapper.map(usuarioDTO);
+
+        // Todo novo usuario começa ativo
         usuarioNovo.setAtivo(true);
 
-        return usuarioRespository.save(usuarioNovo);
+        // Transformar o usuario salvo em resposta para a API
+        return usuarioMapper.map(usuarioRespository.save(usuarioNovo));
     }
 
 
     // Pesquisar usuario por RE
-    public UsuarioModel buscarPorRe(String re)  {
+    public UsuarioRespostaDTO buscarPorRe(String re)  {
         Optional<UsuarioModel> buscarRe = usuarioRespository.findByRe(re);
-        return buscarRe.orElse(null);
+        if (buscarRe.isPresent()) {
+            return usuarioMapper.map(buscarRe.get());
+        }
+        return null;
     }
 
 
@@ -57,15 +66,16 @@ public class UsuarioServices {
     }
 
 
-    // Atualizar dados do usuario
-    public UsuarioModel atualizarUsuario(String re, UsuarioModel dadosAtualizados) {
+    // Atualizar apenas nome e posto/graduação do usuario
+    public UsuarioRespostaDTO atualizarUsuario(String re, UsuarioAtualizacaoDTO dadosAtualizados) {
         Optional<UsuarioModel> usuarioAtual = usuarioRespository.findByRe(re);
         if (usuarioAtual.isPresent()) {
             UsuarioModel usuario = usuarioAtual.get();
             usuario.setNome(dadosAtualizados.getNome());
             usuario.setPostoGraduacao(dadosAtualizados.getPostoGraduacao());
 
-            return usuarioRespository.save(usuario);
+            // Transformar o usuario atualizado em resposta para a API
+            return usuarioMapper.map(usuarioRespository.save(usuario));
         }
         return null;
     }
