@@ -33,6 +33,7 @@ O projeto está na fase de construção e teste da API. As funcionalidades abaix
 - Fluxo de status: aberto, em atendimento, fechado e cancelado.
 - Cancelamento de chamado aberto com motivo registrado.
 - Fila de atendimento: urgentes primeiro, depois alta, média e baixa prioridade. Dentro da mesma prioridade, o chamado mais antigo vem antes.
+- Consulta de chamados em atendimento, separada da fila de chamados abertos.
 - Banco H2 local para desenvolvimento e testes.
 
 ### Fluxo do chamado
@@ -63,6 +64,7 @@ Regras importantes:
 | `POST` | `/chamados/cadastrar` | Abre um chamado. |
 | `GET` | `/chamados/buscar/{id}` | Busca chamado pelo identificador. |
 | `GET` | `/chamados/fila` | Mostra a fila de chamados abertos. |
+| `GET` | `/chamados/em-atendimento` | Mostra os chamados que já estão sendo atendidos. |
 | `PUT` | `/chamados/atualizar-dados/{id}?prioridade=ALTA` | Altera a prioridade de um chamado aberto. |
 | `PATCH` | `/chamados/iniciar-atendimento/{id}` | Inicia o atendimento. |
 | `PATCH` | `/chamados/finalizar/{id}` | Finaliza um chamado em atendimento. |
