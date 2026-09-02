@@ -9,6 +9,7 @@ public class ChamadoMapper {
     public ChamadoModel map(ChamadoDTO chamadoDTO) {
         ChamadoModel chamadoModel = new ChamadoModel();
         chamadoModel.setDescricao(chamadoDTO.getDescricao());
+        chamadoModel.setCategoria(chamadoDTO.getCategoria());
         chamadoModel.setLocalAtendimento(chamadoDTO.getLocalAtendimento());
         chamadoModel.setPrioridade(chamadoDTO.getPrioridade());
 
@@ -21,6 +22,7 @@ public class ChamadoMapper {
         chamadoRespostaDTO.setId(chamadoModel.getId());
         chamadoRespostaDTO.setSolicitante(chamadoModel.getSolicitante().getIdentificacaoCompleta());
         chamadoRespostaDTO.setDescricao(chamadoModel.getDescricao());
+        chamadoRespostaDTO.setCategoria(chamadoModel.getCategoria());
         chamadoRespostaDTO.setLocalAtendimento(chamadoModel.getLocalAtendimento());
         chamadoRespostaDTO.setMotivoCancelamento(chamadoModel.getMotivoCancelamento());
         chamadoRespostaDTO.setPrioridade(chamadoModel.getPrioridade());

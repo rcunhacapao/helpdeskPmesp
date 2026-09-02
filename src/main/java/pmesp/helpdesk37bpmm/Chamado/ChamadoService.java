@@ -24,6 +24,7 @@ public class ChamadoService {
     // Cadastrar novo chamado usando os dados do ChamadoDTO
     public ChamadoRespostaDTO criar(ChamadoDTO chamadoDTO) {
         if (chamadoDTO == null || chamadoDTO.getRe() == null
+                || chamadoDTO.getCategoria() == null
                 || chamadoDTO.getDescricao() == null || chamadoDTO.getDescricao().isBlank()
                 || chamadoDTO.getLocalAtendimento() == null || chamadoDTO.getLocalAtendimento().isBlank()
                 || chamadoDTO.getPrioridade() == null) {
