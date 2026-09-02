@@ -1,4 +1,4 @@
-package pmesp.helpdesk37bpmm.Chamado;
+package pmesp.helpdesk37bpmm.Chamado.enums;
 
 public enum ChamadoPrioridade {
     BAIXA("Baixa - até 1 Hora"),

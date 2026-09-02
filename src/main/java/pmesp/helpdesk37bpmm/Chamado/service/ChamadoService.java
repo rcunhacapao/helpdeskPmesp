@@ -1,9 +1,16 @@
-package pmesp.helpdesk37bpmm.Chamado;
+package pmesp.helpdesk37bpmm.Chamado.service;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import pmesp.helpdesk37bpmm.Usuario.UsuarioModel;
-import pmesp.helpdesk37bpmm.Usuario.UsuarioRepository;
+import pmesp.helpdesk37bpmm.Chamado.dto.ChamadoDTO;
+import pmesp.helpdesk37bpmm.Chamado.dto.ChamadoRespostaDTO;
+import pmesp.helpdesk37bpmm.Chamado.enums.ChamadoPrioridade;
+import pmesp.helpdesk37bpmm.Chamado.enums.ChamadoStatus;
+import pmesp.helpdesk37bpmm.Chamado.mapper.ChamadoMapper;
+import pmesp.helpdesk37bpmm.Chamado.model.ChamadoModel;
+import pmesp.helpdesk37bpmm.Chamado.repository.ChamadoRepository;
+import pmesp.helpdesk37bpmm.Usuario.model.UsuarioModel;
+import pmesp.helpdesk37bpmm.Usuario.repository.UsuarioRepository;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;

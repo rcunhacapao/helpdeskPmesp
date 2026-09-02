@@ -1,8 +1,14 @@
-package pmesp.helpdesk37bpmm.Usuario;
+package pmesp.helpdesk37bpmm.Usuario.service;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import pmesp.helpdesk37bpmm.Chamado.ChamadoService;
+import pmesp.helpdesk37bpmm.Chamado.service.ChamadoService;
+import pmesp.helpdesk37bpmm.Usuario.dto.UsuarioAtualizacaoDTO;
+import pmesp.helpdesk37bpmm.Usuario.dto.UsuarioDTO;
+import pmesp.helpdesk37bpmm.Usuario.dto.UsuarioRespostaDTO;
+import pmesp.helpdesk37bpmm.Usuario.mapper.UsuarioMapper;
+import pmesp.helpdesk37bpmm.Usuario.model.UsuarioModel;
+import pmesp.helpdesk37bpmm.Usuario.repository.UsuarioRepository;
 
 import java.util.Optional;
 

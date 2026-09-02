@@ -1,6 +1,10 @@
-package pmesp.helpdesk37bpmm.Usuario;
+package pmesp.helpdesk37bpmm.Usuario.controller;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
+import pmesp.helpdesk37bpmm.Usuario.dto.UsuarioAtualizacaoDTO;
+import pmesp.helpdesk37bpmm.Usuario.dto.UsuarioDTO;
+import pmesp.helpdesk37bpmm.Usuario.dto.UsuarioRespostaDTO;
+import pmesp.helpdesk37bpmm.Usuario.service.UsuarioServices;
 
 @RestController
 @RequestMapping("/usuarios")

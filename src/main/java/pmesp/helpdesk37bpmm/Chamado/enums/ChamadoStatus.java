@@ -1,4 +1,4 @@
-package pmesp.helpdesk37bpmm.Chamado;
+package pmesp.helpdesk37bpmm.Chamado.enums;
 
 public enum ChamadoStatus {
     ABERTO("Chamado Aberto"),

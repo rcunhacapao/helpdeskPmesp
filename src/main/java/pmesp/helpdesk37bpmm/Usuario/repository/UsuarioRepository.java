@@ -1,5 +1,6 @@
-package pmesp.helpdesk37bpmm.Usuario;
+package pmesp.helpdesk37bpmm.Usuario.repository;
 import org.springframework.data.jpa.repository.JpaRepository;
+import pmesp.helpdesk37bpmm.Usuario.model.UsuarioModel;
 
 import java.util.Optional;
 

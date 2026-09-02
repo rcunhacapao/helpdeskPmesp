@@ -1,16 +1,16 @@
-package pmesp.helpdesk37bpmm.Usuario;
+package pmesp.helpdesk37bpmm.Usuario.dto;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import pmesp.helpdesk37bpmm.Usuario.enums.UsuarioPostoGraduacao;
 
-// Dados necessários para cadastrar um novo usuário
+// Dados permitidos para atualizar em um usuario ja cadastrado
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class UsuarioDTO {
+public class UsuarioAtualizacaoDTO {
 
     private UsuarioPostoGraduacao postoGraduacao;
     private String nome;
-    private String re;
 }

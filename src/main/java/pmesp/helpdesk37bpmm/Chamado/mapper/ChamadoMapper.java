@@ -1,6 +1,9 @@
-package pmesp.helpdesk37bpmm.Chamado;
+package pmesp.helpdesk37bpmm.Chamado.mapper;
 
 import org.springframework.stereotype.Component;
+import pmesp.helpdesk37bpmm.Chamado.dto.ChamadoDTO;
+import pmesp.helpdesk37bpmm.Chamado.dto.ChamadoRespostaDTO;
+import pmesp.helpdesk37bpmm.Chamado.model.ChamadoModel;
 
 @Component
 public class ChamadoMapper {

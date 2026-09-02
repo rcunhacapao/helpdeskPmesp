@@ -1,4 +1,4 @@
-package pmesp.helpdesk37bpmm.Chamado;
+package pmesp.helpdesk37bpmm.Chamado.enums;
 
 // Tipos de problema que podem ser selecionados ao abrir um chamado
 public enum ChamadoCategoria {

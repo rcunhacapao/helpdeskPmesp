@@ -1,4 +1,4 @@
-package pmesp.helpdesk37bpmm.Chamado;
+package pmesp.helpdesk37bpmm.Chamado.model;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
 import jakarta.persistence.*;
@@ -7,7 +7,10 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import pmesp.helpdesk37bpmm.Usuario.UsuarioModel;
+import pmesp.helpdesk37bpmm.Chamado.enums.ChamadoCategoria;
+import pmesp.helpdesk37bpmm.Chamado.enums.ChamadoPrioridade;
+import pmesp.helpdesk37bpmm.Chamado.enums.ChamadoStatus;
+import pmesp.helpdesk37bpmm.Usuario.model.UsuarioModel;
 
 import java.time.LocalDateTime;
 

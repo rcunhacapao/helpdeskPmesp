@@ -1,7 +1,11 @@
-package pmesp.helpdesk37bpmm.Chamado;
+package pmesp.helpdesk37bpmm.Chamado.controller;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
+import pmesp.helpdesk37bpmm.Chamado.dto.ChamadoDTO;
+import pmesp.helpdesk37bpmm.Chamado.dto.ChamadoRespostaDTO;
+import pmesp.helpdesk37bpmm.Chamado.enums.ChamadoPrioridade;
+import pmesp.helpdesk37bpmm.Chamado.service.ChamadoService;
 
 import java.util.List;
 
