@@ -11,21 +11,21 @@ public class UsuarioController {
 
     // Cadastrar usuario
     @PostMapping("/cadastrar")
-    public UsuarioModel cadastrarUsuario(@RequestBody UsuarioDTO usuarioDTO) {
+    public UsuarioRespostaDTO cadastrarUsuario(@RequestBody UsuarioDTO usuarioDTO) {
         return usuarioServices.criar(usuarioDTO);
     }
 
 
     // Buscar por RE
     @GetMapping("/buscar/{re}")
-    public UsuarioModel buscarUsuarioPorRe(@PathVariable String re) {
+    public UsuarioRespostaDTO buscarUsuarioPorRe(@PathVariable String re) {
         return usuarioServices.buscarPorRe(re);
     }
 
 
     // Atualizar dados
     @PutMapping("/atualizar-dados/{re}")
-    public UsuarioModel atualizarUsuario(@PathVariable String re, @RequestBody UsuarioModel dadosAtualizados) {
+    public UsuarioRespostaDTO atualizarUsuario(@PathVariable String re, @RequestBody UsuarioAtualizacaoDTO dadosAtualizados) {
         return usuarioServices.atualizarUsuario(re, dadosAtualizados);
     }
 

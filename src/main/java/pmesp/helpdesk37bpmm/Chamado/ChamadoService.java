@@ -18,8 +18,11 @@ public class ChamadoService {
     @Autowired
     UsuarioRepository usuarioRepository;
 
+    @Autowired
+    ChamadoMapper chamadoMapper;
+
     // Cadastrar novo chamado usando os dados do ChamadoDTO
-    public ChamadoModel criar(ChamadoDTO chamadoDTO) {
+    public ChamadoRespostaDTO criar(ChamadoDTO chamadoDTO) {
         if (chamadoDTO == null || chamadoDTO.getRe() == null
                 || chamadoDTO.getDescricao() == null || chamadoDTO.getDescricao().isBlank()
                 || chamadoDTO.getLocalAtendimento() == null || chamadoDTO.getLocalAtendimento().isBlank()
@@ -31,17 +34,16 @@ public class ChamadoService {
         if (buscarRe.isPresent()) {
             UsuarioModel solicitante = buscarRe.get();
             if (solicitante.isAtivo()) {
-                ChamadoModel chamadoNovo = new ChamadoModel();
+                ChamadoModel chamadoNovo = chamadoMapper.map(chamadoDTO);
 
+                // Definir os dados que são regras do sistema
                 chamadoNovo.setSolicitante(solicitante);
-                chamadoNovo.setDescricao(chamadoDTO.getDescricao());
-                chamadoNovo.setLocalAtendimento(chamadoDTO.getLocalAtendimento());
-                chamadoNovo.setPrioridade(chamadoDTO.getPrioridade());
                 chamadoNovo.setDataAbertura(LocalDateTime.now());
                 chamadoNovo.setStatus(ChamadoStatus.ABERTO);
                 chamadoNovo.setMotivoCancelamento(null);
 
-                return chamadoRepository.save(chamadoNovo);
+                // Transformar o chamado salvo em resposta para a API
+                return chamadoMapper.map(chamadoRepository.save(chamadoNovo));
             }
         }
         return null;
@@ -49,20 +51,24 @@ public class ChamadoService {
 
 
     // Pesquisar chamado por ID
-    public ChamadoModel buscarPorId(Long chamadoId) {
+    public ChamadoRespostaDTO buscarPorId(Long chamadoId) {
         Optional<ChamadoModel> chamado = chamadoRepository.findById(chamadoId);
-        return chamado.orElse(null);
+        if (chamado.isPresent()) {
+            return chamadoMapper.map(chamado.get());
+        }
+        return null;
     }
 
 
     // Atualizar a [prioridade] do chamado
-    public ChamadoModel atualizarPrioridade(Long chamadoId, ChamadoPrioridade prioridade) {
+    public ChamadoRespostaDTO atualizarPrioridade(Long chamadoId, ChamadoPrioridade prioridade) {
         Optional<ChamadoModel> chamadoAtual = chamadoRepository.findById(chamadoId);
         if (chamadoAtual.isPresent()) {
             ChamadoModel chamado = chamadoAtual.get();
             if (chamado.getStatus() != ChamadoStatus.CANCELADO && chamado.getDataFinalizacao() == null) {
                 chamado.setPrioridade(prioridade);
-                return chamadoRepository.save(chamado);
+                // Transformar o chamado atualizado em resposta para a API
+                return chamadoMapper.map(chamadoRepository.save(chamado));
             }
         }
         return null;
@@ -70,7 +76,7 @@ public class ChamadoService {
 
 
     // Iniciar atendimento do chamado
-    public ChamadoModel iniciarAtendimento(Long chamadoId) {
+    public ChamadoRespostaDTO iniciarAtendimento(Long chamadoId) {
         Optional<ChamadoModel> chamadoAtual = chamadoRepository.findById(chamadoId);
 
         if (chamadoAtual.isPresent()) {
@@ -78,7 +84,8 @@ public class ChamadoService {
 
             if (chamado.getStatus() == ChamadoStatus.ABERTO) {
                 chamado.setStatus(ChamadoStatus.EM_ATENDIMENTO);
-                return chamadoRepository.save(chamado);
+                // Transformar o chamado atualizado em resposta para a API
+                return chamadoMapper.map(chamadoRepository.save(chamado));
             }
         }
 
@@ -87,7 +94,7 @@ public class ChamadoService {
 
 
     // Finalizar atendimento do chamado
-    public ChamadoModel finalizarAtendimento(Long chamadoId) {
+    public ChamadoRespostaDTO finalizarAtendimento(Long chamadoId) {
         Optional<ChamadoModel> chamadoAtual = chamadoRepository.findById(chamadoId);
 
         if (chamadoAtual.isPresent()) {
@@ -96,7 +103,8 @@ public class ChamadoService {
             if (chamado.getStatus() == ChamadoStatus.EM_ATENDIMENTO) {
                 chamado.finalizarAtendimento();
                 chamado.setStatus(ChamadoStatus.FECHADO);
-                return chamadoRepository.save(chamado);
+                // Transformar o chamado finalizado em resposta para a API
+                return chamadoMapper.map(chamadoRepository.save(chamado));
             }
         }
         return null;
@@ -104,7 +112,7 @@ public class ChamadoService {
 
 
     // Cancelar apenas chamado que ainda está aberto
-    public ChamadoModel cancelarChamado(Long chamadoId, String motivoCancelamento) {
+    public ChamadoRespostaDTO cancelarChamado(Long chamadoId, String motivoCancelamento) {
         Optional<ChamadoModel> chamadoAtual = chamadoRepository.findById(chamadoId);
         if (chamadoAtual.isPresent() && motivoCancelamentoValido(motivoCancelamento)) {
             ChamadoModel chamado = chamadoAtual.get();
@@ -112,7 +120,8 @@ public class ChamadoService {
             if (chamado.getStatus() == ChamadoStatus.ABERTO) {
                 chamado.setMotivoCancelamento(motivoCancelamento);
                 chamado.setStatus(ChamadoStatus.CANCELADO);
-                return chamadoRepository.save(chamado);
+                // Transformar o chamado cancelado em resposta para a API
+                return chamadoMapper.map(chamadoRepository.save(chamado));
             }
         }
         return null;
