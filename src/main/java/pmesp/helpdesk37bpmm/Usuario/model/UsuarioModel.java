@@ -1,9 +1,10 @@
-package pmesp.helpdesk37bpmm.Usuario;
+package pmesp.helpdesk37bpmm.Usuario.model;
 import com.fasterxml.jackson.annotation.JsonValue;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import pmesp.helpdesk37bpmm.Usuario.enums.UsuarioPostoGraduacao;
 
 @Entity
 @Table(name = "tb_usuario")
@@ -17,16 +18,21 @@ public class UsuarioModel {
     @Column(name = "ID")
     private Long id;
 
+
+    // Posto ou Graduação
     @Column(name = "Posto_Graduacao", nullable = false)
     @Enumerated(EnumType.STRING)
     private UsuarioPostoGraduacao postoGraduacao;
 
+    // Nome de guerra
     @Column(name = "QRA", nullable = false)
     private String nome;
 
+    // O re deve ser usado sempre SEM DIGITO.
     @Column(name = "RE", unique = true, nullable = false)
     private String re;
 
+    // O usuario será considerado ativo automaticamente quando for cadastrado no BD.
     @Column(name = "ativo", nullable = false)
     private boolean ativo = true;
 

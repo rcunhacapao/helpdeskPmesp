@@ -1,6 +1,9 @@
-package pmesp.helpdesk37bpmm.Usuario;
+package pmesp.helpdesk37bpmm.Usuario.mapper;
 
 import org.springframework.stereotype.Component;
+import pmesp.helpdesk37bpmm.Usuario.dto.UsuarioDTO;
+import pmesp.helpdesk37bpmm.Usuario.dto.UsuarioRespostaDTO;
+import pmesp.helpdesk37bpmm.Usuario.model.UsuarioModel;
 
 @Component
 public class UsuarioMapper {

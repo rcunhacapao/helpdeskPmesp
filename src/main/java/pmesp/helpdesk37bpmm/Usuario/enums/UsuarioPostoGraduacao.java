@@ -1,4 +1,4 @@
-package pmesp.helpdesk37bpmm.Usuario;
+package pmesp.helpdesk37bpmm.Usuario.enums;
 
 import com.fasterxml.jackson.annotation.JsonValue;
 
