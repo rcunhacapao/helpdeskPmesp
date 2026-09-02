@@ -30,6 +30,11 @@ public class ChamadoModel {
     @Column(name = "Descricao", nullable = false, columnDefinition = "TEXT")
     private String descricao;
 
+    // Tipo do problema informado no chamado
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private ChamadoCategoria categoria;
+
     // Local onde o atendimento será realizado
     @Column(name = "local_atendimento", nullable = false)
     private String localAtendimento;

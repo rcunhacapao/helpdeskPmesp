@@ -12,6 +12,7 @@ public class ChamadoDTO {
 
     private String re;
     private String descricao;
+    private ChamadoCategoria categoria;
     private String localAtendimento;
     private ChamadoPrioridade prioridade;
 }

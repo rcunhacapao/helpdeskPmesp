@@ -16,6 +16,7 @@ public class ChamadoRespostaDTO {
     private Long id;
     private String solicitante;
     private String descricao;
+    private ChamadoCategoria categoria;
     private String localAtendimento;
     private String motivoCancelamento;
     private ChamadoPrioridade prioridade;
