@@ -3,6 +3,8 @@ package pmesp.helpdesk37bpmm.Usuario.service;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import pmesp.helpdesk37bpmm.Chamado.service.ChamadoService;
+import pmesp.helpdesk37bpmm.Tecnico.model.TecnicoModel;
+import pmesp.helpdesk37bpmm.Tecnico.service.TecnicoService;
 import pmesp.helpdesk37bpmm.Usuario.dto.UsuarioAtualizacaoDTO;
 import pmesp.helpdesk37bpmm.Usuario.dto.UsuarioDTO;
 import pmesp.helpdesk37bpmm.Usuario.dto.UsuarioRespostaDTO;
@@ -20,6 +22,9 @@ public class UsuarioServices {
 
     @Autowired
     ChamadoService chamadoService;
+
+    @Autowired
+    TecnicoService tecnicoService;
 
     @Autowired
     UsuarioMapper usuarioMapper;
@@ -63,7 +68,17 @@ public class UsuarioServices {
         Optional<UsuarioModel> policial = usuarioRespository.findByRe(re);
         if (policial.isPresent()) {
             UsuarioModel usuario = policial.get();
+            Optional<TecnicoModel> tecnico = tecnicoService.buscarPorUsuario(usuario);
+
+            // Não inativar técnico que ainda tem chamados para atender
+            if (tecnico.isPresent() && chamadoService.temChamadosPendentesDoTecnico(tecnico.get())) {
+                return false;
+            }
+
             usuario.setAtivo(false);
+            if (tecnico.isPresent()) {
+                tecnicoService.tornarIndisponivel(tecnico.get());
+            }
             chamadoService.cancelarChamadosAbertosDoUsuario(usuario);
             usuarioRespository.save(usuario);
             return true;

@@ -9,6 +9,8 @@ import pmesp.helpdesk37bpmm.Chamado.enums.ChamadoStatus;
 import pmesp.helpdesk37bpmm.Chamado.mapper.ChamadoMapper;
 import pmesp.helpdesk37bpmm.Chamado.model.ChamadoModel;
 import pmesp.helpdesk37bpmm.Chamado.repository.ChamadoRepository;
+import pmesp.helpdesk37bpmm.Tecnico.model.TecnicoModel;
+import pmesp.helpdesk37bpmm.Tecnico.service.TecnicoService;
 import pmesp.helpdesk37bpmm.Usuario.model.UsuarioModel;
 import pmesp.helpdesk37bpmm.Usuario.repository.UsuarioRepository;
 
@@ -26,6 +28,8 @@ public class ChamadoService {
     UsuarioRepository usuarioRepository;
     @Autowired
     ChamadoMapper chamadoMapper;
+    @Autowired
+    TecnicoService tecnicoService;
 
     // Cadastrar novo chamado usando os dados do ChamadoDTO
     public ChamadoRespostaDTO criar(ChamadoDTO chamadoDTO) {
@@ -40,11 +44,14 @@ public class ChamadoService {
         Optional<UsuarioModel> buscarRe = usuarioRepository.findByRe(chamadoDTO.getRe());
         if (buscarRe.isPresent()) {
             UsuarioModel solicitante = buscarRe.get();
+            TecnicoModel tecnicoResponsavel = tecnicoService.buscarTecnicoDisponivelParaNovoChamado();
+
             if (solicitante.isAtivo()) {
                 ChamadoModel chamadoNovo = chamadoMapper.map(chamadoDTO);
 
                 // Definir os dados que são regras do sistema
                 chamadoNovo.setSolicitante(solicitante);
+                chamadoNovo.setTecnicoResponsavel(tecnicoResponsavel);
                 chamadoNovo.setDataAbertura(LocalDateTime.now());
                 chamadoNovo.setStatus(ChamadoStatus.ABERTO);
                 chamadoNovo.setMotivoCancelamento(null);
@@ -137,6 +144,48 @@ public class ChamadoService {
     }
 
 
+    // Transferir chamado para outro técnico ativo
+    public ChamadoRespostaDTO transferirResponsavel(Long chamadoId, String reTecnico) {
+        Optional<ChamadoModel> chamadoAtual = chamadoRepository.findById(chamadoId);
+        Optional<TecnicoModel> tecnicoAtual = tecnicoService.buscarPorReComoModel(reTecnico);
+
+        if (chamadoAtual.isPresent() && tecnicoAtual.isPresent()) {
+            ChamadoModel chamado = chamadoAtual.get();
+            TecnicoModel tecnico = tecnicoAtual.get();
+
+            if (tecnicoService.estaDisponivel(tecnico)
+                    && (chamado.getStatus() == ChamadoStatus.ABERTO
+                    || chamado.getStatus() == ChamadoStatus.EM_ATENDIMENTO)) {
+                chamado.setTecnicoResponsavel(tecnico);
+                return chamadoMapper.map(chamadoRepository.save(chamado));
+            }
+        }
+
+        return null;
+    }
+
+
+    // Assumir chamado aberto que ainda não possui responsável
+    public ChamadoRespostaDTO assumirChamado(Long chamadoId, String reTecnico) {
+        Optional<ChamadoModel> chamadoAtual = chamadoRepository.findById(chamadoId);
+        Optional<TecnicoModel> tecnicoAtual = tecnicoService.buscarPorReComoModel(reTecnico);
+
+        if (chamadoAtual.isPresent() && tecnicoAtual.isPresent()) {
+            ChamadoModel chamado = chamadoAtual.get();
+            TecnicoModel tecnico = tecnicoAtual.get();
+
+            if (chamado.getStatus() == ChamadoStatus.ABERTO
+                    && chamado.getTecnicoResponsavel() == null
+                    && tecnicoService.estaDisponivel(tecnico)) {
+                chamado.setTecnicoResponsavel(tecnico);
+                return chamadoMapper.map(chamadoRepository.save(chamado));
+            }
+        }
+
+        return null;
+    }
+
+
     // Finalizar atendimento do chamado
     public ChamadoRespostaDTO finalizarAtendimento(Long chamadoId) {
         Optional<ChamadoModel> chamadoAtual = chamadoRepository.findById(chamadoId);
@@ -189,6 +238,15 @@ public class ChamadoService {
             chamado.setStatus(ChamadoStatus.CANCELADO);
             chamadoRepository.save(chamado);
         }
+    }
+
+
+    // Verificar se técnico ainda possui chamados para atender
+    public boolean temChamadosPendentesDoTecnico(TecnicoModel tecnico) {
+        List<ChamadoModel> chamadosAbertos = chamadoRepository.findByTecnicoResponsavelAndStatus(tecnico, ChamadoStatus.ABERTO);
+        List<ChamadoModel> chamadosEmAtendimento = chamadoRepository.findByTecnicoResponsavelAndStatus(tecnico, ChamadoStatus.EM_ATENDIMENTO);
+
+        return !chamadosAbertos.isEmpty() || !chamadosEmAtendimento.isEmpty();
     }
 
 

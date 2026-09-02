@@ -10,6 +10,7 @@ import lombok.Setter;
 import pmesp.helpdesk37bpmm.Chamado.enums.ChamadoCategoria;
 import pmesp.helpdesk37bpmm.Chamado.enums.ChamadoPrioridade;
 import pmesp.helpdesk37bpmm.Chamado.enums.ChamadoStatus;
+import pmesp.helpdesk37bpmm.Tecnico.model.TecnicoModel;
 import pmesp.helpdesk37bpmm.Usuario.model.UsuarioModel;
 
 import java.time.LocalDateTime;
@@ -29,6 +30,11 @@ public class ChamadoModel {
     @ManyToOne
     @JoinColumn(name = "solicitante_id", nullable = false)
     private UsuarioModel solicitante;
+
+    // Técnico que será responsável pelo atendimento
+    @ManyToOne
+    @JoinColumn(name = "tecnico_id")
+    private TecnicoModel tecnicoResponsavel;
 
     @Column(name = "Descricao", nullable = false, columnDefinition = "TEXT")
     private String descricao;
