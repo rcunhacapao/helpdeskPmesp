@@ -1,301 +1,299 @@
-# Helpdesk Telemática — 37º BPM/M
+# Helpdesk Telemática - PMESP
 
-Sistema em desenvolvimento para organizar os chamados de suporte de Telemática nos batalhões. A proposta é centralizar pedidos que hoje podem chegar por telefone, mensagem ou pessoalmente, deixando claro **quem pediu ajuda, onde está o problema, qual a prioridade e em que etapa está o atendimento**.
+> Projeto em desenvolvimento para organizar os chamados de suporte de Telemática, facilitar o acompanhamento do atendimento e transformar os registros do dia a dia em informações úteis para o setor.
 
-Mais do que registrar chamados, a ideia é gerar informação útil para o setor: entender os problemas mais recorrentes, acompanhar a quantidade de atendimentos e ter dados reais para planejar melhorias.
+## Sobre o projeto
 
-> Projeto pessoal de estudo e portfólio, construído em Java com Spring Boot. O código está sendo desenvolvido de forma gradual, com comentários simples e decisões registradas para facilitar a manutenção e o aprendizado.
+Este sistema nasceu para resolver uma situação comum em muitos batalhões: pedidos de suporte chegam por telefone, mensagem, conversa pessoal ou por vários canais diferentes. Com isso, fica difícil saber o que ainda está pendente, quem solicitou ajuda, qual problema deve ser atendido primeiro e quanto tempo os atendimentos estão levando.
 
-## Sumário
+A proposta é criar um Helpdesk simples de usar para quem pede suporte e organizado para quem atende. Cada unidade poderá ter a sua própria instalação, com os seus próprios dados e sua própria equipe de Telemática. O repositório servirá como uma base que outros batalhões poderão adaptar à sua realidade.
 
-- [Por que este sistema está sendo criado?](#por-que-este-sistema-está-sendo-criado)
-- [O que o sistema deve ajudar a controlar](#o-que-o-sistema-deve-ajudar-a-controlar)
-- [Situação atual do projeto](#situação-atual-do-projeto)
-- [Como funciona hoje](#como-funciona-hoje)
-- [Regras importantes já definidas](#regras-importantes-já-definidas)
-- [Rotas disponíveis na API](#rotas-disponíveis-na-api)
-- [Como executar localmente](#como-executar-localmente)
-- [Evolução planejada](#evolução-planejada)
-- [Indicadores e relatórios planejados](#indicadores-e-relatórios-planejados)
-- [Tecnologias utilizadas](#tecnologias-utilizadas)
+Além do Helpdesk, a visão de longo prazo é formar uma ferramenta de informática mais completa. Ela terá um módulo separado chamado **Mike IA**, voltado a dúvidas sobre procedimentos, documentos e normas. Esse módulo não substituirá a gestão de chamados: ele será uma área própria dentro da mesma plataforma.
 
-## Por que este sistema está sendo criado?
+## O que este sistema pretende melhorar
 
-Em um setor de Telemática, diversos problemas podem aparecer durante o dia: computador sem acesso à rede, monitor sem imagem, dificuldade para entrar em algum sistema, falha de impressora, necessidade de acesso a e-mail de seção e muitos outros.
-
-Quando esses pedidos não ficam centralizados, é fácil perder o controle. Pode ficar difícil saber quais atendimentos estão pendentes, há quanto tempo um chamado está aguardando, quais locais precisam de mais suporte e quais problemas acontecem com maior frequência.
-
-Este projeto foi pensado para dar uma visão organizada desse trabalho. A intenção é que o usuário consiga abrir um chamado de maneira simples e que o setor responsável consiga acompanhar o atendimento com mais clareza.
-
-## O que o sistema deve ajudar a controlar
-
-Quando estiver completo, o sistema deverá permitir acompanhar pontos como:
-
-| Informação | Como isso pode ajudar o setor |
+| Situação sem centralização | Como o sistema pode ajudar |
 | --- | --- |
-| Quantidade total de chamados | Entender o volume de trabalho por período. |
-| Chamados abertos, em atendimento, fechados e cancelados | Saber a situação real da demanda. |
-| Tempo médio de atendimento | Identificar quanto tempo os atendimentos costumam levar. |
-| Chamados por usuário, unidade ou local | Encontrar locais e usuários que precisam de mais apoio. |
-| Tipos de chamado mais frequentes | Descobrir os problemas mais repetidos para buscar uma solução definitiva. |
-| Prioridades mais comuns | Entender se há muitas ocorrências urgentes e onde agir preventivamente. |
-| Motivos de cancelamento | Ver se o problema foi resolvido no local, se deixou de ser necessário ou se houve duplicidade. |
+| Pedidos chegam por vários canais | Cada solicitação fica registrada em um único lugar. |
+| Dificuldade para saber o que atender primeiro | A fila prioriza chamados urgentes e mantém ordem dentro de cada prioridade. |
+| Histórico se perde com o tempo | Chamados fechados e cancelados continuam no banco para consultas futuras. |
+| Falta de dados para planejar melhorias | Os registros poderão gerar relatórios de volume, tempo e problemas frequentes. |
+| Atendimento depende de memória ou mensagens antigas | Técnico e solicitante poderão acompanhar o status pelo sistema. |
 
-Esses dados não servem apenas para gerar números. Eles podem ajudar a justificar compra de equipamentos, reforço de infraestrutura, criação de orientações internas e prevenção de falhas que se repetem.
+## Estado atual
 
-## Situação atual do projeto
+O projeto está na fase de construção da API. A API é a parte que recebe os dados, aplica as regras e conversa com o banco de dados. As funcionalidades abaixo foram testadas manualmente no Postman.
 
-O projeto está na fase inicial da API, ou seja, a parte que recebe e organiza os dados. Ainda não existe uma tela pronta para o usuário final, login, fila visível ou painel de relatórios.
+Ainda não existe frontend, login, painel de técnico, painel de usuário ou relatório automático. Esses itens fazem parte das próximas etapas e estão descritos neste README para deixar claro o caminho do projeto.
 
-Mesmo assim, as regras principais de usuário e chamado já estão sendo montadas para que as próximas partes sejam criadas sobre uma base organizada.
+### O que já funciona
 
-### O que já está pronto
-
-| Área | O que já foi implementado |
+| Área | Entrega atual |
 | --- | --- |
-| Usuários | Cadastro com posto/graduação, nome e RE. |
-| Validação de RE | Aceita somente números de 1 a 6 dígitos, sem traços ou dígito verificador. |
-| Inativação | O usuário não é apagado pela aplicação; ele pode ser inativado para preservar o histórico. |
-| Chamados | Cadastro com solicitante, descrição, local de atendimento e prioridade. |
-| Prioridades | `BAIXA`, `MEDIA`, `ALTA` e `URGENTE`. |
-| Status | `ABERTO`, `EM_ATENDIMENTO`, `FECHADO` e `CANCELADO`. |
-| Atendimento | Um chamado pode ser iniciado e finalizado pelo sistema. |
-| Cancelamento | O solicitante pode cancelar um chamado ainda aberto usando um motivo definido. |
-| Histórico | Chamados não são excluídos, pois serão necessários para relatórios futuros. |
-| Banco de dados | Banco H2 local para a fase de desenvolvimento. |
+| Cadastro de usuário | Registra posto/graduação, nome e RE. |
+| Validação de RE | Aceita somente números, com 1 a 6 dígitos. |
+| Usuário inativo | O usuário não é apagado pela aplicação, preservando o histórico. |
+| Cadastro de chamado | Registra solicitante, descrição, categoria, local e prioridade. |
+| Categorias | Computador, monitor, impressora, rede/internet, e-mail e outro. |
+| Prioridades | Baixa, média, alta e urgente. |
+| Status | Aberto, em atendimento, fechado e cancelado. |
+| Cancelamento | Usuário pode cancelar chamado aberto com motivo predefinido. |
+| Inativação automática | Ao inativar um usuário, seus chamados ainda abertos são cancelados com o motivo técnico `USUARIO_INATIVADO`. |
+| Fila de atendimento | Mostra somente chamados abertos, na ordem: urgente, alta, média e baixa. Dentro da mesma prioridade, o mais antigo vem primeiro. |
+| Organização do código | O projeto já está separado por área: controller, dto, mapper, model, repository, service e enums. |
+| Banco de dados atual | H2 local, usado durante o desenvolvimento e os testes. |
 
-## Como funciona hoje
-
-O fluxo atual de um chamado é o seguinte:
+## Como o chamado funciona hoje
 
 ```text
-Usuário é cadastrado
-        ↓
-Usuário abre um chamado
-        ↓
-Status inicial: ABERTO
-        ↓
+Usuário cadastrado e ativo
+        |
+        v
+Abre um chamado
+        |
+        v
+Status: ABERTO
+        |
+        +--> Pode ser cancelado pelo solicitante, com motivo
+        |
+        v
 Técnico inicia o atendimento
-        ↓
+        |
+        v
 Status: EM_ATENDIMENTO
-        ↓
-Técnico finaliza o atendimento
-        ↓
+        |
+        v
+Técnico finaliza
+        |
+        v
 Status: FECHADO
 ```
 
-Enquanto o chamado estiver `ABERTO`, o próprio solicitante pode cancelá-lo se não precisar mais do suporte. Um chamado cancelado não é apagado: ele continua registrado para manter o histórico correto.
+### Regras já definidas
 
-## Regras importantes já definidas
+- Um chamado novo sempre nasce como `ABERTO`.
+- Somente um chamado `ABERTO` entra na fila de atendimento.
+- O técnico só pode iniciar um chamado que esteja `ABERTO`.
+- O técnico só pode finalizar um chamado que esteja `EM_ATENDIMENTO`.
+- Um chamado não é apagado nem inativado. Ele precisa ficar registrado para consultas e relatórios futuros.
+- O solicitante só pode cancelar um chamado que ainda esteja `ABERTO`.
+- Um usuário inativo não pode abrir novos chamados.
+- Quando um usuário é inativado, seus chamados abertos são cancelados automaticamente. Chamados em atendimento, fechados e já cancelados não são alterados.
 
-### Usuários
+### Motivos de cancelamento disponíveis ao solicitante
 
-- O RE é único e deve conter somente números, com no máximo seis dígitos.
-- Usuários não devem ser excluídos pela aplicação, pois podem possuir chamados antigos vinculados ao seu cadastro.
-- Ao inativar um usuário, os chamados que ainda estiverem `ABERTO` serão cancelados automaticamente.
-- Chamados em `EM_ATENDIMENTO` ou `FECHADO` não são alterados ao inativar o usuário, pois fazem parte do histórico de trabalho já iniciado ou concluído.
+- `RESOLVIDO_NO_LOCAL`
+- `NAO_HA_MAIS_NECESSIDADE`
+- `CHAMADO_DUPLICADO`
+- `OUTRO`
 
-### Chamados
+`USUARIO_INATIVADO` é reservado ao sistema e não deve aparecer como opção para o usuário.
 
-- Todo chamado novo começa com o status `ABERTO`.
-- O fluxo normal é: `ABERTO` → `EM_ATENDIMENTO` → `FECHADO`.
-- Chamados não serão excluídos nem “inativados”. O histórico precisa continuar disponível para consultas e relatórios.
-- O cancelamento é permitido somente para chamado `ABERTO`.
-- Os motivos que o usuário pode escolher para cancelar são:
-  - `RESOLVIDO_NO_LOCAL`
-  - `NAO_HA_MAIS_NECESSIDADE`
-  - `CHAMADO_DUPLICADO`
-  - `OUTRO`
-- O motivo `USUARIO_INATIVADO` é usado somente pelo sistema quando um usuário é inativado. Ele não aparece como opção para o usuário escolher.
+## Fila de atendimento atual
 
-### Fila por prioridade
+A fila já está pronta na API e segue esta ordem:
 
-A fila ainda será implementada, mas suas regras já foram definidas:
+1. `URGENTE`
+2. `ALTA`
+3. `MEDIA`
+4. `BAIXA`
 
-1. A fila considerará apenas chamados com status `ABERTO`.
-2. Chamados em `EM_ATENDIMENTO` já estão sendo tratados e não devem ocupar uma posição de espera.
-3. A ordem de prioridade será: `URGENTE` → `ALTA` → `MEDIA` → `BAIXA`.
-4. Entre chamados da mesma prioridade, será respeitada a ordem de abertura.
-5. Ao abrir um chamado, o solicitante deverá ver sua posição na fila e quantos chamados estão à frente.
+Se dois chamados tiverem a mesma prioridade, o chamado aberto primeiro aparece antes. A posição numérica para o solicitante, por exemplo "você está em 3º na fila", ainda será implementada em uma etapa futura. Essa função é obrigatória para a versão final.
 
-## Rotas disponíveis na API
+## Estrutura do código
 
-Por enquanto, os testes podem ser feitos pelo Postman. A aplicação inicia, por padrão, em `http://localhost:8080`.
+O código foi organizado por assunto para facilitar a leitura e a manutenção:
 
-### Usuários
+```text
+src/main/java/pmesp/helpdesk37bpmm
+|
+|-- Chamado
+|   |-- controller   # Rotas de chamado
+|   |-- dto          # Dados recebidos e dados devolvidos pela API
+|   |-- enums        # Status, prioridade e categoria
+|   |-- mapper       # Conversão entre DTO e Model
+|   |-- model        # Tabela de chamados no banco
+|   |-- repository   # Consultas ao banco
+|   `-- service      # Regras de negócio do chamado
+|
+`-- Usuario
+    |-- controller   # Rotas de usuário
+    |-- dto          # Dados recebidos e dados devolvidos pela API
+    |-- enums        # Postos e graduações
+    |-- mapper       # Conversão entre DTO e Model
+    |-- model        # Tabela de usuários no banco
+    |-- repository   # Consultas ao banco
+    `-- service      # Regras de negócio do usuário
+```
 
-| Ação | Método e rota |
-| --- | --- |
-| Cadastrar usuário | `POST /usuarios/cadastrar` |
-| Buscar por RE | `GET /usuarios/buscar/{re}` |
-| Atualizar dados | `PUT /usuarios/atualizar-dados/{re}` |
-| Inativar usuário | `PATCH /usuarios/inativar/{re}` |
+### Por que existem DTOs e Mappers?
 
-Exemplo de cadastro de usuário:
+O `Model` representa como a informação fica guardada no banco. O `DTO` representa somente os dados que entram ou saem da API. O `Mapper` faz a conversão entre os dois.
+
+Na prática, isso evita que campos definidos pelo sistema, como `id`, `ativo`, `status` e datas, sejam enviados livremente por quem usa a API. Também deixa cada classe com uma responsabilidade mais clara.
+
+## Rotas disponíveis para teste
+
+| Método | Rota | O que faz |
+| --- | --- | --- |
+| `POST` | `/usuarios/cadastrar` | Cadastra um usuário. |
+| `GET` | `/usuarios/buscar/{re}` | Busca um usuário pelo RE. |
+| `PUT` | `/usuarios/atualizar-dados/{re}` | Atualiza nome e posto/graduação. |
+| `PATCH` | `/usuarios/inativar/{re}` | Inativa o usuário e cancela os chamados abertos dele. |
+| `POST` | `/chamados/cadastrar` | Abre um novo chamado. |
+| `GET` | `/chamados/buscar/{id}` | Busca um chamado pelo identificador. |
+| `GET` | `/chamados/fila` | Mostra a fila de chamados abertos. |
+| `PUT` | `/chamados/atualizar-dados/{id}?prioridade=ALTA` | Altera a prioridade de um chamado aberto. |
+| `PATCH` | `/chamados/iniciar-atendimento/{id}` | Move o chamado de aberto para em atendimento. |
+| `PATCH` | `/chamados/finalizar/{id}` | Fecha um chamado que está em atendimento. |
+| `PATCH` | `/chamados/cancelar/{id}?motivoCancelamento=OUTRO` | Cancela um chamado aberto. |
+
+### Exemplos de JSON
+
+Cadastro de usuário:
 
 ```json
 {
-  "postoGraduacao": "CB",
-  "nome": "João da Silva",
+  "postoGraduacao": "SD PM",
+  "nome": "Nome de teste",
   "re": "123456"
 }
 ```
 
-### Chamados
-
-| Ação | Método e rota |
-| --- | --- |
-| Cadastrar chamado | `POST /chamados/cadastrar` |
-| Buscar por ID | `GET /chamados/buscar/{chamadoId}` |
-| Atualizar prioridade | `PUT /chamados/atualizar-dados/{chamadoId}?prioridade=ALTA` |
-| Iniciar atendimento | `PATCH /chamados/iniciar-atendimento/{chamadoId}` |
-| Finalizar atendimento | `PATCH /chamados/finalizar/{chamadoId}` |
-| Cancelar chamado | `PATCH /chamados/cancelar/{chamadoId}?motivoCancelamento=RESOLVIDO_NO_LOCAL` |
-
-Exemplo de cadastro de chamado:
+Cadastro de chamado:
 
 ```json
 {
   "re": "123456",
-  "descricao": "O monitor não apresenta imagem.",
+  "descricao": "Monitor não apresenta imagem.",
+  "categoria": "MONITOR",
   "localAtendimento": "Sala do P1",
   "prioridade": "MEDIA"
 }
 ```
 
-> Os nomes enviados pela API são técnicos, como `MEDIA`, `ABERTO` e `RESOLVIDO_NO_LOCAL`. Quando o frontend for criado, o usuário verá textos mais amigáveis.
+> Os valores de categoria, prioridade, status e motivo são técnicos na API. No frontend, eles serão mostrados com nomes mais amigáveis para facilitar o uso.
 
 ## Como executar localmente
 
 ### Pré-requisitos
 
-- Java 26 ou versão compatível com a configuração do projeto.
-- IntelliJ IDEA ou outra IDE para Java.
-- Maven Wrapper, que já está incluído no repositório.
+- Java instalado
+- Uma IDE Java, como IntelliJ IDEA
+- Postman para testar a API, se desejar
 
-### Configuração do banco local
+### Configuração local
 
-Antes de iniciar, configure as variáveis de ambiente da execução da aplicação. Caso use um arquivo `.env` com sua IDE, ele deve permanecer fora do GitHub.
+As configurações privadas do banco ficam no arquivo `.env`, que não deve ser enviado ao GitHub. Use valores locais e não publique senhas, dados reais de usuários ou o arquivo do banco.
 
-Exemplo para o banco H2 usado nesta fase:
+Exemplo de estrutura esperada:
 
-```properties
-DATABASE_URL=jdbc:h2:./Data;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
-DATABASE_USERNAME=sa
-DATABASE_PASSWORD=
+```env
+DATABASE_URL=jdbc:h2:./Data/helpdesk
+DATABASE_USERNAME=seu_usuario_local
+DATABASE_PASSWORD=sua_senha_local
 ```
 
-Depois, execute a classe `Helpdesk37bpmmApplication` pela IDE ou use o Maven Wrapper:
+O banco H2 é temporário para o aprendizado e os testes. A migração para PostgreSQL será feita mais à frente, quando a base estiver madura.
 
-```bash
-.\mvnw.cmd spring-boot:run
-```
+## Próximas tarefas sugeridas
 
-Com a aplicação em execução, o console do H2 fica disponível em:
+Estas são as próximas prioridades para continuar o projeto sem pular etapas:
 
-```text
-http://localhost:8080/h2-console
-```
+1. **Melhorar respostas de erro da API** - trocar retornos vazios por mensagens claras, por exemplo: "RE deve conter apenas números de 1 a 6 dígitos".
+2. **Criar testes automatizados** - garantir que as regras de abertura, cancelamento, fila e inativação continuem funcionando depois de futuras alterações.
+3. **Criar consulta por status** - separar chamadas abertos, em atendimento, finalizados e todos os chamados para preparar as telas do técnico.
+4. **Implementar posição na fila** - informar ao solicitante quantos chamados estão à frente dele, respeitando a prioridade.
+5. **Planejar a conclusão do chamado** - registrar uma solução simples ou observação de encerramento para ajudar nos relatórios futuros.
+6. **Começar o frontend** - criar as telas de abertura, meus chamados e painel do técnico usando a identidade visual definida para o projeto.
 
-No console, utilize a mesma URL, usuário e senha configurados para a aplicação. O arquivo `Data.mv.db` é local e está ignorado pelo Git.
+## Visão de evolução
 
-## Evolução planejada
+O caminho abaixo representa o planejamento atual. Ele pode mudar conforme surgirem testes, ideias melhores ou novas necessidades do setor.
 
-O objetivo é transformar este projeto em um Helpdesk completo, útil no dia a dia e forte como projeto de portfólio. As etapas abaixo ainda não estão prontas; elas fazem parte do planejamento do sistema.
+### 1. API mais completa e segura
 
-### 1. Melhorar a experiência e as respostas da API
+- Mensagens de erro claras e padronizadas.
+- Testes automatizados das principais regras.
+- Filtros por status, prioridade, período, categoria, solicitante e local.
+- Histórico de solução e atendimento.
+- Posição do chamado na fila.
+- Controle de permissões para solicitante e técnico.
 
-- Criar mensagens de erro claras para campos inválidos ou dados não encontrados.
-- Substituir os retornos `null` atuais por respostas que deixem claro o que aconteceu.
-- Validar campos obrigatórios antes de salvar os dados.
-- Criar testes automáticos para garantir que regras importantes continuem funcionando após mudanças.
-- Criar filtros e páginas de consulta para não carregar listas grandes de uma vez.
+### 2. Login e primeiro acesso
 
-### 2. Criar a fila de atendimento
+- Usuários serão cadastrados inicialmente pela equipe responsável.
+- No primeiro acesso, o policial informará o RE e criará uma senha própria para o Helpdesk.
+- A senha será salva de forma protegida no banco, nunca em texto visível.
+- Em uma etapa posterior, será avaliado envio de código para o e-mail corporativo, aumentando a segurança.
+- Para a versão de portfólio, haverá dados fictícios e uma autenticação separada da instalação real.
 
-- Aplicar a ordem de prioridade já definida.
-- Mostrar a posição de cada chamado na fila.
-- Informar quantos chamados estão à frente do solicitante.
-- Registrar qual técnico assumiu o atendimento.
-- Guardar datas de abertura, início, finalização e cancelamento para permitir análises corretas.
+### 3. Frontend para usuário e técnico
 
-### 3. Classificar os chamados
+A interface seguirá uma identidade visual sóbria e institucional:
 
-Para descobrir os problemas mais frequentes, os chamados precisarão de uma classificação. A ideia é incluir categorias como rede, hardware, impressora, monitor, sistemas, acesso, e-mail e outras que façam sentido para a rotina do setor.
-
-Essa classificação permitirá responder perguntas como: “qual tipo de problema mais gerou atendimento neste mês?” ou “quais equipamentos apresentam mais falhas?”. As categorias serão definidas com cuidado em uma etapa futura, para não criar opções que não sejam úteis na prática.
-
-### 4. Criar relatórios e painel de acompanhamento
-
-- Total de chamados por período.
-- Quantidade por status e prioridade.
-- Quantidade por usuário, local de atendimento e categoria.
-- Tipos de problema mais recorrentes.
-- Tempo médio entre abertura e início do atendimento.
-- Tempo médio entre início e finalização.
-- Chamados cancelados e seus motivos.
-- Visão de chamados pendentes para apoiar a organização da equipe.
-
-### 5. Criar o frontend
-
-- Tela de login e tela inicial simples.
-- Formulário de abertura de chamado pensado para quem não tem familiaridade com sistemas.
-- Exemplos nos campos, como `Ex.: Sala do P1` no local de atendimento.
-- Tela para acompanhar o próprio chamado e sua posição na fila.
-- Tela de atendimento para técnicos.
-- Painel de relatórios para responsáveis pelo setor.
-- Textos amigáveis no lugar dos nomes técnicos usados pela API.
-
-### 6. Integrar inteligência artificial de forma útil
-
-Antes de abrir um chamado, a pessoa poderá conversar com um assistente simples. A intenção não é substituir o atendimento humano, mas resolver situações conhecidas antes que elas virem um chamado.
-
-Exemplos de ajuda que poderão ser oferecidos:
-
-- Orientações para verificar cabo de energia e cabo de imagem quando o monitor não liga.
-- Passo a passo para acessar o e-mail de seção ou algum sistema interno.
-- Perguntas com botões, como “resolveu?”, “sim”, “não” ou outras opções adequadas ao caso.
-- Abertura normal do chamado caso as orientações não resolvam o problema.
-
-As orientações serão baseadas em informações controladas pelo setor, e as chaves de integração ficarão apenas no backend, nunca no navegador do usuário.
-
-### 7. Preparar para uso real
-
-- Migrar do H2 para PostgreSQL, banco mais adequado para uma aplicação em uso contínuo.
-- Usar Flyway para registrar as alterações feitas na estrutura do banco ao longo do tempo.
-- Criar autenticação e separar permissões de solicitante, técnico e administrador.
-- Registrar ações importantes, como início, finalização, cancelamento e alterações de prioridade.
-- Organizar logs para facilitar a identificação de problemas.
-- Dockerizar a aplicação e o banco para facilitar a execução em outro computador ou servidor.
-- Criar documentação de instalação, uso e manutenção.
-- Configurar testes automáticos no GitHub a cada atualização do projeto.
-
-## Indicadores e relatórios planejados
-
-| Indicador | O que será possível entender |
+| Elemento | Cor |
 | --- | --- |
-| Chamados recebidos no mês | Volume de demanda do setor. |
-| Chamados por categoria | Quais problemas precisam de mais atenção. |
-| Chamados por local | Quais salas ou unidades apresentam mais ocorrências. |
-| Chamados por usuário | Onde há maior necessidade de suporte ou orientação. |
-| Tempo médio para iniciar atendimento | Quanto tempo, em média, um chamado fica aguardando. |
-| Tempo médio para finalizar | Quanto tempo os atendimentos costumam durar. |
-| Chamados por prioridade | Se os casos urgentes estão sendo tratados com a atenção esperada. |
-| Taxa de cancelamento | Quantos chamados foram resolvidos antes do atendimento ou deixaram de ser necessários. |
+| Menu lateral e navegação | `#1A1D20` |
+| Fundo principal | `#F8F9FA` |
+| Cards e áreas de leitura | `#FFFFFF` |
+| Ações principais | `#8B0000` |
+| Alertas e urgências | `#DC3545` |
 
-## Tecnologias utilizadas
+Telas planejadas:
 
-- **Java** — linguagem usada no projeto.
-- **Spring Boot** — base da aplicação e das rotas da API.
-- **Spring Data JPA** — ajuda a salvar e buscar informações no banco de dados.
-- **H2 Database** — banco local usado durante o desenvolvimento inicial.
-- **Lombok** — reduz código repetitivo nas classes.
-- **Maven** — gerencia as bibliotecas do projeto.
+- Abertura de chamado com linguagem simples e exemplos de local de atendimento.
+- Meus chamados, para o solicitante acompanhar situação, horário e posição na fila.
+- Fila do técnico, mostrando somente chamados abertos.
+- Chamados em atendimento.
+- Todos os chamados, com filtros.
+- Chamados finalizados, reunindo fechados e cancelados.
+- Painel com indicadores do setor.
 
-## Transparência sobre a fase atual
+### 4. Relatórios e indicadores
 
-Este é um projeto em desenvolvimento. A estrutura principal de usuários e chamados já existe, mas recursos importantes para uma versão final — como tela, autenticação, fila, categorias, relatórios, banco PostgreSQL e testes automáticos — ainda serão construídos.
+O objetivo é gerar informação que ajude a gestão, não somente listar chamados. Alguns indicadores planejados são:
 
-Parte das validações ainda retorna `null` quando algo não atende às regras. Isso foi mantido nesta fase porque acompanha o conteúdo estudado até o momento. A melhoria para mensagens de erro específicas já está registrada como próxima evolução.
+- Quantidade de chamados por período.
+- Quantidade de chamados por usuário, local e categoria.
+- Problemas mais frequentes.
+- Tempo médio entre abertura, início e finalização.
+- Volume de chamados por prioridade.
+- Motivos de cancelamento.
+- Chamados recorrentes por equipamento ou ambiente, quando esses dados forem incluídos.
 
-O objetivo é evoluir o sistema passo a passo, mantendo o código legível e entendendo cada decisão antes de avançar.
+### 5. Banco e entrega da aplicação
+
+- Migrar de H2 para PostgreSQL.
+- Usar migrações de banco para manter cada instalação organizada.
+- Aprender e adicionar Docker para facilitar a execução em outras unidades.
+- Registrar logs e preparar uma forma segura de configurar cada instalação.
+- Criar instruções para que outro batalhão consiga baixar, configurar e usar sua própria instância.
+
+### 6. IA dentro da plataforma
+
+O uso de IA será dividido em duas ideias:
+
+| Módulo futuro | Objetivo |
+| --- | --- |
+| Assistente antes do chamado | Sugerir verificações simples, como cabos, energia ou orientações iniciais, antes de abrir um chamado. |
+| Mike IA | Responder dúvidas sobre documentos, normas e procedimentos, em uma área separada do Helpdesk. |
+
+O Mike IA deverá trabalhar somente com fontes revisadas. Quando for criado, a ideia é que ele informe de qual documento, versão e página veio a resposta, evitando respostas sem referência.
+
+## Tecnologias usadas até agora
+
+- Java
+- Spring Boot
+- Spring Data JPA
+- H2 Database
+- Lombok
+- Maven
+- Postman para testes manuais
+- Git e GitHub para versionamento
+
+## Transparência sobre o estágio do projeto
+
+Este é um projeto em evolução, feito de forma gradual para que cada decisão possa ser entendida, testada e mantida no futuro. O objetivo não é apenas chegar a uma aplicação pronta: é construir uma base confiável, aprender as escolhas feitas e produzir um projeto de portfólio que represente uma solução real para a rotina de Telemática.
+
+As telas, regras secundárias e integrações futuras podem ser ajustadas durante o desenvolvimento. As regras já implementadas e testadas são a base atual do sistema.
