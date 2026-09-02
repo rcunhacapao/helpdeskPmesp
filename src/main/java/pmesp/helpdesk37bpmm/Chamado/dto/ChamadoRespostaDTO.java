@@ -18,6 +18,7 @@ public class ChamadoRespostaDTO {
 
     private Long id;
     private String solicitante;
+    private String tecnicoResponsavel;
     private String descricao;
     private ChamadoCategoria categoria;
     private String localAtendimento;

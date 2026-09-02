@@ -24,6 +24,9 @@ public class ChamadoMapper {
         ChamadoRespostaDTO chamadoRespostaDTO = new ChamadoRespostaDTO();
         chamadoRespostaDTO.setId(chamadoModel.getId());
         chamadoRespostaDTO.setSolicitante(chamadoModel.getSolicitante().getIdentificacaoCompleta());
+        if (chamadoModel.getTecnicoResponsavel() != null) {
+            chamadoRespostaDTO.setTecnicoResponsavel(chamadoModel.getTecnicoResponsavel().getUsuario().getIdentificacaoCompleta());
+        }
         chamadoRespostaDTO.setDescricao(chamadoModel.getDescricao());
         chamadoRespostaDTO.setCategoria(chamadoModel.getCategoria());
         chamadoRespostaDTO.setLocalAtendimento(chamadoModel.getLocalAtendimento());
