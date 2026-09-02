@@ -3,6 +3,8 @@ package pmesp.helpdesk37bpmm.Chamado;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+
 @RestController
 @RequestMapping("/chamados")
 public class ChamadoController {
@@ -21,6 +23,13 @@ public class ChamadoController {
     @GetMapping("/buscar/{chamadoId}")
     public ChamadoRespostaDTO buscarChamadoPorId(@PathVariable Long chamadoId) {
         return chamadoService.buscarPorId(chamadoId);
+    }
+
+
+    // Mostrar fila de chamados que aguardam atendimento
+    @GetMapping("/fila")
+    public List<ChamadoRespostaDTO> listarFilaAtendimento() {
+        return chamadoService.listarFilaAtendimento();
     }
 
 

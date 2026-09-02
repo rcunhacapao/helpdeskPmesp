@@ -6,6 +6,7 @@ import pmesp.helpdesk37bpmm.Usuario.UsuarioModel;
 import pmesp.helpdesk37bpmm.Usuario.UsuarioRepository;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
@@ -14,10 +15,8 @@ public class ChamadoService {
 
     @Autowired
     ChamadoRepository chamadoRepository;
-
     @Autowired
     UsuarioRepository usuarioRepository;
-
     @Autowired
     ChamadoMapper chamadoMapper;
 
@@ -58,6 +57,30 @@ public class ChamadoService {
             return chamadoMapper.map(chamado.get());
         }
         return null;
+    }
+
+
+    // Mostrar chamados abertos na ordem correta da fila de atendimento
+    public List<ChamadoRespostaDTO> listarFilaAtendimento() {
+        List<ChamadoModel> chamadosAbertos = chamadoRepository.findByStatusOrderByDataAberturaAsc(ChamadoStatus.ABERTO);
+        List<ChamadoRespostaDTO> fila = new ArrayList<>();
+
+        adicionarChamadosDaPrioridadeNaFila(chamadosAbertos, ChamadoPrioridade.URGENTE, fila);
+        adicionarChamadosDaPrioridadeNaFila(chamadosAbertos, ChamadoPrioridade.ALTA, fila);
+        adicionarChamadosDaPrioridadeNaFila(chamadosAbertos, ChamadoPrioridade.MEDIA, fila);
+        adicionarChamadosDaPrioridadeNaFila(chamadosAbertos, ChamadoPrioridade.BAIXA, fila);
+
+        return fila;
+    }
+
+
+    // Adicionar na fila somente os chamados de uma prioridade
+    private void adicionarChamadosDaPrioridadeNaFila(List<ChamadoModel> chamadosAbertos, ChamadoPrioridade prioridade, List<ChamadoRespostaDTO> fila) {
+        for (ChamadoModel chamado : chamadosAbertos) {
+            if (chamado.getPrioridade() == prioridade) {
+                fila.add(chamadoMapper.map(chamado));
+            }
+        }
     }
 
 
