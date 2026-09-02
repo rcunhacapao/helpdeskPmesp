@@ -37,6 +37,13 @@ public class ChamadoController {
     }
 
 
+    // Mostrar chamados que já estão sendo atendidos
+    @GetMapping("/em-atendimento")
+    public List<ChamadoRespostaDTO> listarChamadosEmAtendimento() {
+        return chamadoService.listarChamadosEmAtendimento();
+    }
+
+
     // Atualizar prioridade do chamado
     @PutMapping("/atualizar-dados/{chamadoId}")
     public ChamadoRespostaDTO atualizarDadosChamado(@PathVariable Long chamadoId, @RequestParam ChamadoPrioridade prioridade) {

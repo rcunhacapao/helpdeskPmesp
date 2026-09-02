@@ -81,6 +81,19 @@ public class ChamadoService {
     }
 
 
+    // Mostrar chamados que já estão sendo atendidos
+    public List<ChamadoRespostaDTO> listarChamadosEmAtendimento() {
+        List<ChamadoModel> chamadosEmAtendimento = chamadoRepository.findByStatusOrderByDataAberturaAsc(ChamadoStatus.EM_ATENDIMENTO);
+        List<ChamadoRespostaDTO> resposta = new ArrayList<>();
+
+        for (ChamadoModel chamado : chamadosEmAtendimento) {
+            resposta.add(chamadoMapper.map(chamado));
+        }
+
+        return resposta;
+    }
+
+
     // Adicionar na fila somente os chamados de uma prioridade
     private void adicionarChamadosDaPrioridadeNaFila(List<ChamadoModel> chamadosAbertos, ChamadoPrioridade prioridade, List<ChamadoRespostaDTO> fila) {
         for (ChamadoModel chamado : chamadosAbertos) {
