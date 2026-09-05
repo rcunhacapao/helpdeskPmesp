@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="description" content="Protótipo navegável do Sistema de Suporte.">
     <title>Sistema de Suporte</title>
-    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="styles.css?v=0.0.1-beta.10">
 </head>
 <body>
     <main class="login-page" id="pagina-login">
@@ -39,19 +39,32 @@
             </div>
 
             <nav class="side-navigation" aria-label="Seções do sistema">
-                <button class="nav-link is-active" type="button" data-route="visao-geral" aria-current="page">
+                <button class="nav-link is-active" type="button" data-route="visao-geral" data-profile="usuario" aria-current="page">
                     <span aria-hidden="true">⌂</span> Visão geral
                 </button>
-                <button class="nav-link" type="button" data-route="abrir-chamado">
-                    <span aria-hidden="true">▣</span> Chamados
+                <button class="nav-link" type="button" data-route="meus-chamados" data-profile="usuario">
+                    <span aria-hidden="true">▣</span> Meus chamados
                 </button>
-                <button class="nav-link" type="button" data-route="mike-ia">
+                <button class="nav-link" type="button" data-route="abrir-chamado" data-profile="todos">
+                    <span aria-hidden="true">+</span> Abrir chamado
+                </button>
+                <button class="nav-link" type="button" data-route="central-tecnica" data-profile="tecnico">
+                    <span aria-hidden="true">⌁</span> Central técnica
+                </button>
+                <button class="nav-link" type="button" data-route="fila-atendimento" data-profile="tecnico">
+                    <span aria-hidden="true">▤</span> Fila de atendimento
+                </button>
+                <button class="nav-link" type="button" data-route="gestao-usuarios" data-profile="tecnico">
+                    <span aria-hidden="true">♙</span> Gestão de usuários
+                </button>
+                <button class="nav-link" type="button" data-route="mike-ia" data-profile="todos">
                     <span aria-hidden="true">✦</span> Mike IA
                 </button>
             </nav>
 
             <div class="sidebar-footer">
-                <p class="user-name">Usuário em desenvolvimento</p>
+                <p class="user-name" id="identificacao-sidebar">3º SGT PM Usuário</p>
+                <p class="profile-label" id="perfil-sessao">Perfil: Usuário</p>
                 <p>Versão 0.0.1 (beta)</p>
             </div>
         </aside>
@@ -61,69 +74,169 @@
                 <img src="logo-pmesp.png" alt="Polícia Militar do Estado de São Paulo">
                 <button class="button button-secondary" id="sair" type="button">Sair</button>
                 <nav class="mobile-navigation" aria-label="Seções do sistema">
-                    <button class="mobile-nav-link is-active" type="button" data-route="visao-geral" aria-current="page">Visão geral</button>
-                    <button class="mobile-nav-link" type="button" data-route="abrir-chamado">Chamados</button>
-                    <button class="mobile-nav-link" type="button" data-route="mike-ia">Mike IA</button>
+                    <button class="mobile-nav-link is-active" type="button" data-route="visao-geral" data-profile="usuario" aria-current="page">Visão geral</button>
+                    <button class="mobile-nav-link" type="button" data-route="meus-chamados" data-profile="usuario">Meus chamados</button>
+                    <button class="mobile-nav-link" type="button" data-route="abrir-chamado" data-profile="todos">Abrir chamado</button>
+                    <button class="mobile-nav-link" type="button" data-route="central-tecnica" data-profile="tecnico">Central técnica</button>
+                    <button class="mobile-nav-link" type="button" data-route="fila-atendimento" data-profile="tecnico">Fila</button>
+                    <button class="mobile-nav-link" type="button" data-route="gestao-usuarios" data-profile="tecnico">Usuários</button>
+                    <button class="mobile-nav-link" type="button" data-route="mike-ia" data-profile="todos">Mike IA</button>
                 </nav>
             </header>
 
-            <section class="page-view is-visible" id="visao-geral" data-view aria-labelledby="titulo-visao-geral">
+            <section class="page-view is-visible" id="visao-geral" data-view data-profile="usuario" aria-labelledby="titulo-visao-geral">
                 <p class="breadcrumb">Início / Visão geral</p>
                 <div class="page-heading">
                     <div>
-                        <p class="eyebrow">Ambiente de demonstração</p>
-                        <h1 id="titulo-visao-geral">Bom trabalho.</h1>
-                        <p>Veja um resumo rápido e acesse os principais recursos do Sistema de Suporte.</p>
+                        <p class="eyebrow">Sistema de Suporte</p>
+                        <h1 id="titulo-visao-geral">Olá, <span id="saudacao-usuario">3º SGT PM Usuário</span>.</h1>
+                        <p>Acompanhe suas solicitações e acesse o suporte de que precisa.</p>
                     </div>
                     <button class="button button-primary" type="button" data-route="abrir-chamado">+ Abrir chamado</button>
                 </div>
 
-                <div class="overview-grid" aria-label="Resumo de chamados demonstrativo">
-                    <article class="summary-card">
-                        <p>Chamados abertos</p>
-                        <strong>0</strong>
-                        <span>Sem pendências no momento</span>
-                    </article>
-                    <article class="summary-card">
-                        <p>Em atendimento</p>
-                        <strong>0</strong>
-                        <span>Acompanhamento em breve</span>
-                    </article>
-                    <article class="summary-card">
-                        <p>Finalizados no mês</p>
-                        <strong>0</strong>
-                        <span>Indicadores serão integrados</span>
-                    </article>
-                </div>
-
                 <div class="overview-columns">
-                    <article class="surface-card last-ticket-card">
+                    <article class="surface-card current-ticket-card">
                         <div class="card-heading">
                             <div>
-                                <h2>Último chamado</h2>
-                                <p>Quando os dados forem conectados, seu último atendimento aparecerá aqui.</p>
+                                <p class="eyebrow">Acompanhamento do chamado</p>
+                                <h2>Impressora do setor administrativo não imprime</h2>
+                                <p>Chamado #2026-0042 · aberto hoje às 09:35</p>
                             </div>
-                            <span class="status-label">Em preparação</span>
+                            <span class="status-label" id="overview-ticket-status">Aguardando atendimento</span>
                         </div>
-                        <div class="empty-state">
-                            <span aria-hidden="true">▣</span>
-                            <h3>Nenhum chamado para mostrar</h3>
-                            <p>Você poderá abrir e acompanhar chamados por esta área.</p>
-                            <button class="text-button" type="button" data-route="abrir-chamado">Abrir o primeiro chamado</button>
+                        <section class="user-queue-overview" aria-label="Posição do chamado na fila">
+                            <div class="queue-position-value"><span>Posição atual na fila</span><strong id="overview-queue-position">2º</strong></div>
+                            <div class="queue-overview-details"><strong id="overview-queue-ahead">1 chamado à frente</strong><span id="overview-tech-assignment">Técnico responsável: ainda não atribuído.</span></div>
+                        </section>
+                        <p class="progress-intro" id="overview-queue-message">Seu chamado foi recebido e aguarda a definição de um técnico responsável.</p>
+                        <div class="ticket-progress" aria-label="Situação atual do chamado">
+                            <div class="progress-step is-complete"><span>1</span><p>Chamado registrado</p></div>
+                            <div class="progress-step is-current"><span>2</span><p>Na fila de atendimento</p></div>
+                            <div class="progress-step"><span>3</span><p>Atendimento técnico</p></div>
+                            <div class="progress-step"><span>4</span><p>Conclusão</p></div>
                         </div>
                     </article>
 
+                    <article class="surface-card notices-card">
+                        <div class="card-heading">
+                            <div>
+                                <p class="eyebrow">Comunicação</p>
+                                <h2>Avisos gerais</h2>
+                            </div>
+                            <span aria-hidden="true" class="notice-icon">●</span>
+                        </div>
+                        <ul class="notice-list">
+                            <li><strong>Seu chamado fica mais completo com uma captura de tela.</strong><span>Inclua mensagens de erro sempre que possível.</span></li>
+                            <li><strong>Registre o local e o equipamento envolvidos.</strong><span>Essas informações aceleram o direcionamento.</span></li>
+                            <li><strong>Precisa de orientação antes de abrir o chamado?</strong><button class="text-button" type="button" data-route="mike-ia">Converse com o Mike IA</button></li>
+                        </ul>
+                    </article>
                     <article class="surface-card mike-highlight">
-                        <p class="eyebrow">Assistente virtual</p>
                         <img class="mike-overview-avatar" src="mike-ia-visao-geral.png" alt="Mike IA, assistente virtual">
-                        <h2>Converse com o Mike IA</h2>
-                        <p>Suporte inteligente para orientar seu atendimento.</p>
-                        <button class="button button-secondary" type="button" data-route="mike-ia">Conhecer o Mike IA</button>
+                        <div><p class="eyebrow">Assistente virtual</p><h2>Mike IA</h2><p>Suporte inteligente para orientar seu atendimento.</p></div>
+                        <button class="button button-secondary" type="button" data-route="mike-ia">Conversar com Mike IA</button>
                     </article>
                 </div>
             </section>
 
-            <section class="page-view" id="abrir-chamado" data-view aria-labelledby="titulo-abrir-chamado" hidden>
+            <section class="page-view" id="meus-chamados" data-view data-profile="usuario" aria-labelledby="titulo-meus-chamados" hidden>
+                <p class="breadcrumb">Início / Meus chamados</p>
+                <div class="page-heading page-heading-compact">
+                    <div>
+                        <p class="eyebrow">Acompanhamento pessoal</p>
+                        <h1 id="titulo-meus-chamados">Meus chamados</h1>
+                        <p>Visualize o andamento das suas solicitações e consulte seus atendimentos anteriores.</p>
+                    </div>
+                    <button class="button button-primary" type="button" data-route="abrir-chamado">+ Abrir chamado</button>
+                </div>
+                <div class="ticket-list-layout">
+                    <section class="surface-card ticket-list-card" aria-labelledby="titulo-chamado-atual">
+                        <div class="card-heading"><div><p class="eyebrow">Andamento detalhado</p><h2 id="titulo-chamado-atual">Chamado #2026-0042</h2><p>Impressora do setor administrativo não imprime</p></div><span class="status-label" id="meus-chamados-ticket-status">Aguardando atendimento</span></div>
+                        <p class="ticket-opened-date">Registrado hoje às 09:35</p>
+                        <section class="user-queue-summary" aria-label="Situação na fila de atendimento"><div class="queue-position-value"><span>Posição atual na fila</span><strong id="meus-chamados-queue-position">2º</strong></div><div class="queue-overview-details"><strong id="meus-chamados-queue-ahead">1 chamado à frente</strong><span id="meus-chamados-tech-assignment">Técnico responsável: ainda não atribuído.</span></div></section>
+                        <div class="ticket-update"><span aria-hidden="true">●</span><p id="meus-chamados-queue-message"><strong>Chamado recebido.</strong> Um técnico será definido para iniciar o atendimento.</p></div>
+                        <section class="ticket-activity" aria-labelledby="titulo-atualizacoes-chamado"><h3 id="titulo-atualizacoes-chamado">Atualizações</h3><ol><li class="is-complete"><span aria-hidden="true">1</span><div><strong>Chamado registrado</strong><small>Hoje, às 09:35</small></div></li><li class="is-current"><span aria-hidden="true">2</span><div><strong>Aguardando atendimento técnico</strong><small>Você será informado quando o atendimento for iniciado.</small></div></li></ol></section>
+                        <div class="card-actions"><button class="button button-secondary" type="button" data-focus-cancel>Cancelar chamado</button></div>
+                        <form class="cancel-ticket-form" id="formulario-cancelamento" hidden>
+                            <label for="motivo-cancelamento">Motivo do cancelamento</label>
+                            <textarea id="motivo-cancelamento" rows="3" placeholder="Explique por que esta solicitação não é mais necessária." required></textarea>
+                            <div class="form-actions"><button class="button button-secondary" type="button" data-close-cancel>Voltar</button><button class="button button-danger" type="submit">Confirmar cancelamento</button></div>
+                            <p class="form-message" id="mensagem-cancelamento" role="status" aria-live="polite"></p>
+                        </form>
+                    </section>
+                    <aside class="surface-card history-card"><p class="eyebrow">Consultas anteriores</p><h2>Histórico de chamados</h2><div class="history-item"><strong>#2026-0031</strong><span>Configuração de acesso à rede</span><small>Finalizado em 28 ago.</small></div><div class="history-item"><strong>#2026-0018</strong><span>Atualização de aplicativo</span><small>Finalizado em 13 ago.</small></div><button class="text-button" type="button" data-demo-action="Histórico completo preparado">Ver histórico completo</button></aside>
+                </div>
+            </section>
+
+            <section class="page-view" id="central-tecnica" data-view data-profile="tecnico" aria-labelledby="titulo-central-tecnica" hidden>
+                <p class="breadcrumb">Início / Central técnica</p>
+                <div class="page-heading">
+                    <div>
+                        <p class="eyebrow">Operação de Telemática</p>
+                        <h1 id="titulo-central-tecnica">Olá, <span id="saudacao-tecnico">3º SGT PM Técnico de Telemática</span>.</h1>
+                        <p>Centralize as decisões, os atendimentos e a gestão de acessos do Sistema de Suporte.</p>
+                    </div>
+                    <button class="button button-primary" type="button" data-route="fila-atendimento">Ver fila de atendimento</button>
+                </div>
+                <div class="overview-grid technical-summary-grid" aria-label="Resumo de chamados demonstrativo">
+                    <article class="summary-card metric-today"><p>Chamados hoje</p><strong>6</strong><span>Registrados desde o início do dia</span></article>
+                    <article class="summary-card metric-week"><p>Nesta semana</p><strong>28</strong><span>Chamados registrados nos últimos dias</span></article>
+                    <article class="summary-card metric-month"><p>Neste mês</p><strong>116</strong><span>Total de chamados registrados no mês</span></article>
+                </div>
+                <div class="technical-dashboard-grid">
+                    <section class="surface-card action-hub-card">
+                        <div class="card-heading"><div><p class="eyebrow">Operação</p><h2>Ações do técnico</h2><p>Atalhos para as rotinas mais frequentes.</p></div></div>
+                        <div class="action-hub-grid">
+                            <button class="action-hub-item" type="button" data-route="fila-atendimento"><span aria-hidden="true">▤</span><strong>Organizar fila</strong><small>Assuma, transfira e acompanhe o andamento dos chamados.</small></button>
+                            <button class="action-hub-item" type="button" data-route="gestao-usuarios"><span aria-hidden="true">♙</span><strong>Gerir usuários</strong><small>Cadastre, atualize, inative e conceda acesso técnico.</small></button>
+                            <button class="action-hub-item" type="button" data-route="gestao-usuarios"><span aria-hidden="true">◉</span><strong>Disponibilidade técnica</strong><small>Controle a presença operacional de cada técnico.</small></button>
+                            <button class="action-hub-item" type="button" data-route="abrir-chamado"><span aria-hidden="true">+</span><strong>Registrar chamado</strong><small>Crie uma solicitação em nome da unidade quando necessário.</small></button>
+                        </div>
+                    </section>
+                    <aside class="surface-card coordinator-status-card"><p class="eyebrow">Seu estado</p><h2>Disponibilidade</h2><p>Defina como a central deve considerar sua participação na distribuição dos atendimentos.</p><button class="availability-toggle is-available" type="button" id="alternar-disponibilidade" aria-pressed="true"><span aria-hidden="true"></span><strong>Disponível para atendimento</strong></button><small id="mensagem-disponibilidade">Ação visual preparada para atualizar a disponibilidade do técnico.</small></aside>
+                </div>
+            </section>
+
+            <section class="page-view" id="fila-atendimento" data-view data-profile="tecnico" aria-labelledby="titulo-fila-atendimento" hidden>
+                <p class="breadcrumb">Início / Central técnica / Fila de atendimento</p>
+                <div class="page-heading page-heading-compact"><div><p class="eyebrow">Gestão de chamados</p><h1 id="titulo-fila-atendimento">Fila de atendimento</h1><p>Assuma um chamado e conduza o atendimento de ponta a ponta, sem sair desta tela.</p></div><div class="heading-actions"><button class="button button-secondary" type="button" data-route="central-tecnica">Voltar à central</button><button class="button button-primary" type="button" data-route="abrir-chamado">+ Registrar chamado</button></div></div>
+
+                <div class="technical-queue-layout">
+                    <section class="surface-card queue-list-card" aria-labelledby="titulo-lista-fila">
+                        <div class="queue-list-header"><div><p class="eyebrow">Atendimentos</p><h2 id="titulo-lista-fila">Fila de atendimento</h2></div><span class="queue-total" id="contador-chamados-ativos">0 ativos</span></div>
+                        <div class="queue-filter-group" role="tablist" aria-label="Filtrar chamados por situação">
+                            <button class="queue-filter is-active" type="button" data-queue-filter="ABERTO" role="tab" aria-selected="true">Pendentes <span id="contador-fila-aberta">0</span></button>
+                            <button class="queue-filter" type="button" data-queue-filter="EM_ATENDIMENTO" role="tab" aria-selected="false">Em atendimento <span id="contador-em-atendimento">0</span></button>
+                        </div>
+                        <div class="queue-search"><label class="sr-only" for="busca-chamado">Buscar chamado pelo número ou assunto</label><input id="busca-chamado" type="search" placeholder="Buscar por número ou assunto"><button class="button button-secondary" type="button" id="buscar-chamado">Buscar</button></div>
+                        <div class="queue-list" id="lista-fila" role="list" aria-live="polite"></div>
+                    </section>
+
+                    <section class="surface-card queue-detail-card" id="detalhe-chamado-tecnico" aria-labelledby="titulo-detalhe-chamado">
+                        <div class="queue-empty-state queue-summary-state" id="detalhe-chamado-vazio"><span aria-hidden="true">▤</span><p class="eyebrow">Fila de atendimento</p><strong class="queue-summary-number" id="resumo-fila-quantidade">0</strong><h2 id="titulo-detalhe-chamado">Chamados pendentes</h2><p id="resumo-fila-descricao">Selecione um chamado na lista para consultar os dados e iniciar o atendimento.</p></div>
+                        <div id="conteudo-detalhe-chamado" hidden>
+                            <div class="queue-detail-header"><div><p class="eyebrow" id="detalhe-codigo">Chamado</p><h2 id="detalhe-assunto">-</h2><p id="detalhe-abertura">-</p></div><div class="queue-detail-badges"><span class="priority-label" id="detalhe-prioridade">-</span><span class="status-label" id="detalhe-status">-</span></div></div>
+                            <dl class="queue-detail-facts"><div><dt>Solicitante</dt><dd id="detalhe-solicitante">-</dd></div><div><dt>Local / setor</dt><dd id="detalhe-local">-</dd></div><div><dt>Categoria</dt><dd id="detalhe-categoria">-</dd></div><div><dt>Responsável</dt><dd id="detalhe-responsavel">Aguardando assunção</dd></div></dl>
+                            <section class="queue-detail-description" aria-labelledby="titulo-descricao-tecnica"><h3 id="titulo-descricao-tecnica">Descrição informada</h3><p id="detalhe-descricao">-</p></section>
+                            <section class="queue-action-panel" aria-labelledby="titulo-acoes-chamado"><p class="eyebrow">Próxima etapa</p><h3 id="titulo-acoes-chamado">Ações permitidas</h3><div class="queue-action-grid" id="acoes-chamado-aberto"><button class="button button-success" type="button" data-queue-action="iniciar">Assumir e iniciar atendimento</button></div><div class="queue-action-grid" id="acoes-transferencia"><label for="transferir-responsavel">Transferir responsável</label><div class="queue-control-inline"><select id="transferir-responsavel"><option value="CB PM Técnico de apoio">CB PM Técnico de apoio</option><option value="3º SGT PM Técnico de Telemática">3º SGT PM Técnico de Telemática</option></select><button class="button button-secondary" type="button" data-queue-action="transferir">Transferir</button></div></div><div class="queue-action-grid" id="acoes-chamado-atendimento" hidden><button class="button button-info" type="button" data-queue-action="finalizar">Finalizar atendimento</button></div></section>
+                        </div>
+                        <p class="form-message" id="mensagem-fila" role="status" aria-live="polite"></p>
+                    </section>
+                </div>
+            </section>
+
+            <section class="page-view" id="gestao-usuarios" data-view data-profile="tecnico" aria-labelledby="titulo-gestao-usuarios" hidden>
+                <p class="breadcrumb">Início / Central técnica / Gestão de usuários</p>
+                <div class="page-heading page-heading-compact"><div><p class="eyebrow">Administração do sistema</p><h1 id="titulo-gestao-usuarios">Gestão de usuários</h1><p>Centralize cadastros, perfis de acesso e a disponibilidade da equipe em uma única área.</p></div></div>
+                <div class="management-grid">
+                    <form class="surface-card compact-form registration-card" id="formulario-cadastro-usuario"><p class="eyebrow">Novo acesso</p><h2>Cadastrar usuário</h2><p class="field-help">Registre o militar para habilitar o acesso ao Sistema de Suporte.</p><div class="field-group"><label for="cadastro-re">RE</label><input id="cadastro-re" type="text" placeholder="Digite o RE" required></div><div class="field-group"><label for="cadastro-posto">Posto / graduação</label><select id="cadastro-posto" required><option value="">Selecione</option><option>3º SGT PM</option><option>CB PM</option><option>SD PM</option></select></div><div class="field-group"><label for="cadastro-nome">Nome</label><input id="cadastro-nome" type="text" placeholder="Nome completo" required></div><button class="button button-primary button-block" type="submit">Cadastrar usuário</button><p class="form-message" role="status" aria-live="polite"></p></form>
+                    <section class="surface-card user-lookup-card" aria-labelledby="titulo-controle-acesso"><div class="management-card-heading"><div><p class="eyebrow">Consulta e manutenção</p><h2 id="titulo-controle-acesso">Controle de acesso</h2><p>Localize um cadastro pelo RE e escolha a ação necessária.</p></div></div><div class="lookup-row"><label class="sr-only" for="consulta-re">Consultar usuário por RE</label><input id="consulta-re" type="search" placeholder="Informe o RE"><button class="button button-secondary" type="button" data-demo-action="Consulta de usuário preparada" data-demo-message="mensagem-controle-acesso">Consultar</button></div><article class="user-record"><div><strong>3º SGT PM Usuário</strong><span>RE 250861 · Perfil de usuário</span></div><span class="status-label status-active">Ativo</span></article><div class="management-actions"><button class="button button-secondary" type="button" data-demo-action="Atualização de dados preparada" data-demo-message="mensagem-controle-acesso">Atualizar dados</button><button class="button button-success" type="button" data-demo-action="Cadastro de técnico preparado" data-demo-message="mensagem-controle-acesso">Conceder acesso técnico</button><button class="text-button danger-text" type="button" data-demo-action="Inativação de usuário preparada" data-demo-message="mensagem-controle-acesso">Inativar usuário</button></div><p class="field-help management-note">A inativação será bloqueada quando houver atendimento técnico pendente vinculado ao usuário.</p><p class="form-message" id="mensagem-controle-acesso" role="status" aria-live="polite"></p></section>
+                    <section class="surface-card technician-management-card" aria-labelledby="titulo-equipe-tecnica"><div class="management-card-heading"><div><p class="eyebrow">Equipe técnica</p><h2 id="titulo-equipe-tecnica">Disponibilidade dos técnicos</h2><p>Consulte rapidamente quem pode receber um novo atendimento.</p></div><button class="button button-secondary" type="button" data-demo-action="Lista de técnicos disponíveis preparada" data-demo-message="mensagem-disponibilidade-tecnica">Gerenciar disponibilidade</button></div><div class="technician-list"><article class="technician-row"><div><strong>3º SGT PM Técnico de Telemática</strong><span>RE 250861 · Técnico</span></div><button class="availability-toggle is-available" type="button" data-demo-action="Disponibilidade do técnico preparada" data-demo-message="mensagem-disponibilidade-tecnica"><span aria-hidden="true"></span>Disponível</button></article><article class="technician-row"><div><strong>CB PM Técnico de apoio</strong><span>RE 249900 · Técnico</span></div><button class="availability-toggle" type="button" data-demo-action="Disponibilidade do técnico preparada" data-demo-message="mensagem-disponibilidade-tecnica"><span aria-hidden="true"></span>Indisponível</button></article></div><p class="form-message" id="mensagem-disponibilidade-tecnica" role="status" aria-live="polite"></p></section>
+                </div>
+            </section>
+
+            <section class="page-view" id="abrir-chamado" data-view data-profile="todos" aria-labelledby="titulo-abrir-chamado" hidden>
                 <p class="breadcrumb">Início / Chamados / Abrir chamado</p>
                 <div class="page-heading page-heading-compact">
                     <div>
@@ -195,7 +308,7 @@
                 </div>
             </section>
 
-            <section class="page-view" id="mike-ia" data-view aria-labelledby="titulo-mike" hidden>
+            <section class="page-view" id="mike-ia" data-view data-profile="todos" aria-labelledby="titulo-mike" hidden>
                 <p class="breadcrumb">Início / Mike IA</p>
                 <div class="page-heading page-heading-compact">
                     <div>
@@ -204,28 +317,34 @@
                         <p>Um espaço visual para validar a futura experiência de orientação técnica.</p>
                     </div>
                 </div>
-                <section class="surface-card chat-card" aria-label="Conversa demonstrativa com Mike IA">
-                    <div class="chat-messages">
-                        <div class="chat-message chat-message-mike">
-                            <span class="mike-message-avatar" aria-hidden="true"><img src="mike-ia-avatar.jpeg" alt=""></span>
-                            <div class="chat-bubble"><strong>Mike IA</strong><p>Olá. Posso ajudar você a organizar as informações antes de abrir um chamado.</p></div>
+                <div class="mike-conversation-layout">
+                    <aside class="mike-persona" aria-label="Mike IA, assistente virtual da Polícia Militar">
+                        <img class="mike-fullbody-avatar" src="mike-ia-livre.png" alt="Mike IA, assistente virtual da Polícia Militar">
+                    </aside>
+                    <section class="surface-card chat-card" aria-label="Conversa demonstrativa com Mike IA">
+                        <div class="mike-chat-intro"><div><p class="eyebrow">Conversa segura</p><h2>Como posso ajudar?</h2></div><span class="mike-availability"><span aria-hidden="true"></span>Pronto para orientar</span></div>
+                        <div class="chat-messages">
+                            <div class="chat-message chat-message-mike">
+                                <span class="mike-message-avatar" aria-hidden="true"><img src="mike-ia-avatar.jpeg" alt=""></span>
+                                <div class="chat-bubble"><strong>Mike IA</strong><p>Olá. Posso ajudar você a organizar as informações antes de abrir um chamado.</p></div>
+                            </div>
+                            <div class="chat-message chat-message-user" id="resposta-mike" hidden><strong>Você</strong><p></p></div>
+                            <div class="chat-message chat-message-mike" id="retorno-mike" hidden>
+                                <span class="mike-message-avatar" aria-hidden="true"><img src="mike-ia-avatar.jpeg" alt=""></span>
+                                <div class="chat-bubble"><strong>Mike IA</strong><p>Obrigado. Nesta fase, ainda não analiso solicitações reais, mas esta conversa já demonstra onde o assistente ficará.</p></div>
+                            </div>
                         </div>
-                    <div class="chat-message chat-message-user" id="resposta-mike" hidden><strong>Você</strong><p></p></div>
-                    <div class="chat-message chat-message-mike" id="retorno-mike" hidden>
-                        <span class="mike-message-avatar" aria-hidden="true"><img src="mike-ia-avatar.jpeg" alt=""></span>
-                        <div class="chat-bubble"><strong>Mike IA</strong><p>Obrigado. Nesta fase, ainda não analiso solicitações reais, mas esta conversa já demonstra onde o assistente ficará.</p></div>
-                    </div>
-                    </div>
-                    <form class="chat-form" id="formulario-mike">
-                        <label class="sr-only" for="pergunta-mike">Mensagem para Mike IA</label>
-                        <input id="pergunta-mike" type="text" placeholder="Descreva o que está acontecendo...">
-                        <button class="button button-primary" type="submit">Enviar</button>
-                    </form>
-                </section>
+                        <form class="chat-form" id="formulario-mike">
+                            <label class="sr-only" for="pergunta-mike">Mensagem para Mike IA</label>
+                            <input id="pergunta-mike" type="text" placeholder="Descreva o que está acontecendo...">
+                            <button class="button button-primary" type="submit">Enviar</button>
+                        </form>
+                    </section>
+                </div>
             </section>
         </section>
     </main>
 
-    <script src="app.js"></script>
+    <script src="app.js?v=0.0.1-beta.10"></script>
 </body>
 </html>
