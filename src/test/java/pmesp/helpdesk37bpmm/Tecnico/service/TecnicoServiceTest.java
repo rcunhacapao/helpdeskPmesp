@@ -10,10 +10,13 @@ import pmesp.helpdesk37bpmm.Exception.RecursoNaoEncontradoException;
 import pmesp.helpdesk37bpmm.Exception.RegraDeNegocioException;
 import pmesp.helpdesk37bpmm.Tecnico.dto.TecnicoDTO;
 import pmesp.helpdesk37bpmm.Tecnico.model.TecnicoModel;
+import pmesp.helpdesk37bpmm.Tecnico.dto.TecnicoRespostaDTO;
+import pmesp.helpdesk37bpmm.Tecnico.mapper.TecnicoMapper;
 import pmesp.helpdesk37bpmm.Tecnico.repository.TecnicoRepository;
 import pmesp.helpdesk37bpmm.Usuario.model.UsuarioModel;
 import pmesp.helpdesk37bpmm.Usuario.repository.UsuarioRepository;
 
+import java.util.List;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -27,6 +30,8 @@ class TecnicoServiceTest {
     TecnicoRepository tecnicoRepository;
     @Mock
     UsuarioRepository usuarioRepository;
+    @Mock
+    TecnicoMapper tecnicoMapper;
 
     @InjectMocks
     TecnicoService tecnicoService;
@@ -72,5 +77,17 @@ class TecnicoServiceTest {
                 () -> tecnicoService.criar(tecnicoDTO));
 
         assertEquals("TECNICO_JA_CADASTRADO", excecao.getCodigo());
+    }
+
+
+    @Test
+    void deveListarTodosOsTecnicosCadastrados() {
+        TecnicoModel tecnico = new TecnicoModel();
+        when(tecnicoRepository.findAll()).thenReturn(List.of(tecnico));
+        when(tecnicoMapper.map(tecnico)).thenReturn(new TecnicoRespostaDTO());
+
+        List<TecnicoRespostaDTO> resposta = tecnicoService.listarTodosOsTecnicos();
+
+        assertEquals(1, resposta.size());
     }
 }

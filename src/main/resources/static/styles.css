@@ -514,7 +514,12 @@ h3 { font-size: clamp(.9rem, 1.2vw, 1rem); margin: 0; }
 .notice-list span, .notice-list .text-button { color: var(--muted); font-size: .76rem; line-height: 1.4; }
 .notice-list .text-button { color: var(--primary); justify-self: start; }
 
-.ticket-list-layout { align-items: start; display: grid; gap: clamp(16px, 2vw, 28px); grid-template-columns: minmax(0, 1.45fr) minmax(250px, .55fr); }
+.ticket-list-layout { align-items: start; display: grid; gap: clamp(16px, 2vw, 28px); grid-template-columns: minmax(0, 1fr); }
+.meu-chamado-item { border-top: 1px solid var(--border); padding: 16px 0; }
+.meu-chamado-item:first-child { border-top: 0; padding-top: 0; }
+.meu-chamado-item .card-heading { margin-bottom: 6px; }
+.meu-chamado-item p { color: var(--muted); font-size: .82rem; margin: 4px 0 0; }
+.lista-tecnicos-vazia, .lista-chamados-vazia { color: var(--muted); font-size: .82rem; padding: 8px 0; }
 #meus-chamados .page-heading .eyebrow { color: var(--info); }
 .ticket-list-card { border-color: rgba(45, 95, 139, .24); }
 .ticket-list-card .eyebrow { color: var(--info); }

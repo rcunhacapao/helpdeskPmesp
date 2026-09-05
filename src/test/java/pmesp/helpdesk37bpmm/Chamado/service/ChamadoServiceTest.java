@@ -173,6 +173,24 @@ class ChamadoServiceTest {
 
 
     @Test
+    void deveListarSomenteOsChamadosDoUsuarioAutenticado() {
+        UsuarioModel usuarioAutenticado = new UsuarioModel();
+        usuarioAutenticado.setId(1L);
+        when(usuarioRepository.findByRe("250861")).thenReturn(Optional.of(usuarioAutenticado));
+        autenticarComoUsuarioComum("250861");
+
+        ChamadoModel chamado = new ChamadoModel();
+        when(chamadoRepository.findBySolicitanteOrderByDataAberturaDesc(usuarioAutenticado))
+                .thenReturn(List.of(chamado));
+
+        List<pmesp.helpdesk37bpmm.Chamado.dto.ChamadoRespostaDTO> resposta =
+                chamadoService.listarChamadosDoUsuarioAutenticado();
+
+        assertEquals(1, resposta.size());
+    }
+
+
+    @Test
     void deveImpedirFinalizacaoDeChamadoForaDeAtendimento() {
         ChamadoModel chamado = new ChamadoModel();
         chamado.setStatus(ChamadoStatus.ABERTO);

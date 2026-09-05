@@ -12,6 +12,9 @@ public interface ChamadoRepository extends JpaRepository<ChamadoModel, Long> {
     // Buscar chamados abertos de um usuário
     List<ChamadoModel> findBySolicitanteAndStatus(UsuarioModel solicitante, ChamadoStatus status);
 
+    // Buscar todos os chamados de um usuário, do mais recente para o mais antigo
+    List<ChamadoModel> findBySolicitanteOrderByDataAberturaDesc(UsuarioModel solicitante);
+
     // Buscar chamados de um técnico por status
     List<ChamadoModel> findByTecnicoResponsavelAndStatus(TecnicoModel tecnicoResponsavel, ChamadoStatus status);
 

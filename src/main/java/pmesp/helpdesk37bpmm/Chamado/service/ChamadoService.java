@@ -89,6 +89,20 @@ public class ChamadoService {
     }
 
 
+    // Listar todos os chamados do usuário autenticado (tela "Meus chamados")
+    public List<ChamadoRespostaDTO> listarChamadosDoUsuarioAutenticado() {
+        UsuarioModel usuarioAutenticado = usuarioAutenticado();
+        List<ChamadoModel> chamados = chamadoRepository.findBySolicitanteOrderByDataAberturaDesc(usuarioAutenticado);
+        List<ChamadoRespostaDTO> resposta = new ArrayList<>();
+
+        for (ChamadoModel chamado : chamados) {
+            resposta.add(chamadoMapper.map(chamado));
+        }
+
+        return resposta;
+    }
+
+
     // Mostrar chamados abertos na ordem correta da fila de atendimento
     public List<ChamadoRespostaDTO> listarFilaAtendimento() {
         List<ChamadoModel> chamadosAbertos = chamadoRepository.findByStatusOrderByDataAberturaAsc(ChamadoStatus.ABERTO);

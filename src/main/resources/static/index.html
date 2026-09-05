@@ -5,10 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="description" content="Protótipo navegável do Sistema de Suporte.">
     <title>Sistema de Suporte</title>
-    <link rel="icon" type="image/png" href="favicon.png?v=0.0.1-beta.17">
-    <link rel="apple-touch-icon" href="apple-touch-icon.png?v=0.0.1-beta.17">
+    <link rel="icon" type="image/png" href="favicon.png?v=0.0.1-beta.18">
+    <link rel="apple-touch-icon" href="apple-touch-icon.png?v=0.0.1-beta.18">
     <meta name="theme-color" content="#1A1D20">
-    <link rel="stylesheet" href="styles.css?v=0.0.1-beta.17">
+    <link rel="stylesheet" href="styles.css?v=0.0.1-beta.18">
 </head>
 <body>
     <main class="login-page" id="pagina-login">
@@ -19,7 +19,7 @@
 
             <form id="formulario-login" class="login-form" novalidate>
                 <div class="field-group">
-                    <label for="login">Login</label>
+                    <label for="login">RE</label>
                     <input id="login" name="login" type="text" autocomplete="username" placeholder="Digite seu RE" required>
                 </div>
                 <div class="field-group">
@@ -30,7 +30,25 @@
                 <button class="button button-primary button-block" type="submit">Entrar</button>
             </form>
 
-            <p class="login-note">Protótipo visual: o acesso ainda não valida credenciais.</p>
+            <button class="text-button" type="button" id="mostrar-primeiro-acesso">Primeiro acesso</button>
+
+            <form id="formulario-primeiro-acesso" class="login-form" novalidate hidden>
+                <div class="field-group">
+                    <label for="primeiro-acesso-re">RE</label>
+                    <input id="primeiro-acesso-re" type="text" placeholder="Digite seu RE" required>
+                </div>
+                <div class="field-group">
+                    <label for="primeiro-acesso-email">E-mail funcional</label>
+                    <input id="primeiro-acesso-email" type="email" placeholder="nome@policiamilitar.sp.gov.br" required>
+                </div>
+                <div class="field-group">
+                    <label for="primeiro-acesso-senha">Nova senha</label>
+                    <input id="primeiro-acesso-senha" type="password" autocomplete="new-password" placeholder="Crie sua senha" required>
+                </div>
+                <p id="mensagem-primeiro-acesso" class="form-message" role="status" aria-live="polite"></p>
+                <button class="button button-primary button-block" type="submit">Criar senha e continuar</button>
+                <button class="text-button" type="button" id="ocultar-primeiro-acesso">Voltar para o login</button>
+            </form>
         </section>
     </main>
 
@@ -87,12 +105,12 @@
                 </div>
 
                 <div class="overview-columns">
-                    <article class="surface-card current-ticket-card">
+                    <article class="surface-card current-ticket-card" id="overview-ticket-card" hidden>
                         <div class="card-heading">
                             <div>
                                 <p class="eyebrow">Acompanhamento do chamado</p>
-                                <h2>Impressora do setor administrativo não imprime</h2>
-                                <p>Chamado #2026-0042 · aberto hoje às 09:35</p>
+                                <h2 id="overview-ticket-titulo">-</h2>
+                                <p id="overview-ticket-info">-</p>
                             </div>
                             <span class="status-label" id="overview-ticket-status">Aguardando atendimento</span>
                         </div>
@@ -107,6 +125,9 @@
                             <div class="progress-step"><span>3</span><p>Atendimento técnico</p></div>
                             <div class="progress-step"><span>4</span><p>Conclusão</p></div>
                         </div>
+                    </article>
+                    <article class="surface-card current-ticket-card" id="overview-sem-chamado">
+                        <div class="card-heading"><div><p class="eyebrow">Acompanhamento do chamado</p><h2>Nenhum chamado em aberto</h2><p>Quando você abrir um chamado, o andamento aparece aqui.</p></div></div>
                     </article>
 
                     <article class="surface-card notices-card">
@@ -143,20 +164,21 @@
                 </div>
                 <div class="ticket-list-layout">
                     <section class="surface-card ticket-list-card" aria-labelledby="titulo-chamado-atual">
-                        <div class="card-heading"><div><p class="eyebrow">Andamento detalhado</p><h2 id="titulo-chamado-atual">Chamado #2026-0042</h2><p>Impressora do setor administrativo não imprime</p></div><span class="status-label" id="meus-chamados-ticket-status">Aguardando atendimento</span></div>
-                        <p class="ticket-opened-date">Registrado hoje às 09:35</p>
-                        <section class="user-queue-summary" aria-label="Situação na fila de atendimento"><div class="queue-position-value"><span>Posição atual na fila</span><strong id="meus-chamados-queue-position">2º</strong></div><div class="queue-overview-details"><strong id="meus-chamados-queue-ahead">1 chamado à frente</strong><span id="meus-chamados-tech-assignment">Técnico responsável: ainda não atribuído.</span></div></section>
-                        <div class="ticket-update"><span aria-hidden="true">●</span><p id="meus-chamados-queue-message"><strong>Chamado recebido.</strong> Um técnico será definido para iniciar o atendimento.</p></div>
-                        <section class="ticket-activity" aria-labelledby="titulo-atualizacoes-chamado"><h3 id="titulo-atualizacoes-chamado">Atualizações</h3><ol><li class="is-complete"><span aria-hidden="true">1</span><div><strong>Chamado registrado</strong><small>Hoje, às 09:35</small></div></li><li class="is-current"><span aria-hidden="true">2</span><div><strong>Aguardando atendimento técnico</strong><small>Você será informado quando o atendimento for iniciado.</small></div></li></ol></section>
-                        <div class="card-actions"><button class="button button-secondary" type="button" data-focus-cancel>Cancelar chamado</button></div>
+                        <div class="card-heading"><div><p class="eyebrow">Meus chamados</p><h2 id="titulo-chamado-atual">Chamados registrados</h2><p>Acompanhe o andamento e cancele quando não precisar mais.</p></div></div>
+                        <div id="lista-meus-chamados"></div>
                         <form class="cancel-ticket-form" id="formulario-cancelamento" hidden>
                             <label for="motivo-cancelamento">Motivo do cancelamento</label>
-                            <textarea id="motivo-cancelamento" rows="3" placeholder="Explique por que esta solicitação não é mais necessária." required></textarea>
+                            <select id="motivo-cancelamento" required>
+                                <option value="">Selecione</option>
+                                <option value="RESOLVIDO_NO_LOCAL">Resolvido no local</option>
+                                <option value="NAO_HA_MAIS_NECESSIDADE">Não há mais necessidade</option>
+                                <option value="CHAMADO_DUPLICADO">Chamado duplicado</option>
+                                <option value="OUTRO">Outro</option>
+                            </select>
                             <div class="form-actions"><button class="button button-secondary" type="button" data-close-cancel>Voltar</button><button class="button button-danger" type="submit">Confirmar cancelamento</button></div>
                             <p class="form-message" id="mensagem-cancelamento" role="status" aria-live="polite"></p>
                         </form>
                     </section>
-                    <aside class="surface-card history-card"><p class="eyebrow">Consultas anteriores</p><h2>Histórico de chamados</h2><div class="history-item"><strong>#2026-0031</strong><span>Configuração de acesso à rede</span><small>Finalizado em 28 ago.</small></div><div class="history-item"><strong>#2026-0018</strong><span>Atualização de aplicativo</span><small>Finalizado em 13 ago.</small></div><button class="text-button" type="button" data-demo-action="Histórico completo preparado">Ver histórico completo</button></aside>
                 </div>
             </section>
 
@@ -210,7 +232,7 @@
                             <div class="queue-detail-header"><div><p class="eyebrow" id="detalhe-codigo">Chamado</p><h2 id="detalhe-assunto">-</h2><p id="detalhe-abertura">-</p></div><div class="queue-detail-badges"><span class="priority-label" id="detalhe-prioridade">-</span><span class="status-label" id="detalhe-status">-</span></div></div>
                             <dl class="queue-detail-facts"><div><dt>Solicitante</dt><dd id="detalhe-solicitante">-</dd></div><div><dt>Local / setor</dt><dd id="detalhe-local">-</dd></div><div><dt>Categoria</dt><dd id="detalhe-categoria">-</dd></div><div><dt>Responsável</dt><dd id="detalhe-responsavel">Aguardando assunção</dd></div></dl>
                             <section class="queue-detail-description" aria-labelledby="titulo-descricao-tecnica"><h3 id="titulo-descricao-tecnica">Descrição informada</h3><p id="detalhe-descricao">-</p></section>
-                            <section class="queue-action-panel" aria-labelledby="titulo-acoes-chamado"><p class="eyebrow">Próxima etapa</p><h3 id="titulo-acoes-chamado">Ações permitidas</h3><div class="queue-action-grid" id="acoes-chamado-aberto"><button class="button button-success" type="button" data-queue-action="iniciar">Assumir e iniciar atendimento</button></div><div class="queue-action-grid" id="acoes-transferencia"><label for="transferir-responsavel">Transferir responsável</label><div class="queue-control-inline"><select id="transferir-responsavel"><option value="CB PM Técnico de apoio">CB PM Técnico de apoio</option><option value="3º SGT PM Técnico de Telemática">3º SGT PM Técnico de Telemática</option></select><button class="button button-secondary" type="button" data-queue-action="transferir">Transferir</button></div></div><div class="queue-action-grid" id="acoes-chamado-atendimento" hidden><button class="button button-info" type="button" data-queue-action="finalizar">Finalizar atendimento</button></div></section>
+                            <section class="queue-action-panel" aria-labelledby="titulo-acoes-chamado"><p class="eyebrow">Próxima etapa</p><h3 id="titulo-acoes-chamado">Ações permitidas</h3><div class="queue-action-grid" id="acoes-chamado-aberto"><button class="button button-success" type="button" data-queue-action="iniciar">Assumir e iniciar atendimento</button></div><div class="queue-action-grid" id="acoes-transferencia"><label for="transferir-responsavel">Transferir responsável</label><div class="queue-control-inline"><select id="transferir-responsavel"></select><button class="button button-secondary" type="button" data-queue-action="transferir">Transferir</button></div></div><div class="queue-action-grid" id="acoes-chamado-atendimento" hidden><button class="button button-info" type="button" data-queue-action="finalizar">Finalizar atendimento</button></div></section>
                         </div>
                         <p class="form-message" id="mensagem-fila" role="status" aria-live="polite"></p>
                     </section>
@@ -221,9 +243,32 @@
                 <p class="breadcrumb">Início / Central técnica / Gestão de usuários</p>
                 <div class="page-heading page-heading-compact"><div><p class="eyebrow">Administração do sistema</p><h1 id="titulo-gestao-usuarios">Gestão de usuários</h1><p>Centralize cadastros, perfis de acesso e a disponibilidade da equipe em uma única área.</p></div></div>
                 <div class="management-grid">
-                    <form class="surface-card compact-form registration-card" id="formulario-cadastro-usuario"><p class="eyebrow">Novo acesso</p><h2>Cadastrar usuário</h2><p class="field-help">Registre o militar para habilitar o acesso ao Sistema de Suporte.</p><div class="field-group"><label for="cadastro-re">RE</label><input id="cadastro-re" type="text" placeholder="Digite o RE" required></div><div class="field-group"><label for="cadastro-posto">Posto / graduação</label><select id="cadastro-posto" required><option value="">Selecione</option><option>3º SGT PM</option><option>CB PM</option><option>SD PM</option></select></div><div class="field-group"><label for="cadastro-nome">Nome</label><input id="cadastro-nome" type="text" placeholder="Nome completo" required></div><button class="button button-primary button-block" type="submit">Cadastrar usuário</button><p class="form-message" role="status" aria-live="polite"></p></form>
-                    <section class="surface-card user-lookup-card" aria-labelledby="titulo-controle-acesso"><div class="management-card-heading"><div><p class="eyebrow">Consulta e manutenção</p><h2 id="titulo-controle-acesso">Controle de acesso</h2><p>Localize um cadastro pelo RE e escolha a ação necessária.</p></div></div><div class="lookup-row"><label class="sr-only" for="consulta-re">Consultar usuário por RE</label><input id="consulta-re" type="search" placeholder="Informe o RE"><button class="button button-secondary" type="button" data-demo-action="Consulta de usuário preparada" data-demo-message="mensagem-controle-acesso">Consultar</button></div><article class="user-record"><div><strong>3º SGT PM Usuário</strong><span>RE 250861 · Perfil de usuário</span></div><span class="status-label status-active">Ativo</span></article><div class="management-actions"><button class="button button-secondary" type="button" data-demo-action="Atualização de dados preparada" data-demo-message="mensagem-controle-acesso">Atualizar dados</button><button class="button button-success" type="button" data-demo-action="Cadastro de técnico preparado" data-demo-message="mensagem-controle-acesso">Conceder acesso técnico</button><button class="text-button danger-text" type="button" data-demo-action="Inativação de usuário preparada" data-demo-message="mensagem-controle-acesso">Inativar usuário</button></div><p class="field-help management-note">A inativação será bloqueada quando houver atendimento técnico pendente vinculado ao usuário.</p><p class="form-message" id="mensagem-controle-acesso" role="status" aria-live="polite"></p></section>
-                    <section class="surface-card technician-management-card" aria-labelledby="titulo-equipe-tecnica"><div class="management-card-heading"><div><p class="eyebrow">Equipe técnica</p><h2 id="titulo-equipe-tecnica">Disponibilidade dos técnicos</h2><p>Consulte rapidamente quem pode receber um novo atendimento.</p></div><button class="button button-secondary" type="button" data-demo-action="Lista de técnicos disponíveis preparada" data-demo-message="mensagem-disponibilidade-tecnica">Gerenciar disponibilidade</button></div><div class="technician-list"><article class="technician-row"><div><strong>3º SGT PM Técnico de Telemática</strong><span>RE 250861 · Técnico</span></div><button class="availability-toggle is-available" type="button" data-demo-action="Disponibilidade do técnico preparada" data-demo-message="mensagem-disponibilidade-tecnica"><span aria-hidden="true"></span>Disponível</button></article><article class="technician-row"><div><strong>CB PM Técnico de apoio</strong><span>RE 249900 · Técnico</span></div><button class="availability-toggle" type="button" data-demo-action="Disponibilidade do técnico preparada" data-demo-message="mensagem-disponibilidade-tecnica"><span aria-hidden="true"></span>Indisponível</button></article></div><p class="form-message" id="mensagem-disponibilidade-tecnica" role="status" aria-live="polite"></p></section>
+                    <form class="surface-card compact-form registration-card" id="formulario-cadastro-usuario"><p class="eyebrow">Novo acesso</p><h2>Cadastrar usuário</h2><p class="field-help">Registre o militar para habilitar o acesso ao Sistema de Suporte.</p><div class="field-group"><label for="cadastro-re">RE</label><input id="cadastro-re" type="text" placeholder="Digite o RE" required></div><div class="field-group"><label for="cadastro-posto">Posto / graduação</label><select id="cadastro-posto" required><option value="">Selecione</option><option value="SD">SD PM</option><option value="CB">CB PM</option><option value="SGT_3">3º SGT PM</option><option value="SGT_2">2º SGT PM</option><option value="SGT_1">1º SGT PM</option><option value="SUBTEN">SUBTEN PM</option><option value="ASP_OF">ASP OF PM</option><option value="TEN_2">2º TEN PM</option><option value="TEN_1">1º TEN PM</option><option value="CAP">CAP PM</option><option value="MAJ">MAJ PM</option><option value="TEN_CEL">TEN CEL PM</option><option value="CEL">CEL PM</option></select></div><div class="field-group"><label for="cadastro-nome">Nome</label><input id="cadastro-nome" type="text" placeholder="Nome completo" required></div><div class="field-group"><label for="cadastro-email">E-mail funcional</label><input id="cadastro-email" type="email" placeholder="nome@policiamilitar.sp.gov.br" required></div><button class="button button-primary button-block" type="submit">Cadastrar usuário</button><p class="form-message" id="mensagem-cadastro-usuario" role="status" aria-live="polite"></p></form>
+                    <section class="surface-card user-lookup-card" aria-labelledby="titulo-controle-acesso">
+                        <div class="management-card-heading"><div><p class="eyebrow">Consulta e manutenção</p><h2 id="titulo-controle-acesso">Controle de acesso</h2><p>Localize um cadastro pelo RE e escolha a ação necessária.</p></div></div>
+                        <div class="lookup-row"><label class="sr-only" for="consulta-re">Consultar usuário por RE</label><input id="consulta-re" type="search" placeholder="Informe o RE"><button class="button button-secondary" type="button" id="consultar-usuario">Consultar</button></div>
+                        <article class="user-record" id="registro-usuario-consultado" hidden>
+                            <div><strong id="consulta-usuario-nome">-</strong><span id="consulta-usuario-info">-</span></div>
+                            <span class="status-label" id="consulta-usuario-status">-</span>
+                        </article>
+                        <div class="management-actions" id="acoes-usuario-consultado" hidden>
+                            <button class="button button-secondary" type="button" id="alternar-edicao-usuario">Atualizar dados</button>
+                            <button class="button button-success" type="button" id="conceder-acesso-tecnico">Conceder acesso técnico</button>
+                            <button class="text-button danger-text" type="button" id="inativar-usuario">Inativar usuário</button>
+                        </div>
+                        <form class="compact-form" id="formulario-atualizar-usuario" hidden>
+                            <div class="field-group"><label for="atualizar-nome">Nome</label><input id="atualizar-nome" type="text" required></div>
+                            <div class="field-group"><label for="atualizar-posto">Posto / graduação</label><select id="atualizar-posto" required><option value="SD">SD PM</option><option value="CB">CB PM</option><option value="SGT_3">3º SGT PM</option><option value="SGT_2">2º SGT PM</option><option value="SGT_1">1º SGT PM</option><option value="SUBTEN">SUBTEN PM</option><option value="ASP_OF">ASP OF PM</option><option value="TEN_2">2º TEN PM</option><option value="TEN_1">1º TEN PM</option><option value="CAP">CAP PM</option><option value="MAJ">MAJ PM</option><option value="TEN_CEL">TEN CEL PM</option><option value="CEL">CEL PM</option></select></div>
+                            <button class="button button-primary" type="submit">Salvar alterações</button>
+                        </form>
+                        <p class="field-help management-note">A inativação será bloqueada quando houver atendimento técnico pendente vinculado ao usuário.</p>
+                        <p class="form-message" id="mensagem-controle-acesso" role="status" aria-live="polite"></p>
+                    </section>
+                    <section class="surface-card technician-management-card" aria-labelledby="titulo-equipe-tecnica">
+                        <div class="management-card-heading"><div><p class="eyebrow">Equipe técnica</p><h2 id="titulo-equipe-tecnica">Disponibilidade dos técnicos</h2><p>Consulte rapidamente quem pode receber um novo atendimento.</p></div><button class="button button-secondary" type="button" id="atualizar-lista-tecnicos">Atualizar lista</button></div>
+                        <div class="technician-list" id="lista-tecnicos"></div>
+                        <p class="form-message" id="mensagem-disponibilidade-tecnica" role="status" aria-live="polite"></p>
+                    </section>
                 </div>
             </section>
 
@@ -338,6 +383,6 @@
         </section>
     </main>
 
-    <script src="app.js?v=0.0.1-beta.17"></script>
+    <script src="app.js?v=0.0.1-beta.18"></script>
 </body>
 </html>

@@ -31,6 +31,13 @@ public class ChamadoController {
     }
 
 
+    // Listar os chamados do usuário autenticado (tela "Meus chamados")
+    @GetMapping("/meus")
+    public List<ChamadoRespostaDTO> listarMeusChamados() {
+        return chamadoService.listarChamadosDoUsuarioAutenticado();
+    }
+
+
     // Mostrar fila de chamados que aguardam atendimento
     @GetMapping("/fila")
     public List<ChamadoRespostaDTO> listarFilaAtendimento() {
@@ -46,7 +53,7 @@ public class ChamadoController {
 
 
     // Atualizar prioridade do chamado
-    // Nome do método mais específico que o da rota (/atualizar-dados) de propósito: hoje só
+    // Nome do metodo mais específico que o da rota (/atualizar-dados) de propósito: hoje só
     // a prioridade é atualizável por aqui. A URL não muda para não quebrar o frontend.
     @PutMapping("/atualizar-dados/{chamadoId}")
     public ChamadoRespostaDTO atualizarPrioridadeDoChamado(@PathVariable Long chamadoId, @RequestParam ChamadoPrioridade prioridade) {

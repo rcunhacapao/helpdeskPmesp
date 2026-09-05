@@ -77,6 +77,16 @@ public class TecnicoService {
     }
 
 
+    // Listar todos os técnicos cadastrados, disponíveis ou não (tela de gestão de usuários)
+    public List<TecnicoRespostaDTO> listarTodosOsTecnicos() {
+        List<TecnicoRespostaDTO> resposta = new ArrayList<>();
+        for (TecnicoModel tecnico : tecnicoRepository.findAll()) {
+            resposta.add(tecnicoMapper.map(tecnico));
+        }
+        return resposta;
+    }
+
+
     // Mostrar somente técnicos que se colocaram disponíveis
     public List<TecnicoRespostaDTO> listarTecnicosDisponiveis() {
         List<TecnicoRespostaDTO> resposta = new ArrayList<>();

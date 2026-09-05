@@ -42,45 +42,97 @@ const contadorEmAtendimento = document.querySelector('#contador-em-atendimento')
 const contadorChamadosAtivos = document.querySelector('#contador-chamados-ativos');
 const filtrosDaFila = document.querySelectorAll('[data-queue-filter]');
 
-const perfilDemonstracao = new URLSearchParams(window.location.search).get('perfil') === 'tecnico'
-    ? 'tecnico'
-    : 'usuario';
-
-const sessaoDemonstracao = perfilDemonstracao === 'tecnico'
-    ? {
-        identificacao: '3º SGT PM Técnico de Telemática',
-        perfil: 'Técnico',
-        rotaInicial: 'central-tecnica'
-    }
-    : {
-        identificacao: '3º SGT PM Usuário',
-        perfil: 'Usuário',
-        rotaInicial: 'visao-geral'
+// ============================================================
+// Comunicação com a API — um único lugar para montar a requisição,
+// enviar o cookie de sessão e transformar erros do backend em algo
+// fácil de mostrar na tela.
+// ============================================================
+async function apiFetch(caminho, opcoes = {}) {
+    const configuracao = {
+        method: opcoes.method || 'GET',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json', ...(opcoes.headers || {}) }
     };
+    if (opcoes.body !== undefined) {
+        configuracao.body = JSON.stringify(opcoes.body);
+    }
+
+    const resposta = await fetch(caminho, configuracao);
+
+    if (resposta.status === 401) {
+        sessaoAtual = null;
+        if (appPage && !appPage.hidden) {
+            appPage.hidden = true;
+            loginPage.hidden = false;
+        }
+    }
+
+    if (resposta.status === 204) {
+        return null;
+    }
+
+    const texto = await resposta.text();
+    const dados = texto ? JSON.parse(texto) : null;
+
+    if (!resposta.ok) {
+        const mensagem = dados?.mensagem || 'Ocorreu um erro inesperado. Tente novamente.';
+        const erro = new Error(mensagem);
+        erro.codigo = dados?.codigo;
+        erro.status = resposta.status;
+        throw erro;
+    }
+
+    return dados;
+}
+
+// Desabilita o botão e mostra um texto de carregamento enquanto a ação assíncrona
+// (uma chamada à API) não termina, reabilitando o botão ao final, com sucesso ou erro.
+async function executarComEstadoDeEnvio(botao, textoEnviando, acaoAssincrona) {
+    if (!botao) { await acaoAssincrona(); return; }
+    const textoOriginal = botao.textContent;
+    botao.disabled = true;
+    botao.textContent = textoEnviando;
+    try {
+        await acaoAssincrona();
+    } finally {
+        botao.disabled = false;
+        botao.textContent = textoOriginal;
+    }
+}
+
+// ============================================================
+// Sessão autenticada
+// ============================================================
+let sessaoAtual = null; // { identificacaoCompleta, re, tecnico } — preenchido após /auth/login
 
 function pertenceAoPerfil(elemento) {
     const perfilPermitido = elemento.dataset.profile || 'todos';
-    return perfilPermitido === 'todos' || perfilPermitido === perfilDemonstracao;
+    const perfilAtual = sessaoAtual?.tecnico ? 'tecnico' : 'usuario';
+    return perfilPermitido === 'todos' || perfilPermitido === perfilAtual;
 }
 
-function aplicarPerfilDemonstracao() {
+function aplicarSessaoNaInterface() {
     document.querySelectorAll('.nav-link[data-profile]').forEach((item) => {
         item.hidden = !pertenceAoPerfil(item);
     });
 
-    document.querySelector('#identificacao-sidebar').textContent = sessaoDemonstracao.identificacao;
-    document.querySelector('#perfil-sessao').textContent = `Perfil: ${sessaoDemonstracao.perfil}`;
+    document.querySelector('#identificacao-sidebar').textContent = sessaoAtual.identificacaoCompleta;
+    document.querySelector('#perfil-sessao').textContent = `Perfil: ${sessaoAtual.tecnico ? 'Técnico' : 'Usuário'}`;
 
     const saudacaoUsuario = document.querySelector('#saudacao-usuario');
     const saudacaoTecnico = document.querySelector('#saudacao-tecnico');
-
-    if (saudacaoUsuario) saudacaoUsuario.textContent = sessaoDemonstracao.identificacao;
-    if (saudacaoTecnico) saudacaoTecnico.textContent = sessaoDemonstracao.identificacao;
+    if (saudacaoUsuario) saudacaoUsuario.textContent = sessaoAtual.identificacaoCompleta;
+    if (saudacaoTecnico) saudacaoTecnico.textContent = sessaoAtual.identificacaoCompleta;
 }
 
-function showRoute(route) {
+// ============================================================
+// Navegação entre telas — ao trocar de rota, também carrega os
+// dados reais daquela tela.
+// ============================================================
+async function showRoute(route) {
     const destino = document.querySelector(`#${route}`);
-    const rotaValida = destino && pertenceAoPerfil(destino) ? route : sessaoDemonstracao.rotaInicial;
+    const rotaPadrao = sessaoAtual?.tecnico ? 'central-tecnica' : 'visao-geral';
+    const rotaValida = destino && pertenceAoPerfil(destino) ? route : rotaPadrao;
 
     views.forEach((view) => {
         const isCurrentView = view.id === rotaValida && pertenceAoPerfil(view);
@@ -93,106 +145,404 @@ function showRoute(route) {
         link.classList.toggle('is-active', isActive);
         link.toggleAttribute('aria-current', isActive);
     });
+
+    await carregarDadosDaRota(rotaValida);
 }
 
-function mostrarMensagemDeDemonstracao(mensagem, destinoId) {
-    const destino = destinoId ? document.querySelector(`#${destinoId}`) : null;
-    if (!destino) return;
-
-    destino.classList.remove('is-error');
-    destino.textContent = `${mensagem}. A integração com a API será realizada na etapa de lógica.`;
+function carregarDadosDaRota(rota) {
+    if (rota === 'visao-geral') return carregarVisaoGeral();
+    if (rota === 'meus-chamados') return carregarMeusChamados();
+    if (rota === 'central-tecnica') return carregarCentralTecnica();
+    if (rota === 'fila-atendimento') return carregarFilaAtendimento();
+    if (rota === 'gestao-usuarios') return carregarListaTecnicos();
+    return Promise.resolve();
 }
 
-const chamadosDemonstracao = [
-    {
-        id: 41,
-        codigo: '2026-0041',
-        assunto: 'Acesso ao sistema administrativo indisponível',
-        descricao: 'Não é possível acessar o sistema administrativo desde o início do expediente. A tela informa que a conexão foi recusada.',
-        solicitante: 'CB PM Rafael Moreira',
-        local: 'Seção administrativa',
-        categoria: 'Software',
-        prioridade: 'URGENTE',
-        status: 'ABERTO',
-        dataAbertura: 'Hoje às 08:50',
-        responsavel: null
-    },
-    {
-        id: 42,
-        codigo: '2026-0042',
-        assunto: 'Impressora do setor administrativo não imprime',
-        descricao: 'A impressora está ligada, mas os documentos permanecem na fila de impressão. O problema começou nesta manhã.',
-        solicitante: '3º SGT PM Usuário',
-        local: 'Administração',
-        categoria: 'Impressora',
-        prioridade: 'MEDIA',
-        status: 'ABERTO',
-        dataAbertura: 'Hoje às 09:35',
-        responsavel: null
-    },
-    {
-        id: 39,
-        codigo: '2026-0039',
-        assunto: 'Estação de trabalho com falha de conexão',
-        descricao: 'A estação de trabalho perdeu o acesso à rede interna. O cabo foi conferido, mas a conexão não retornou.',
-        solicitante: 'SD PM Marina Costa',
-        local: 'P/1',
-        categoria: 'Rede e internet',
-        prioridade: 'ALTA',
-        status: 'EM_ATENDIMENTO',
-        dataAbertura: 'Hoje às 08:20',
-        responsavel: 'CB PM Técnico de apoio'
+routes.forEach((route) => {
+    route.addEventListener('click', () => showRoute(route.dataset.route));
+});
+
+// ============================================================
+// Login, primeiro acesso e logout
+// ============================================================
+loginForm?.addEventListener('submit', async (event) => {
+    event.preventDefault();
+    const re = document.querySelector('#login').value.trim();
+    const senha = document.querySelector('#senha').value;
+
+    await executarComEstadoDeEnvio(loginForm.querySelector('button[type="submit"]'), 'Entrando...', async () => {
+        try {
+            sessaoAtual = await apiFetch('/auth/login', { method: 'POST', body: { re, senha } });
+            loginMessage.classList.remove('is-error');
+            loginMessage.textContent = '';
+            loginForm.reset();
+            loginPage.hidden = true;
+            appPage.hidden = false;
+            aplicarSessaoNaInterface();
+            await showRoute(sessaoAtual.tecnico ? 'central-tecnica' : 'visao-geral');
+        } catch (erro) {
+            loginMessage.classList.add('is-error');
+            loginMessage.textContent = 'RE ou senha inválidos.';
+        }
+    });
+});
+
+document.querySelector('#mostrar-primeiro-acesso')?.addEventListener('click', () => {
+    loginForm.hidden = true;
+    document.querySelector('#formulario-primeiro-acesso').hidden = false;
+    document.querySelector('#mostrar-primeiro-acesso').hidden = true;
+});
+
+document.querySelector('#ocultar-primeiro-acesso')?.addEventListener('click', () => {
+    document.querySelector('#formulario-primeiro-acesso').hidden = true;
+    loginForm.hidden = false;
+    document.querySelector('#mostrar-primeiro-acesso').hidden = false;
+});
+
+document.querySelector('#formulario-primeiro-acesso')?.addEventListener('submit', async (event) => {
+    event.preventDefault();
+    const form = event.currentTarget;
+    const mensagem = document.querySelector('#mensagem-primeiro-acesso');
+
+    if (!form.checkValidity()) {
+        mensagem.classList.add('is-error');
+        mensagem.textContent = 'Preencha RE, e-mail funcional e a nova senha.';
+        form.reportValidity();
+        return;
     }
-];
 
-let filtroFilaAtual = 'ABERTO';
-let termoBuscaFila = '';
-let chamadoSelecionadoId = null;
+    const corpo = {
+        re: document.querySelector('#primeiro-acesso-re').value.trim(),
+        email: document.querySelector('#primeiro-acesso-email').value.trim(),
+        novaSenha: document.querySelector('#primeiro-acesso-senha').value
+    };
 
-const ordemDePrioridade = { URGENTE: 0, ALTA: 1, MEDIA: 2, BAIXA: 3 };
-const nomeDaPrioridade = { URGENTE: 'Urgente', ALTA: 'Alta', MEDIA: 'Média', BAIXA: 'Baixa' };
-const nomeDoStatus = { ABERTO: 'Aguardando atendimento', EM_ATENDIMENTO: 'Em atendimento' };
+    await executarComEstadoDeEnvio(form.querySelector('button[type="submit"]'), 'Enviando...', async () => {
+        try {
+            await apiFetch('/auth/primeiro-acesso', { method: 'POST', body: corpo });
+            mensagem.classList.remove('is-error');
+            mensagem.textContent = 'Senha criada com sucesso. Faça login para continuar.';
+            form.reset();
+            window.setTimeout(() => document.querySelector('#ocultar-primeiro-acesso').click(), 1500);
+        } catch (erro) {
+            mensagem.classList.add('is-error');
+            mensagem.textContent = erro.message;
+        }
+    });
+});
 
-function atualizarTextosDoSeletor(seletor, texto) {
-    document.querySelectorAll(seletor).forEach((elemento) => {
-        elemento.textContent = texto;
+document.querySelector('#sair')?.addEventListener('click', async () => {
+    try {
+        await apiFetch('/logout', { method: 'POST' });
+    } catch (erro) {
+        // Mesmo se a chamada falhar, a sessão local é encerrada abaixo.
+    }
+    sessaoAtual = null;
+    appPage.hidden = true;
+    loginPage.hidden = false;
+    loginForm.reset();
+    loginMessage.textContent = '';
+});
+
+// ============================================================
+// Vocabulário para exibir os enums do backend em português
+// ============================================================
+const nomeDaCategoria = {
+    COMPUTADOR: 'Computador', MONITOR: 'Monitor', IMPRESSORA: 'Impressora',
+    REDE_INTERNET: 'Rede / Internet', E_MAIL: 'E-mail', OUTRO: 'Outro'
+};
+const nomeDaPrioridade = { BAIXA: 'Baixa', MEDIA: 'Média', ALTA: 'Alta', URGENTE: 'Urgente' };
+const nomeDoStatus = {
+    ABERTO: 'Aguardando atendimento', EM_ATENDIMENTO: 'Em atendimento',
+    FECHADO: 'Finalizado', CANCELADO: 'Cancelado'
+};
+
+// O backend só devolve a descrição do posto (ex.: "3° SGT PM"), mas o formulário de
+// edição precisa do valor do enum (ex.: SGT_3) para pré-selecionar a opção certa.
+const chaveDoPostoPorDescricao = {
+    'SD PM': 'SD', 'CB PM': 'CB', '3° SGT PM': 'SGT_3', '2° SGT PM': 'SGT_2',
+    '1° SGT PM': 'SGT_1', 'SUBTEN PM': 'SUBTEN', 'ASP OF PM': 'ASP_OF',
+    '2° TEN PM': 'TEN_2', '1° TEN PM': 'TEN_1', 'CAP PM': 'CAP',
+    'MAJ PM': 'MAJ', 'TEN CEL PM': 'TEN_CEL', 'CEL PM': 'CEL'
+};
+
+// O backend guarda um único campo "descricao" (o formulário de abertura pede um
+// assunto curto e uma descrição detalhada); a primeira linha funciona como título.
+function tituloDoChamado(chamado) {
+    return chamado.descricao.split('\n')[0];
+}
+
+// ============================================================
+// Visão geral — acompanhamento do chamado em aberto do usuário
+// ============================================================
+async function carregarVisaoGeral() {
+    if (!document.querySelector('#overview-ticket-card')) return;
+    try {
+        const chamados = await apiFetch('/chamados/meus');
+        const emAndamento = chamados.find((chamado) => chamado.status === 'ABERTO' || chamado.status === 'EM_ATENDIMENTO');
+        exibirResumoDoChamado(emAndamento);
+    } catch (erro) {
+        exibirResumoDoChamado(null);
+    }
+}
+
+function atualizarProgresso(card, status) {
+    const etapaPorStatus = { ABERTO: 1, EM_ATENDIMENTO: 2, FECHADO: 3, CANCELADO: 3 };
+    const etapaAtual = etapaPorStatus[status] ?? 0;
+    card.querySelectorAll('.progress-step').forEach((passo, indice) => {
+        passo.classList.toggle('is-complete', indice < etapaAtual);
+        passo.classList.toggle('is-current', indice === etapaAtual);
     });
 }
 
-function atualizarAcompanhamentoDoUsuario() {
-    const chamadoDoUsuario = chamadosDemonstracao.find((chamado) => chamado.solicitante === '3º SGT PM Usuário');
-    if (!chamadoDoUsuario) return;
+function exibirResumoDoChamado(chamado) {
+    const card = document.querySelector('#overview-ticket-card');
+    const vazio = document.querySelector('#overview-sem-chamado');
 
-    const aguardando = chamadosDemonstracao
-        .filter((chamado) => chamado.status === 'ABERTO')
-        .sort((primeiro, segundo) => ordemDePrioridade[primeiro.prioridade] - ordemDePrioridade[segundo.prioridade]);
-    const posicao = aguardando.findIndex((chamado) => chamado.id === chamadoDoUsuario.id) + 1;
-    const estaNaFila = chamadoDoUsuario.status === 'ABERTO';
-    const posicaoExibida = estaNaFila ? `${posicao}º` : '—';
-    const chamadosAFrente = Math.max(posicao - 1, 0);
-    const resumoDaFila = chamadosAFrente === 0
-        ? 'Você é o próximo da fila'
-        : `${chamadosAFrente} ${chamadosAFrente === 1 ? 'chamado à frente' : 'chamados à frente'}`;
-    const tecnicoResponsavel = chamadoDoUsuario.responsavel
-        ? `Técnico responsável: ${chamadoDoUsuario.responsavel}.`
+    if (!chamado) {
+        card.hidden = true;
+        vazio.hidden = false;
+        return;
+    }
+
+    vazio.hidden = true;
+    card.hidden = false;
+    document.querySelector('#overview-ticket-titulo').textContent = tituloDoChamado(chamado);
+    document.querySelector('#overview-ticket-info').textContent = `Chamado #${chamado.id} · aberto em ${chamado.dataAbertura}`;
+    document.querySelector('#overview-ticket-status').textContent = nomeDoStatus[chamado.status];
+
+    const emFila = chamado.status === 'ABERTO';
+    document.querySelector('#overview-queue-position').textContent = emFila ? 'Na fila' : '—';
+    document.querySelector('#overview-queue-ahead').textContent = emFila ? 'Aguardando um técnico' : 'Atendimento em andamento';
+    document.querySelector('#overview-tech-assignment').textContent = chamado.tecnicoResponsavel
+        ? `Técnico responsável: ${chamado.tecnicoResponsavel}.`
         : 'Técnico responsável: ainda não atribuído.';
-    const status = nomeDoStatus[chamadoDoUsuario.status] || 'Atendimento concluído';
-    const mensagem = estaNaFila
-        ? `Seu chamado está na ${posicao}ª posição da fila e aguarda a definição de um técnico responsável.`
-        : chamadoDoUsuario.status === 'EM_ATENDIMENTO'
-            ? `Seu atendimento já foi iniciado por ${chamadoDoUsuario.responsavel || 'um técnico responsável'}.`
-            : 'Seu atendimento foi concluído. O registro permanece disponível no histórico.';
+    document.querySelector('#overview-queue-message').textContent = emFila
+        ? 'Seu chamado foi recebido e aguarda a definição de um técnico responsável.'
+        : `Seu atendimento já foi iniciado${chamado.tecnicoResponsavel ? ` por ${chamado.tecnicoResponsavel}` : ''}.`;
 
-    atualizarTextosDoSeletor('#overview-ticket-status, #meus-chamados-ticket-status', status);
-    atualizarTextosDoSeletor('#overview-queue-position, #meus-chamados-queue-position', posicaoExibida);
-    atualizarTextosDoSeletor('#overview-queue-ahead, #meus-chamados-queue-ahead', estaNaFila ? resumoDaFila : 'Atendimento em andamento');
-    atualizarTextosDoSeletor('#overview-tech-assignment, #meus-chamados-tech-assignment', tecnicoResponsavel);
-    atualizarTextosDoSeletor('#overview-queue-message', mensagem);
-    atualizarTextosDoSeletor('#meus-chamados-queue-message', mensagem);
+    atualizarProgresso(card, chamado.status);
+}
+
+// ============================================================
+// Meus chamados — lista completa + cancelamento
+// ============================================================
+let chamadoParaCancelarId = null;
+
+async function carregarMeusChamados() {
+    const lista = document.querySelector('#lista-meus-chamados');
+    if (!lista) return;
+    lista.innerHTML = '';
+
+    try {
+        const chamados = await apiFetch('/chamados/meus');
+        if (!chamados.length) {
+            const vazio = document.createElement('p');
+            vazio.className = 'lista-chamados-vazia';
+            vazio.textContent = 'Você ainda não abriu nenhum chamado.';
+            lista.appendChild(vazio);
+            return;
+        }
+        chamados.forEach((chamado) => lista.appendChild(criarItemDeMeuChamado(chamado)));
+    } catch (erro) {
+        const mensagem = document.createElement('p');
+        mensagem.className = 'lista-chamados-vazia';
+        mensagem.textContent = erro.message;
+        lista.appendChild(mensagem);
+    }
+}
+
+function criarItemDeMeuChamado(chamado) {
+    const item = document.createElement('article');
+    item.className = 'meu-chamado-item';
+
+    const cabecalho = document.createElement('div');
+    cabecalho.className = 'card-heading';
+
+    const titulo = document.createElement('div');
+    const h3 = document.createElement('h3');
+    h3.textContent = `#${chamado.id} · ${tituloDoChamado(chamado)}`;
+    const dataAbertura = document.createElement('p');
+    dataAbertura.textContent = `Aberto em ${chamado.dataAbertura}`;
+    titulo.append(h3, dataAbertura);
+
+    const status = document.createElement('span');
+    status.className = 'status-label';
+    status.textContent = nomeDoStatus[chamado.status];
+
+    cabecalho.append(titulo, status);
+    item.appendChild(cabecalho);
+
+    if (chamado.status === 'ABERTO') {
+        const acoes = document.createElement('div');
+        acoes.className = 'card-actions';
+        const botaoCancelar = document.createElement('button');
+        botaoCancelar.type = 'button';
+        botaoCancelar.className = 'button button-secondary';
+        botaoCancelar.textContent = 'Cancelar chamado';
+        botaoCancelar.addEventListener('click', () => {
+            chamadoParaCancelarId = chamado.id;
+            cancelTicketForm.hidden = false;
+            document.querySelector('#motivo-cancelamento').focus();
+        });
+        acoes.appendChild(botaoCancelar);
+        item.appendChild(acoes);
+    }
+
+    return item;
+}
+
+document.querySelector('[data-close-cancel]')?.addEventListener('click', () => {
+    cancelTicketForm.hidden = true;
+    cancelTicketForm.reset();
+    cancelTicketMessage.textContent = '';
+});
+
+cancelTicketForm?.addEventListener('submit', async (event) => {
+    event.preventDefault();
+
+    if (!cancelTicketForm.checkValidity()) {
+        cancelTicketMessage.classList.add('is-error');
+        cancelTicketMessage.textContent = 'Selecione o motivo do cancelamento.';
+        cancelTicketForm.reportValidity();
+        return;
+    }
+
+    const motivoCancelamento = document.querySelector('#motivo-cancelamento').value;
+
+    await executarComEstadoDeEnvio(cancelTicketForm.querySelector('button[type="submit"]'), 'Enviando...', async () => {
+        try {
+            await apiFetch(`/chamados/cancelar/${chamadoParaCancelarId}?motivoCancelamento=${motivoCancelamento}`, { method: 'PATCH' });
+            cancelTicketMessage.classList.remove('is-error');
+            cancelTicketMessage.textContent = 'Chamado cancelado com sucesso.';
+            cancelTicketForm.reset();
+            cancelTicketForm.hidden = true;
+            await carregarMeusChamados();
+        } catch (erro) {
+            cancelTicketMessage.classList.add('is-error');
+            cancelTicketMessage.textContent = erro.message;
+        }
+    });
+});
+
+// ============================================================
+// Abrir chamado
+// ============================================================
+ticketForm?.addEventListener('submit', async (event) => {
+    event.preventDefault();
+
+    if (!ticketForm.checkValidity()) {
+        ticketMessage.classList.add('is-error');
+        ticketMessage.textContent = 'Preencha os campos obrigatórios para continuar.';
+        ticketForm.reportValidity();
+        return;
+    }
+
+    const assunto = document.querySelector('#assunto').value.trim();
+    const descricaoDetalhada = document.querySelector('#descricao').value.trim();
+    const corpo = {
+        re: sessaoAtual.re,
+        descricao: `${assunto}\n\n${descricaoDetalhada}`,
+        categoria: document.querySelector('#categoria').value,
+        localAtendimento: document.querySelector('#local').value.trim(),
+        prioridade: document.querySelector('#prioridade').value
+    };
+
+    await executarComEstadoDeEnvio(ticketForm.querySelector('button[type="submit"]'), 'Enviando...', async () => {
+        try {
+            await apiFetch('/chamados/cadastrar', { method: 'POST', body: corpo });
+            ticketMessage.classList.remove('is-error');
+            ticketMessage.textContent = 'Chamado registrado com sucesso.';
+            ticketForm.reset();
+            document.querySelector('#prioridade').value = 'MEDIA';
+        } catch (erro) {
+            ticketMessage.classList.add('is-error');
+            ticketMessage.textContent = erro.message;
+        }
+    });
+});
+
+// ============================================================
+// Mike IA — sem backend ainda; continua sendo uma demonstração visual
+// ============================================================
+mikeForm?.addEventListener('submit', (event) => {
+    event.preventDefault();
+    const message = mikeQuestion.value.trim();
+    if (!message) return;
+
+    mikeAnswer.querySelector('p').textContent = message;
+    mikeAnswer.hidden = false;
+    mikeReply.hidden = false;
+    mikeQuestion.value = '';
+});
+
+// ============================================================
+// Central técnica — disponibilidade do técnico logado
+// ============================================================
+function atualizarToggleDisponibilidade(botao, disponivel) {
+    if (!botao) return;
+    botao.setAttribute('aria-pressed', String(disponivel));
+    botao.classList.toggle('is-available', disponivel);
+    botao.querySelector('strong').textContent = disponivel ? 'Disponível para atendimento' : 'Indisponível para atendimento';
+}
+
+async function carregarCentralTecnica() {
+    const botao = document.querySelector('#alternar-disponibilidade');
+    if (!botao || !sessaoAtual) return;
+    try {
+        const tecnico = await apiFetch(`/tecnicos/buscar/${sessaoAtual.re}`);
+        atualizarToggleDisponibilidade(botao, tecnico.disponivel);
+    } catch (erro) {
+        // Sem dado real disponível agora; mantém o último estado visual conhecido.
+    }
+}
+
+document.querySelector('#alternar-disponibilidade')?.addEventListener('click', async (event) => {
+    const botao = event.currentTarget;
+    const mensagem = document.querySelector('#mensagem-disponibilidade');
+    const estaDisponivel = botao.getAttribute('aria-pressed') === 'true';
+    const acao = estaDisponivel ? 'ficar-indisponivel' : 'ficar-disponivel';
+
+    try {
+        const tecnico = await apiFetch(`/tecnicos/${acao}/${sessaoAtual.re}`, { method: 'PATCH' });
+        atualizarToggleDisponibilidade(botao, tecnico.disponivel);
+        mensagem.classList.remove('is-error');
+        mensagem.textContent = tecnico.disponivel
+            ? 'Você está disponível para novos atendimentos.'
+            : 'Você ficou indisponível para novos atendimentos.';
+    } catch (erro) {
+        mensagem.classList.add('is-error');
+        mensagem.textContent = erro.message;
+    }
+});
+
+// ============================================================
+// Fila de atendimento (técnico)
+// ============================================================
+let filtroFilaAtual = 'ABERTO';
+let termoBuscaFila = '';
+let chamadoSelecionadoId = null;
+let filaAbertos = [];
+let filaEmAtendimento = [];
+
+async function carregarFilaAtendimento() {
+    try {
+        [filaAbertos, filaEmAtendimento] = await Promise.all([
+            apiFetch('/chamados/fila'),
+            apiFetch('/chamados/em-atendimento')
+        ]);
+        queueMessage.classList.remove('is-error');
+    } catch (erro) {
+        filaAbertos = [];
+        filaEmAtendimento = [];
+        mostrarMensagemDaFila(erro.message, true);
+    }
+    renderizarFilaAtendimento();
 }
 
 function obterChamadoSelecionado() {
-    return chamadosDemonstracao.find((chamado) => chamado.id === chamadoSelecionadoId);
+    return filaAbertos.find((chamado) => chamado.id === chamadoSelecionadoId)
+        || filaEmAtendimento.find((chamado) => chamado.id === chamadoSelecionadoId);
 }
 
 function mostrarMensagemDaFila(mensagem, isError = false) {
@@ -202,14 +552,30 @@ function mostrarMensagemDaFila(mensagem, isError = false) {
 }
 
 function chamadosDaFilaAtual() {
+    const base = filtroFilaAtual === 'ABERTO' ? filaAbertos : filaEmAtendimento;
     const termoNormalizado = termoBuscaFila.trim().toLocaleLowerCase('pt-BR');
 
-    return chamadosDemonstracao
-        .filter((chamado) => chamado.status === filtroFilaAtual)
-        .filter((chamado) => !termoNormalizado
-            || chamado.codigo.includes(termoNormalizado)
-            || chamado.assunto.toLocaleLowerCase('pt-BR').includes(termoNormalizado))
-        .sort((primeiro, segundo) => ordemDePrioridade[primeiro.prioridade] - ordemDePrioridade[segundo.prioridade]);
+    return base.filter((chamado) => !termoNormalizado
+        || String(chamado.id).includes(termoNormalizado)
+        || chamado.descricao.toLocaleLowerCase('pt-BR').includes(termoNormalizado));
+}
+
+// Preenche o seletor de transferência com os técnicos realmente disponíveis agora.
+async function popularSelectDeTecnicos() {
+    const select = document.querySelector('#transferir-responsavel');
+    if (!select) return;
+    try {
+        const tecnicos = await apiFetch('/tecnicos/disponiveis');
+        select.innerHTML = '';
+        tecnicos.forEach((tecnico) => {
+            const opcao = document.createElement('option');
+            opcao.value = tecnico.re;
+            opcao.textContent = tecnico.identificacao;
+            select.appendChild(opcao);
+        });
+    } catch (erro) {
+        select.innerHTML = '';
+    }
 }
 
 function renderizarDetalheDoChamado() {
@@ -219,15 +585,11 @@ function renderizarDetalheDoChamado() {
     if (!chamado || !podeSerConduzido) {
         queueDetailContent.hidden = true;
         queueDetailEmpty.hidden = false;
-        const pendentes = chamadosDemonstracao.filter((item) => item.status === 'ABERTO').length;
-        const emAtendimento = chamadosDemonstracao.filter((item) => item.status === 'EM_ATENDIMENTO').length;
         const exibindoPendentes = filtroFilaAtual === 'ABERTO';
-        const quantidade = exibindoPendentes ? pendentes : emAtendimento;
+        const quantidade = exibindoPendentes ? filaAbertos.length : filaEmAtendimento.length;
 
         resumoFilaQuantidade.textContent = quantidade;
-        tituloDetalheChamado.textContent = exibindoPendentes
-            ? 'Chamados pendentes'
-            : 'Chamados em atendimento';
+        tituloDetalheChamado.textContent = exibindoPendentes ? 'Chamados pendentes' : 'Chamados em atendimento';
         resumoFilaDescricao.textContent = exibindoPendentes
             ? quantidade === 0
                 ? 'Não há chamados pendentes no momento.'
@@ -240,25 +602,27 @@ function renderizarDetalheDoChamado() {
 
     queueDetailContent.hidden = false;
     queueDetailEmpty.hidden = true;
-    detalheCodigo.textContent = `Chamado #${chamado.codigo}`;
-    detalheAssunto.textContent = chamado.assunto;
-    detalheAbertura.textContent = `Aberto ${chamado.dataAbertura.toLocaleLowerCase('pt-BR')}`;
+    detalheCodigo.textContent = `Chamado #${chamado.id}`;
+    detalheAssunto.textContent = tituloDoChamado(chamado);
+    detalheAbertura.textContent = `Aberto em ${chamado.dataAbertura}`;
     detalheStatus.textContent = nomeDoStatus[chamado.status];
     detalheSolicitante.textContent = chamado.solicitante;
-    detalheLocal.textContent = chamado.local;
-    detalheCategoria.textContent = chamado.categoria;
-    detalheResponsavel.textContent = chamado.responsavel || 'Aguardando assunção';
+    detalheLocal.textContent = chamado.localAtendimento;
+    detalheCategoria.textContent = nomeDaCategoria[chamado.categoria];
+    detalheResponsavel.textContent = chamado.tecnicoResponsavel || 'Aguardando assunção';
     detalheDescricao.textContent = chamado.descricao;
     detalhePrioridadeElemento.textContent = nomeDaPrioridade[chamado.prioridade];
-    detalhePrioridadeElemento.className = `priority-label priority-${chamado.prioridade.toLocaleLowerCase('pt-BR')}`;
+    detalhePrioridadeElemento.className = `priority-label priority-${chamado.prioridade.toLowerCase()}`;
     acoesChamadoAberto.hidden = chamado.status !== 'ABERTO';
     acoesTransferencia.hidden = !podeSerConduzido;
     acoesChamadoAtendimento.hidden = chamado.status !== 'EM_ATENDIMENTO';
+
+    popularSelectDeTecnicos();
 }
 
 // Monta o card de um chamado da fila usando textContent (nunca innerHTML) para que
-// campos digitados por qualquer usuário (assunto, categoria, local) nunca sejam
-// interpretados como HTML.
+// campos digitados por qualquer usuário (descrição, local) nunca sejam interpretados
+// como HTML.
 function criarElementoDoChamado(chamado) {
     const botao = document.createElement('button');
     botao.type = 'button';
@@ -271,19 +635,19 @@ function criarElementoDoChamado(chamado) {
     topo.className = 'queue-ticket-top';
     const codigo = document.createElement('span');
     codigo.className = 'queue-ticket-code';
-    codigo.textContent = `#${chamado.codigo}`;
+    codigo.textContent = `#${chamado.id}`;
     const prioridade = document.createElement('span');
-    prioridade.className = `priority-label priority-${chamado.prioridade.toLocaleLowerCase('pt-BR')}`;
+    prioridade.className = `priority-label priority-${chamado.prioridade.toLowerCase()}`;
     prioridade.textContent = nomeDaPrioridade[chamado.prioridade];
     topo.append(codigo, prioridade);
 
     const titulo = document.createElement('strong');
     titulo.className = 'queue-ticket-title';
-    titulo.textContent = chamado.assunto;
+    titulo.textContent = tituloDoChamado(chamado);
 
     const meta = document.createElement('span');
     meta.className = 'queue-ticket-meta';
-    meta.textContent = `${chamado.categoria} · ${chamado.local} · ${chamado.dataAbertura.toLocaleLowerCase('pt-BR')}`;
+    meta.textContent = `${nomeDaCategoria[chamado.categoria]} · ${chamado.localAtendimento} · ${chamado.dataAbertura}`;
 
     const rodape = document.createElement('span');
     rodape.className = 'queue-ticket-footer';
@@ -303,12 +667,10 @@ function renderizarFilaAtendimento() {
     if (!queueList) return;
 
     const chamadosVisiveis = chamadosDaFilaAtual();
-    const aguardando = chamadosDemonstracao.filter((chamado) => chamado.status === 'ABERTO').length;
-    const emAtendimento = chamadosDemonstracao.filter((chamado) => chamado.status === 'EM_ATENDIMENTO').length;
 
-    contadorFilaAberta.textContent = aguardando;
-    contadorEmAtendimento.textContent = emAtendimento;
-    contadorChamadosAtivos.textContent = `${aguardando + emAtendimento} ativos`;
+    contadorFilaAberta.textContent = filaAbertos.length;
+    contadorEmAtendimento.textContent = filaEmAtendimento.length;
+    contadorChamadosAtivos.textContent = `${filaAbertos.length + filaEmAtendimento.length} ativos`;
 
     filtrosDaFila.forEach((button) => {
         const isActive = button.dataset.queueFilter === filtroFilaAtual;
@@ -333,10 +695,9 @@ function renderizarFilaAtendimento() {
     }
 
     renderizarDetalheDoChamado();
-    atualizarAcompanhamentoDoUsuario();
 }
 
-function executarAcaoDaFila(acao) {
+async function executarAcaoDaFila(acao) {
     const chamado = obterChamadoSelecionado();
 
     if (!chamado) {
@@ -344,109 +705,34 @@ function executarAcaoDaFila(acao) {
         return;
     }
 
-    if (acao === 'iniciar') {
-        if (chamado.status !== 'ABERTO') return;
-        chamado.status = 'EM_ATENDIMENTO';
-        chamado.responsavel = sessaoDemonstracao.identificacao;
-        filtroFilaAtual = 'EM_ATENDIMENTO';
-        mostrarMensagemDaFila(`Você assumiu o chamado #${chamado.codigo}. O atendimento foi iniciado.`);
-    }
+    try {
+        if (acao === 'iniciar') {
+            await apiFetch(`/chamados/iniciar-atendimento/${chamado.id}?reTecnico=${sessaoAtual.re}`, { method: 'PATCH' });
+            mostrarMensagemDaFila(`Você assumiu o chamado #${chamado.id}. O atendimento foi iniciado.`);
+            filtroFilaAtual = 'EM_ATENDIMENTO';
+        }
 
-    if (acao === 'transferir') {
-        if (!['ABERTO', 'EM_ATENDIMENTO'].includes(chamado.status)) return;
-        chamado.responsavel = document.querySelector('#transferir-responsavel').value;
-        mostrarMensagemDaFila(`Responsável do chamado #${chamado.codigo} atualizado com sucesso.`);
-    }
+        if (acao === 'transferir') {
+            const reTecnico = document.querySelector('#transferir-responsavel').value;
+            if (!reTecnico) {
+                mostrarMensagemDaFila('Selecione um técnico para transferir.', true);
+                return;
+            }
+            await apiFetch(`/chamados/transferir-responsavel/${chamado.id}?reTecnico=${reTecnico}`, { method: 'PATCH' });
+            mostrarMensagemDaFila(`Responsável do chamado #${chamado.id} atualizado com sucesso.`);
+        }
 
-    if (acao === 'finalizar') {
-        if (chamado.status !== 'EM_ATENDIMENTO') return;
-        chamado.status = 'FECHADO';
-        chamadoSelecionadoId = null;
-        mostrarMensagemDaFila(`Atendimento do chamado #${chamado.codigo} finalizado. O registro permanece no histórico.`);
-    }
+        if (acao === 'finalizar') {
+            await apiFetch(`/chamados/finalizar/${chamado.id}`, { method: 'PATCH' });
+            mostrarMensagemDaFila(`Atendimento do chamado #${chamado.id} finalizado. O registro permanece no histórico.`);
+            chamadoSelecionadoId = null;
+        }
 
-    renderizarFilaAtendimento();
+        await carregarFilaAtendimento();
+    } catch (erro) {
+        mostrarMensagemDaFila(erro.message, true);
+    }
 }
-
-aplicarPerfilDemonstracao();
-
-loginForm?.addEventListener('submit', (event) => {
-    event.preventDefault();
-
-    loginMessage.classList.remove('is-error');
-    loginMessage.textContent = '';
-    loginPage.hidden = true;
-    appPage.hidden = false;
-    showRoute(sessaoDemonstracao.rotaInicial);
-});
-
-routes.forEach((route) => {
-    route.addEventListener('click', () => showRoute(route.dataset.route));
-});
-
-// Desabilita o botão e mostra um texto de carregamento por um instante, no mesmo padrão
-// que será reaproveitado quando os formulários chamarem a API real (fetch) na próxima etapa.
-function executarComEstadoDeEnvio(botao, textoEnviando, aoConcluir) {
-    if (!botao) { aoConcluir(); return; }
-    const textoOriginal = botao.textContent;
-    botao.disabled = true;
-    botao.textContent = textoEnviando;
-    window.setTimeout(() => {
-        botao.disabled = false;
-        botao.textContent = textoOriginal;
-        aoConcluir();
-    }, 500);
-}
-
-ticketForm?.addEventListener('submit', (event) => {
-    event.preventDefault();
-
-    if (!ticketForm.checkValidity()) {
-        ticketMessage.classList.add('is-error');
-        ticketMessage.textContent = 'Preencha os campos obrigatórios para continuar na demonstração.';
-        ticketForm.reportValidity();
-        return;
-    }
-
-    executarComEstadoDeEnvio(ticketForm.querySelector('button[type="submit"]'), 'Enviando...', () => {
-        ticketMessage.classList.remove('is-error');
-        ticketMessage.textContent = 'Chamado simulado com sucesso. O envio real será conectado em uma próxima etapa.';
-        ticketForm.reset();
-    });
-});
-
-mikeForm?.addEventListener('submit', (event) => {
-    event.preventDefault();
-    const message = mikeQuestion.value.trim();
-
-    if (!message) return;
-
-    mikeAnswer.querySelector('p').textContent = message;
-    mikeAnswer.hidden = false;
-    mikeReply.hidden = false;
-    mikeQuestion.value = '';
-});
-
-document.querySelector('#sair')?.addEventListener('click', () => {
-    appPage.hidden = true;
-    loginPage.hidden = false;
-    loginForm.reset();
-    loginMessage.textContent = '';
-});
-
-document.querySelectorAll('[data-focus-cancel], [data-cancel-ticket]').forEach((button) => {
-    button.addEventListener('click', () => {
-        showRoute('meus-chamados');
-        cancelTicketForm.hidden = false;
-        document.querySelector('#motivo-cancelamento').focus();
-    });
-});
-
-document.querySelector('[data-close-cancel]')?.addEventListener('click', () => {
-    cancelTicketForm.hidden = true;
-    cancelTicketForm.reset();
-    cancelTicketMessage.textContent = '';
-});
 
 filtrosDaFila.forEach((button) => {
     button.addEventListener('click', () => {
@@ -477,59 +763,212 @@ document.querySelectorAll('[data-queue-action]').forEach((button) => {
     button.addEventListener('click', () => executarAcaoDaFila(button.dataset.queueAction));
 });
 
-cancelTicketForm?.addEventListener('submit', (event) => {
-    event.preventDefault();
-
-    if (!cancelTicketForm.checkValidity()) {
-        cancelTicketMessage.classList.add('is-error');
-        cancelTicketMessage.textContent = 'Informe o motivo para cancelar o chamado.';
-        cancelTicketForm.reportValidity();
-        return;
-    }
-
-    executarComEstadoDeEnvio(cancelTicketForm.querySelector('button[type="submit"]'), 'Enviando...', () => {
-        cancelTicketMessage.classList.remove('is-error');
-        cancelTicketMessage.textContent = 'Cancelamento simulado. A confirmação real será conectada à API de chamados.';
-        cancelTicketForm.reset();
-    });
-});
-
-document.querySelectorAll('[data-demo-action]').forEach((button) => {
-    button.addEventListener('click', () => mostrarMensagemDeDemonstracao(button.dataset.demoAction, button.dataset.demoMessage));
-});
-
-document.querySelector('#formulario-cadastro-usuario')?.addEventListener('submit', (event) => {
+// ============================================================
+// Gestão de usuários — cadastro, consulta, atualização, técnico
+// ============================================================
+document.querySelector('#formulario-cadastro-usuario')?.addEventListener('submit', async (event) => {
     event.preventDefault();
     const form = event.currentTarget;
-    const message = form.querySelector('.form-message');
+    const mensagem = document.querySelector('#mensagem-cadastro-usuario');
 
     if (!form.checkValidity()) {
-        message.classList.add('is-error');
-        message.textContent = 'Preencha RE, posto ou graduação e nome para continuar.';
+        mensagem.classList.add('is-error');
+        mensagem.textContent = 'Preencha RE, posto/graduação, nome e e-mail funcional.';
         form.reportValidity();
         return;
     }
 
-    executarComEstadoDeEnvio(form.querySelector('button[type="submit"]'), 'Enviando...', () => {
-        message.classList.remove('is-error');
-        message.textContent = 'Cadastro visual validado. O envio ao serviço de usuários será ligado na etapa de lógica.';
-        form.reset();
+    const corpo = {
+        re: document.querySelector('#cadastro-re').value.trim(),
+        postoGraduacao: document.querySelector('#cadastro-posto').value,
+        nome: document.querySelector('#cadastro-nome').value.trim(),
+        email: document.querySelector('#cadastro-email').value.trim()
+    };
+
+    await executarComEstadoDeEnvio(form.querySelector('button[type="submit"]'), 'Enviando...', async () => {
+        try {
+            await apiFetch('/usuarios/cadastrar', { method: 'POST', body: corpo });
+            mensagem.classList.remove('is-error');
+            mensagem.textContent = 'Usuário cadastrado com sucesso.';
+            form.reset();
+        } catch (erro) {
+            mensagem.classList.add('is-error');
+            mensagem.textContent = erro.message;
+        }
     });
 });
 
-document.querySelector('#alternar-disponibilidade')?.addEventListener('click', (buttonEvent) => {
-    const button = buttonEvent.currentTarget;
-    const isAvailable = button.getAttribute('aria-pressed') === 'true';
-    const nextState = !isAvailable;
+let usuarioConsultadoRe = null;
 
-    button.setAttribute('aria-pressed', String(nextState));
-    button.classList.toggle('is-available', nextState);
-    button.querySelector('strong').textContent = nextState
-        ? 'Disponível para atendimento'
-        : 'Indisponível para atendimento';
-    document.querySelector('#mensagem-disponibilidade').textContent = nextState
-        ? 'Disponibilidade visualmente atualizada. A API fará a persistência na próxima etapa.'
-        : 'Indisponibilidade visualmente atualizada. A API fará a persistência na próxima etapa.';
+function exibirUsuarioConsultado(usuario) {
+    usuarioConsultadoRe = usuario.re;
+    document.querySelector('#consulta-usuario-nome').textContent = `${usuario.postoGraduacao} ${usuario.nome}`;
+    document.querySelector('#consulta-usuario-info').textContent = `RE ${usuario.re} · ${usuario.email}`;
+
+    const status = document.querySelector('#consulta-usuario-status');
+    status.textContent = usuario.ativo ? 'Ativo' : 'Inativo';
+    status.classList.toggle('status-active', usuario.ativo);
+
+    document.querySelector('#registro-usuario-consultado').hidden = false;
+    document.querySelector('#acoes-usuario-consultado').hidden = false;
+    document.querySelector('#formulario-atualizar-usuario').hidden = true;
+}
+
+document.querySelector('#consultar-usuario')?.addEventListener('click', async () => {
+    const re = document.querySelector('#consulta-re').value.trim();
+    const mensagem = document.querySelector('#mensagem-controle-acesso');
+
+    if (!re) {
+        mensagem.classList.add('is-error');
+        mensagem.textContent = 'Informe o RE para consultar.';
+        return;
+    }
+
+    try {
+        const usuario = await apiFetch(`/usuarios/buscar/${re}`);
+        exibirUsuarioConsultado(usuario);
+        mensagem.classList.remove('is-error');
+        mensagem.textContent = '';
+    } catch (erro) {
+        usuarioConsultadoRe = null;
+        document.querySelector('#registro-usuario-consultado').hidden = true;
+        document.querySelector('#acoes-usuario-consultado').hidden = true;
+        mensagem.classList.add('is-error');
+        mensagem.textContent = erro.message;
+    }
 });
 
-renderizarFilaAtendimento();
+document.querySelector('#alternar-edicao-usuario')?.addEventListener('click', async () => {
+    if (!usuarioConsultadoRe) return;
+    const form = document.querySelector('#formulario-atualizar-usuario');
+
+    if (!form.hidden) {
+        form.hidden = true;
+        return;
+    }
+
+    try {
+        const usuario = await apiFetch(`/usuarios/buscar/${usuarioConsultadoRe}`);
+        document.querySelector('#atualizar-nome').value = usuario.nome;
+        document.querySelector('#atualizar-posto').value = chaveDoPostoPorDescricao[usuario.postoGraduacao] || '';
+        form.hidden = false;
+    } catch (erro) {
+        const mensagem = document.querySelector('#mensagem-controle-acesso');
+        mensagem.classList.add('is-error');
+        mensagem.textContent = erro.message;
+    }
+});
+
+document.querySelector('#formulario-atualizar-usuario')?.addEventListener('submit', async (event) => {
+    event.preventDefault();
+    const form = event.currentTarget;
+    const mensagem = document.querySelector('#mensagem-controle-acesso');
+    const corpo = {
+        nome: document.querySelector('#atualizar-nome').value.trim(),
+        postoGraduacao: document.querySelector('#atualizar-posto').value
+    };
+
+    await executarComEstadoDeEnvio(form.querySelector('button[type="submit"]'), 'Enviando...', async () => {
+        try {
+            const usuario = await apiFetch(`/usuarios/atualizar-dados/${usuarioConsultadoRe}`, { method: 'PUT', body: corpo });
+            exibirUsuarioConsultado(usuario);
+            form.hidden = true;
+            mensagem.classList.remove('is-error');
+            mensagem.textContent = 'Dados atualizados com sucesso.';
+        } catch (erro) {
+            mensagem.classList.add('is-error');
+            mensagem.textContent = erro.message;
+        }
+    });
+});
+
+document.querySelector('#conceder-acesso-tecnico')?.addEventListener('click', async () => {
+    if (!usuarioConsultadoRe) return;
+    const mensagem = document.querySelector('#mensagem-controle-acesso');
+
+    try {
+        await apiFetch('/tecnicos/cadastrar', { method: 'POST', body: { re: usuarioConsultadoRe } });
+        mensagem.classList.remove('is-error');
+        mensagem.textContent = 'Usuário agora é técnico.';
+        await carregarListaTecnicos();
+    } catch (erro) {
+        mensagem.classList.add('is-error');
+        mensagem.textContent = erro.message;
+    }
+});
+
+document.querySelector('#inativar-usuario')?.addEventListener('click', async () => {
+    if (!usuarioConsultadoRe) return;
+    const mensagem = document.querySelector('#mensagem-controle-acesso');
+
+    try {
+        await apiFetch(`/usuarios/inativar/${usuarioConsultadoRe}`, { method: 'PATCH' });
+        const usuario = await apiFetch(`/usuarios/buscar/${usuarioConsultadoRe}`);
+        exibirUsuarioConsultado(usuario);
+        mensagem.classList.remove('is-error');
+        mensagem.textContent = 'Usuário inativado com sucesso.';
+    } catch (erro) {
+        mensagem.classList.add('is-error');
+        mensagem.textContent = erro.message;
+    }
+});
+
+function criarLinhaDeTecnico(tecnico) {
+    const linha = document.createElement('article');
+    linha.className = 'technician-row';
+
+    const info = document.createElement('div');
+    const nome = document.createElement('strong');
+    nome.textContent = tecnico.identificacao;
+    const re = document.createElement('span');
+    re.textContent = `RE ${tecnico.re} · Técnico`;
+    info.append(nome, re);
+
+    const botao = document.createElement('button');
+    botao.type = 'button';
+    botao.className = `availability-toggle${tecnico.disponivel ? ' is-available' : ''}`;
+    const bolinha = document.createElement('span');
+    bolinha.setAttribute('aria-hidden', 'true');
+    botao.append(bolinha, document.createTextNode(tecnico.disponivel ? 'Disponível' : 'Indisponível'));
+    botao.addEventListener('click', async () => {
+        const acao = tecnico.disponivel ? 'ficar-indisponivel' : 'ficar-disponivel';
+        const mensagem = document.querySelector('#mensagem-disponibilidade-tecnica');
+        try {
+            await apiFetch(`/tecnicos/${acao}/${tecnico.re}`, { method: 'PATCH' });
+            mensagem.classList.remove('is-error');
+            mensagem.textContent = `Disponibilidade de ${tecnico.identificacao} atualizada.`;
+            await carregarListaTecnicos();
+        } catch (erro) {
+            mensagem.classList.add('is-error');
+            mensagem.textContent = erro.message;
+        }
+    });
+
+    linha.append(info, botao);
+    return linha;
+}
+
+async function carregarListaTecnicos() {
+    const lista = document.querySelector('#lista-tecnicos');
+    if (!lista) return;
+    lista.innerHTML = '';
+
+    try {
+        const tecnicos = await apiFetch('/tecnicos');
+        if (!tecnicos.length) {
+            const vazio = document.createElement('p');
+            vazio.className = 'lista-tecnicos-vazia';
+            vazio.textContent = 'Nenhum técnico cadastrado ainda.';
+            lista.appendChild(vazio);
+            return;
+        }
+        tecnicos.forEach((tecnico) => lista.appendChild(criarLinhaDeTecnico(tecnico)));
+    } catch (erro) {
+        const mensagem = document.createElement('p');
+        mensagem.className = 'lista-tecnicos-vazia';
+        mensagem.textContent = erro.message;
+        lista.appendChild(mensagem);
+    }
+}
+
+document.querySelector('#atualizar-lista-tecnicos')?.addEventListener('click', carregarListaTecnicos);

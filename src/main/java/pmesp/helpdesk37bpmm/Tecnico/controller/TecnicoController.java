@@ -30,6 +30,13 @@ public class TecnicoController {
     }
 
 
+    // Listar todos os técnicos cadastrados (disponíveis ou não)
+    @GetMapping
+    public List<TecnicoRespostaDTO> listarTodosOsTecnicos() {
+        return tecnicoService.listarTodosOsTecnicos();
+    }
+
+
     // Mostrar técnicos disponíveis para atendimento neste momento
     @GetMapping("/disponiveis")
     public List<TecnicoRespostaDTO> listarTecnicosDisponiveis() {

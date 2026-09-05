@@ -19,7 +19,9 @@ O objetivo é criar uma solução simples para quem solicita ajuda e organizada 
 
 ## Estado atual
 
-O projeto está na fase de construção e teste da API. As funcionalidades abaixo já foram testadas manualmente no Postman.
+O backend e o frontend já estão integrados de verdade: a interface web consome a API real
+(login, chamados, usuários e técnicos), sem dados simulados. As funcionalidades abaixo foram
+validadas por testes automatizados e revisão de código.
 
 ### Funcionalidades disponíveis
 
@@ -71,12 +73,14 @@ esse perfil.
 | `PUT` | `/usuarios/atualizar-dados/{re}` | Atualiza nome e posto/graduação. | técnico |
 | `PATCH` | `/usuarios/inativar/{re}` | Inativa usuário e cancela seus chamados abertos. | técnico |
 | `POST` | `/tecnicos/cadastrar` | Torna um usuário existente um técnico. | técnico |
+| `GET` | `/tecnicos` | Lista todos os técnicos, disponíveis ou não. | técnico |
 | `GET` | `/tecnicos/buscar/{re}` | Busca técnico pelo RE do usuário. | técnico |
 | `GET` | `/tecnicos/disponiveis` | Lista técnicos disponíveis no momento. | técnico |
 | `PATCH` | `/tecnicos/ficar-disponivel/{re}` | Marca o técnico como disponível. | técnico |
 | `PATCH` | `/tecnicos/ficar-indisponivel/{re}` | Marca o técnico como indisponível. | técnico |
 | `POST` | `/chamados/cadastrar` | Abre um chamado. | logado |
 | `GET` | `/chamados/buscar/{id}` | Busca chamado pelo identificador (usuário comum só vê os próprios). | logado |
+| `GET` | `/chamados/meus` | Lista os chamados do usuário autenticado. | logado |
 | `GET` | `/chamados/fila` | Mostra a fila de chamados abertos. | técnico |
 | `GET` | `/chamados/em-atendimento` | Mostra os chamados que já estão sendo atendidos. | técnico |
 | `PUT` | `/chamados/atualizar-dados/{id}?prioridade=ALTA` | Altera a prioridade de um chamado aberto. | técnico |
@@ -157,6 +161,30 @@ DATABASE_PASSWORD=sua_senha_local
 
 Para acessar o console do H2 (`/h2-console`) em desenvolvimento, ative o profile `dev` ao rodar a aplicação (ex.: `--spring.profiles.active=dev` ou a variável de ambiente `SPRING_PROFILES_ACTIVE=dev`). Por padrão o console fica desligado.
 
+### Primeiro técnico (bootstrap)
+
+Como só um técnico pode cadastrar usuários e técnicos, a aplicação cria automaticamente o
+primeiro técnico ao subir, **somente se ainda não existir nenhum** e estas variáveis de
+ambiente estiverem definidas:
+
+```env
+BOOTSTRAP_TECNICO_RE=100001
+BOOTSTRAP_TECNICO_NOME=Fulano de Tal
+BOOTSTRAP_TECNICO_EMAIL=fulano.detal@policiamilitar.sp.gov.br
+BOOTSTRAP_TECNICO_SENHA=uma-senha-forte
+BOOTSTRAP_TECNICO_POSTO=SGT_3
+```
+
+Com isso, já é possível logar em `POST /auth/login` com esse RE e senha e usar a tela de
+Gestão de usuários para cadastrar o restante da equipe. Usuários cadastrados por um técnico
+ainda precisam completar o primeiro acesso (`POST /auth/primeiro-acesso`) para poderem logar.
+
+### Frontend
+
+O frontend (`src/main/resources/static`) é servido pela própria aplicação Spring, na mesma
+origem — acesse `http://localhost:8080/` no navegador. Ele já está conectado à API real
+(login, chamados, usuários e técnicos); não usa mais dados simulados.
+
 ## Próximas etapas
 
 1. ~~Melhorar as mensagens de erro da API.~~ ✅ concluído.
@@ -164,10 +192,12 @@ Para acessar o console do H2 (`/h2-console`) em desenvolvimento, ative o profile
 3. Criar filtros de chamados por status, prioridade, categoria e período.
 4. Implementar a posição do solicitante na fila.
 5. Registrar solução ou observação ao finalizar um chamado.
-6. Conectar o frontend (hoje um protótipo visual) à API real.
+6. ~~Conectar o frontend (hoje um protótipo visual) à API real.~~ ✅ concluído.
 7. ~~Criar login com primeiro acesso por RE e senha própria do Helpdesk.~~ ✅ concluído.
 8. Migrar o banco de H2 para PostgreSQL e preparar a aplicação para Docker.
 9. Criar relatórios de volume, tempo médio de atendimento, categorias mais frequentes e chamados por usuário/local.
+10. Permitir alterar a prioridade de um chamado diretamente na tela de fila do técnico (o endpoint já existe: `PUT /chamados/atualizar-dados/{id}`).
+11. Registrar código de confirmação por e-mail no primeiro acesso e recuperação de senha (a estrutura já foi pensada para isso, veja [Autenticação](#autenticação)).
 
 ## Visão futura
 
