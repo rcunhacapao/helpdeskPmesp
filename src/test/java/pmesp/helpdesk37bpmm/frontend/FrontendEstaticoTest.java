@@ -16,18 +16,26 @@ class FrontendEstaticoTest {
 
     @Test
     void deveManterAsTelasPrincipaisEASIdentidadeVisualDoProtótipo() throws IOException {
-        String pagina = Files.readString(DIRETORIO_ESTATICO.resolve("index.html"));
-        String estilos = Files.readString(DIRETORIO_ESTATICO.resolve("styles.css"));
-        String comportamento = Files.readString(DIRETORIO_ESTATICO.resolve("app.js"));
+        // Normaliza quebras de linha (o arquivo pode estar em CRLF ou LF conforme o sistema) para que
+        // as comparações de trechos com múltiplas linhas não dependam do fim de linha do disco.
+        String pagina = Files.readString(DIRETORIO_ESTATICO.resolve("index.html")).replace("\r\n", "\n");
+        String estilos = Files.readString(DIRETORIO_ESTATICO.resolve("styles.css")).replace("\r\n", "\n");
+        String comportamento = Files.readString(DIRETORIO_ESTATICO.resolve("app.js")).replace("\r\n", "\n");
 
         assertAll(
                 () -> assertTrue(Files.exists(DIRETORIO_ESTATICO.resolve("logo-pmesp.png"))),
-                () -> assertTrue(Files.exists(DIRETORIO_ESTATICO.resolve("mike-ia-avatar.jpeg"))),
+                () -> assertTrue(Files.exists(DIRETORIO_ESTATICO.resolve("favicon.png"))),
+                () -> assertTrue(Files.exists(DIRETORIO_ESTATICO.resolve("apple-touch-icon.png"))),
+                () -> assertTrue(Files.exists(DIRETORIO_ESTATICO.resolve("mike-ia-avatar.png"))),
                 () -> assertTrue(Files.exists(DIRETORIO_ESTATICO.resolve("mike-ia-visao-geral.png"))),
                 () -> assertTrue(Files.exists(DIRETORIO_ESTATICO.resolve("mike-ia-livre.png"))),
+                () -> assertFalse(Files.exists(DIRETORIO_ESTATICO.resolve("mike-ia-avatar.jpeg"))),
+                () -> assertFalse(Files.exists(DIRETORIO_ESTATICO.resolve("mike-ia-corpo-inteiro.png"))),
                 () -> assertTrue(pagina.contains("id=\"pagina-login\"")),
-                () -> assertTrue(pagina.contains("styles.css?v=0.0.1-beta.10")),
-                () -> assertTrue(pagina.contains("app.js?v=0.0.1-beta.10")),
+                () -> assertTrue(pagina.contains("rel=\"icon\"")),
+                () -> assertTrue(pagina.contains("favicon.png")),
+                () -> assertTrue(pagina.contains("styles.css?v=0.0.1-beta.11")),
+                () -> assertTrue(pagina.contains("app.js?v=0.0.1-beta.11")),
                 () -> assertTrue(pagina.contains("id=\"visao-geral\"")),
                 () -> assertTrue(pagina.contains("id=\"abrir-chamado\"")),
                 () -> assertTrue(pagina.contains("id=\"mike-ia\"")),

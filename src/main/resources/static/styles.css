@@ -893,8 +893,6 @@ h3 { font-size: clamp(.9rem, 1.2vw, 1rem); margin: 0; }
     display: block;
     height: 100%;
     object-fit: cover;
-    transform: scale(2.3);
-    transform-origin: 50% 28%;
     width: 100%;
 }
 .chat-message-mike .chat-bubble {
