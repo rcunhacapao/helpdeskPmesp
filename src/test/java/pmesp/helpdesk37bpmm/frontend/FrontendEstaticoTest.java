@@ -22,11 +22,15 @@ class FrontendEstaticoTest {
 
         assertAll(
                 () -> assertTrue(Files.exists(DIRETORIO_ESTATICO.resolve("logo-pmesp.png"))),
+                () -> assertTrue(Files.exists(DIRETORIO_ESTATICO.resolve("mike-ia-avatar.jpeg"))),
+                () -> assertTrue(Files.exists(DIRETORIO_ESTATICO.resolve("mike-ia-visao-geral.png"))),
                 () -> assertTrue(pagina.contains("id=\"pagina-login\"")),
                 () -> assertTrue(pagina.contains("id=\"visao-geral\"")),
                 () -> assertTrue(pagina.contains("id=\"abrir-chamado\"")),
                 () -> assertTrue(pagina.contains("id=\"mike-ia\"")),
                 () -> assertTrue(pagina.contains("class=\"mobile-navigation\"")),
+                () -> assertTrue(pagina.contains("class=\"mike-overview-avatar\"")),
+                () -> assertTrue(pagina.contains("class=\"mike-message-avatar\"")),
                 () -> assertTrue(pagina.contains("Versão 0.0.1 (beta)")),
                 () -> assertFalse(pagina.contains("Equipamentos")),
                 () -> assertFalse(pagina.contains("Base de conhecimento")),
@@ -42,6 +46,8 @@ class FrontendEstaticoTest {
                 () -> assertTrue(estilos.contains(".ticket-form .field-group:focus-within")),
                 () -> assertTrue(estilos.contains(".ticket-form select {")),
                 () -> assertTrue(estilos.contains(".mobile-navigation")),
+                () -> assertTrue(estilos.contains(".mike-overview-avatar")),
+                () -> assertTrue(estilos.contains(".mike-message-avatar")),
                 () -> assertTrue(comportamento.contains("showRoute('visao-geral')")),
                 () -> assertTrue(comportamento.contains(".mobile-nav-link")),
                 () -> assertTrue(comportamento.contains("Chamado simulado com sucesso"))

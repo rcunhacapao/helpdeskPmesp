@@ -115,6 +115,7 @@
 
                     <article class="surface-card mike-highlight">
                         <p class="eyebrow">Assistente virtual</p>
+                        <img class="mike-overview-avatar" src="mike-ia-visao-geral.png" alt="Mike IA, assistente virtual">
                         <h2>Converse com o Mike IA</h2>
                         <p>Uma área de apoio que, no futuro, poderá orientar antes da abertura do chamado e sugerir soluções rápidas.</p>
                         <button class="button button-secondary" type="button" data-route="mike-ia">Conhecer o Mike IA</button>
@@ -205,9 +206,15 @@
                 </div>
                 <section class="surface-card chat-card" aria-label="Conversa demonstrativa com Mike IA">
                     <div class="chat-messages">
-                        <div class="chat-message chat-message-mike"><strong>Mike IA</strong><p>Olá. Posso ajudar você a organizar as informações antes de abrir um chamado.</p></div>
+                        <div class="chat-message chat-message-mike">
+                            <span class="mike-message-avatar" aria-hidden="true"><img src="mike-ia-avatar.jpeg" alt=""></span>
+                            <div class="chat-bubble"><strong>Mike IA</strong><p>Olá. Posso ajudar você a organizar as informações antes de abrir um chamado.</p></div>
+                        </div>
                     <div class="chat-message chat-message-user" id="resposta-mike" hidden><strong>Você</strong><p></p></div>
-                    <div class="chat-message chat-message-mike" id="retorno-mike" hidden><strong>Mike IA</strong><p>Obrigado. Nesta fase, ainda não analiso solicitações reais, mas esta conversa já demonstra onde o assistente ficará.</p></div>
+                    <div class="chat-message chat-message-mike" id="retorno-mike" hidden>
+                        <span class="mike-message-avatar" aria-hidden="true"><img src="mike-ia-avatar.jpeg" alt=""></span>
+                        <div class="chat-bubble"><strong>Mike IA</strong><p>Obrigado. Nesta fase, ainda não analiso solicitações reais, mas esta conversa já demonstra onde o assistente ficará.</p></div>
+                    </div>
                     </div>
                     <form class="chat-form" id="formulario-mike">
                         <label class="sr-only" for="pergunta-mike">Mensagem para Mike IA</label>

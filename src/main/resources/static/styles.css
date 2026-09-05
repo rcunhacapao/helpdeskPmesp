@@ -415,6 +415,13 @@ h3 { font-size: clamp(.9rem, 1.2vw, 1rem); margin: 0; }
 
 .mike-highlight { background: rgba(139, 0, 0, .05); justify-content: space-between; }
 .mike-highlight .eyebrow { margin-bottom: 4px; }
+.mike-overview-avatar {
+    display: block;
+    height: clamp(120px, 18vh, 168px);
+    margin: 4px auto 12px;
+    max-width: 100%;
+    object-fit: contain;
+}
 .mike-highlight > p:not(.eyebrow) { margin: clamp(8px, 1.5vh, 12px) 0 clamp(16px, 3vh, 24px); }
 
 .button-secondary { background: rgba(255, 255, 255, .7); border-color: rgba(26, 29, 32, .4); color: var(--text); }
@@ -595,7 +602,39 @@ h3 { font-size: clamp(.9rem, 1.2vw, 1rem); margin: 0; }
 .chat-message { border-radius: 8px; line-height: 1.4; max-width: 85%; padding: clamp(10px, 2vh, 14px); flex-shrink: 0;}
 .chat-message strong { font-size: .75rem; }
 .chat-message p { font-size: clamp(.8125rem, 1vw, .875rem); margin: 2px 0 0; }
-.chat-message-mike { background: rgba(26, 29, 32, .06); align-self: flex-start; }
+.chat-message-mike {
+    align-items: flex-start;
+    align-self: flex-start;
+    background: transparent;
+    display: flex;
+    gap: 10px;
+    padding: 0;
+}
+.mike-message-avatar {
+    background: var(--surface);
+    border: 2px solid rgba(139, 0, 0, .32);
+    border-radius: 50%;
+    box-shadow: 0 3px 10px rgba(26, 29, 32, .14);
+    flex: 0 0 42px;
+    height: 42px;
+    overflow: hidden;
+    width: 42px;
+}
+.mike-message-avatar img {
+    display: block;
+    height: 100%;
+    object-fit: cover;
+    transform: scale(2.3);
+    transform-origin: 50% 28%;
+    width: 100%;
+}
+.chat-message-mike .chat-bubble {
+    background: rgba(26, 29, 32, .06);
+    border: 1px solid rgba(26, 29, 32, .08);
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(26, 29, 32, .04);
+    padding: clamp(10px, 2vh, 14px);
+}
 .chat-message-user { background: rgba(139, 0, 0, .08); align-self: flex-end; }
 .chat-form { display: flex; gap: 8px; margin-top: auto; padding-top: 16px; border-top: 1px solid var(--border); flex-shrink: 0;}
 .chat-form input { flex: 1; }
