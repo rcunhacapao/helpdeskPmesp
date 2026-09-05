@@ -31,7 +31,7 @@ class FrontendEstaticoTest {
                 () -> assertTrue(pagina.contains("class=\"mobile-navigation\"")),
                 () -> assertTrue(pagina.contains("class=\"mike-overview-avatar\"")),
                 () -> assertTrue(pagina.contains("class=\"mike-message-avatar\"")),
-                () -> assertTrue(pagina.contains("Orientações e soluções rápidas")),
+                () -> assertTrue(pagina.contains("Suporte inteligente para orientar seu atendimento.")),
                 () -> assertTrue(pagina.contains("Versão 0.0.1 (beta)")),
                 () -> assertFalse(pagina.contains("Equipamentos")),
                 () -> assertFalse(pagina.contains("Base de conhecimento")),
