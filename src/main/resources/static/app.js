@@ -323,9 +323,9 @@ const nomeDaCategoria = {
 };
 const nomeDaPrioridade = { BAIXA: 'Baixa', MEDIA: 'Média', ALTA: 'Alta', URGENTE: 'Urgente' };
 const nomeDoStatus = {
-    EM_DIAGNOSTICO: 'Em diagnóstico', ABERTO: 'Aguardando atendimento',
+    ABERTO: 'Aguardando atendimento',
     EM_ATENDIMENTO: 'Em atendimento', FECHADO: 'Finalizado',
-    CANCELADO: 'Cancelado', ABANDONADO: 'Atendimento abandonado'
+    CANCELADO: 'Cancelado'
 };
 
 // O backend só devolve a descrição do posto (ex.: "3° SGT PM"), mas o formulário de
@@ -363,7 +363,7 @@ async function carregarVisaoGeral() {
 }
 
 function atualizarProgresso(card, status) {
-    const etapaPorStatus = { EM_DIAGNOSTICO: 1, ABERTO: 2, EM_ATENDIMENTO: 3, FECHADO: 4, CANCELADO: 0, ABANDONADO: 0 };
+    const etapaPorStatus = { ABERTO: 1, EM_ATENDIMENTO: 2, FECHADO: 3, CANCELADO: 0 };
     const etapaAtual = etapaPorStatus[status] ?? 0;
     card.querySelectorAll('.progress-step').forEach((passo, indice) => {
         passo.classList.toggle('is-complete', indice < etapaAtual);

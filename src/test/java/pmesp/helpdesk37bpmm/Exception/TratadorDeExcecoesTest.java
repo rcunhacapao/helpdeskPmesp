@@ -68,6 +68,17 @@ class TratadorDeExcecoesTest {
 
 
     @Test
+    void deveRetornar409QuandoHouverConflitoDeConcorrencia() {
+        TratadorDeExcecoes tratador = new TratadorDeExcecoes();
+
+        ResponseEntity<RespostaErroDTO> resposta = tratador.tratarConflitoDeConcorrencia();
+
+        assertEquals(409, resposta.getStatusCode().value());
+        assertEquals("REGISTRO_ALTERADO_POR_OUTRA_ACAO", resposta.getBody().getCodigo());
+    }
+
+
+    @Test
     void deveRetornar401QuandoFalharAutenticacao() {
         TratadorDeExcecoes tratador = new TratadorDeExcecoes();
 

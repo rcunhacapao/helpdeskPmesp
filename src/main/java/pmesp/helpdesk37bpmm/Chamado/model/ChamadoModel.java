@@ -28,6 +28,13 @@ public class ChamadoModel {
     @Column(name = "ID")
     private Long id;
 
+    // Trava otimista: se dois técnicos tentarem assumir/transferir o mesmo chamado ao
+    // mesmo tempo, o segundo a salvar recebe um erro em vez de sobrescrever o primeiro
+    // silenciosamente. O Hibernate incrementa e confere este valor sozinho.
+    @Version
+    @Column(name = "versao")
+    private Long versao;
+
     @ManyToOne
     @JoinColumn(name = "solicitante_id", nullable = false)
     private UsuarioModel solicitante;

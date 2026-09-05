@@ -923,9 +923,9 @@ button + .form-message, .form-actions + .form-message { margin-top: 12px; }
 .abertura-usuario { margin: 0 auto; max-width: 1280px; }
 .ticket-layout-com-mike,
 .abertura-usuario-layout { align-items: center; display: grid; gap: clamp(24px, 4vw, 56px); grid-template-columns: minmax(240px, .42fr) minmax(0, 1fr); }
-/* O formulário técnico pode ser maior que a altura disponível. A rolagem fica
-   dentro da tela de abertura para nunca cortar sua borda ou os botões finais. */
-#abrir-chamado { overflow-x: hidden; overflow-y: auto; padding-right: 6px; }
+/* A composição é compactada pelos breakpoints abaixo para manter toda a abertura
+   visível no monitor, sem criar uma barra de rolagem própria. */
+#abrir-chamado { overflow: hidden; }
 #abrir-chamado .ticket-layout-com-mike,
 #abrir-chamado .abertura-usuario { flex: 1; min-height: 0; }
 #abrir-chamado .ticket-layout-com-mike,
@@ -998,14 +998,13 @@ button + .form-message, .form-actions + .form-message { margin-top: 12px; }
 
 /* Mantém a abertura completa dentro de monitores de notebook. O formulário técnico
    usa o espaço horizontal disponível para evitar cortar campos ou criar rolagem. */
-@media (max-height: 820px) {
+@media (max-height: 920px) {
     #abertura-tecnico {
         align-items: end;
         gap: clamp(16px, 2vw, 28px);
         grid-template-columns: minmax(170px, .28fr) minmax(0, 1fr);
     }
 
-    #abertura-tecnico .mike-abertura-avatar { height: min(52vh, 380px); }
     #abertura-tecnico .ticket-layout-conteudo-tecnico { grid-template-columns: minmax(0, 1fr); }
     #abertura-tecnico .tip-card { display: none; }
 
@@ -1027,15 +1026,31 @@ button + .form-message, .form-actions + .form-message { margin-top: 12px; }
     #formulario-chamado .form-columns { grid-template-columns: repeat(3, minmax(0, 1fr)); }
     #formulario-chamado input,
     #formulario-chamado select { min-height: 40px; }
-    #formulario-chamado textarea { height: 88px; min-height: 88px; padding: 8px 12px; }
+    #formulario-chamado textarea { height: 68px; min-height: 68px; padding: 8px 12px; }
+    #formulario-chamado .campo-descricao-chamado .field-help { display: none; }
     #formulario-chamado .attachment-area { margin: 0; padding: 8px 10px; }
     #formulario-chamado .attachment-area + .form-message { margin: 0; min-height: 18px; }
     #formulario-chamado .form-actions { margin-top: 0; padding-top: 8px; }
 }
 
-/* Em alturas realmente pequenas, a rolagem fica restrita ao formulário. Assim,
-   nenhum campo obrigatório se torna inacessível. */
+/* Em alturas realmente pequenas, reduzimos apenas a imagem e a descrição para
+   preservar o formulário inteiro sem introduzir rolagem. */
 @media (max-height: 620px) {
-    #abrir-chamado .ticket-layout-conteudo-tecnico,
-    #abrir-chamado .abertura-usuario-conteudo { max-height: 100%; overflow-y: auto; padding-right: 6px; }
+    #formulario-chamado textarea { height: 64px; min-height: 64px; }
+}
+
+/* Em monitores estreitos, preserva o personagem e entrega mais largura ao
+   formulário técnico sem aumentar sua altura ou criar rolagem. */
+@media (max-width: 1100px) {
+    #abertura-tecnico {
+        gap: 12px;
+        grid-template-columns: minmax(220px, .4fr) minmax(0, 1fr);
+    }
+
+    #abertura-tecnico .ticket-layout-conteudo-tecnico,
+    #formulario-chamado { min-width: 0; }
+
+    #formulario-chamado {
+        grid-template-columns: minmax(120px, .7fr) minmax(180px, 1.3fr);
+    }
 }

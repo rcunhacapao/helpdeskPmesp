@@ -28,6 +28,13 @@ public class SecurityConfig {
             "/*.css", "/*.js", "/*.png", "/*.jpeg"
     };
 
+    // Documentação da API (Swagger UI). Só descreve os endpoints, não expõe dados —
+    // por isso fica pública, como a página de login. Se o projeto for exposto fora da
+    // rede interna da PMESP, reavaliar se isso deve continuar público.
+    private static final String[] ROTAS_DE_DOCUMENTACAO_DA_API = {
+            "/swagger-ui.html", "/swagger-ui/**", "/v3/api-docs/**", "/v3/api-docs.yaml"
+    };
+
     // Rotas exclusivas de técnico: cadastro/gestão de usuários, gestão de técnicos
     // e as ações que conduzem a fila de atendimento.
     private static final String[] ROTAS_EXCLUSIVAS_DE_TECNICO = {
@@ -73,6 +80,7 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/auth/login", "/auth/primeiro-acesso").permitAll()
                         .requestMatchers(ARQUIVOS_PUBLICOS_DO_FRONTEND).permitAll()
+                        .requestMatchers(ROTAS_DE_DOCUMENTACAO_DA_API).permitAll()
                         .requestMatchers("/h2-console/**").permitAll()
                         .requestMatchers(ROTAS_EXCLUSIVAS_DE_TECNICO).hasRole("TECNICO")
                         .anyRequest().authenticated()

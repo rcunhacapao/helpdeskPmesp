@@ -2,6 +2,7 @@ package pmesp.helpdesk37bpmm.Exception;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
@@ -44,6 +45,15 @@ public class TratadorDeExcecoes {
     @ExceptionHandler(AcessoNegadoException.class)
     public ResponseEntity<RespostaErroDTO> tratarAcessoNegado(AcessoNegadoException excecao) {
         return criarResposta(HttpStatus.FORBIDDEN, excecao.getCodigo(), excecao.getMessage());
+    }
+
+    // Responder com 409 quando dois usuários tentam alterar o mesmo registro ao mesmo
+    // tempo (ex.: dois técnicos assumindo o mesmo chamado). Sem isso, o segundo a salvar
+    // sobrescreveria o primeiro em silêncio.
+    @ExceptionHandler(OptimisticLockingFailureException.class)
+    public ResponseEntity<RespostaErroDTO> tratarConflitoDeConcorrencia() {
+        return criarResposta(HttpStatus.CONFLICT, "REGISTRO_ALTERADO_POR_OUTRA_ACAO",
+                "Este chamado foi alterado por outra ação enquanto você o acessava. Atualize a página e tente novamente.");
     }
 
     // Responder com 401 quando o RE ou a senha do login estiverem incorretos

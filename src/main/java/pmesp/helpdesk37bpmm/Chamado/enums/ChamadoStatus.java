@@ -1,15 +1,14 @@
 package pmesp.helpdesk37bpmm.Chamado.enums;
 
+// O banco (ver migração V2) ainda permite os valores EM_DIAGNOSTICO e ABANDONADO por
+// compatibilidade, mas eles não são mais usados: o diagnóstico do Mike IA hoje vive em
+// AtendimentoMikeIA.resultado (null = em andamento), e um ChamadoModel só passa a
+// existir quando o atendimento é resolvido pelo Mike ou encaminhado à equipe técnica.
 public enum ChamadoStatus {
-    // O chamado já existe, mas ainda recebe o diagnóstico inicial do Mike IA.
-    // Não entra na fila técnica enquanto permanecer neste estado.
-    EM_DIAGNOSTICO("Em diagnóstico"),
     ABERTO("Chamado Aberto"),
     FECHADO("Chamado Fechado"),
     EM_ATENDIMENTO("Chamado Em Atendimento"),
-    CANCELADO("Chamado Cancelado"),
-    // Diagnóstico iniciado e deixado sem resposta pelo usuário após o prazo definido.
-    ABANDONADO("Atendimento abandonado");
+    CANCELADO("Chamado Cancelado");
 
     private final String descricao;
 
