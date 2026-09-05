@@ -125,6 +125,10 @@
                             <div class="progress-step"><span>3</span><p>Atendimento técnico</p></div>
                             <div class="progress-step"><span>4</span><p>Conclusão</p></div>
                         </div>
+                        <p class="field-help" id="overview-outros-chamados" hidden>
+                            <span id="overview-outros-chamados-texto"></span>
+                            <button class="text-button" type="button" data-route="meus-chamados">Ver todos</button>
+                        </p>
                     </article>
                     <article class="surface-card current-ticket-card" id="overview-sem-chamado">
                         <div class="card-heading"><div><p class="eyebrow">Acompanhamento do chamado</p><h2>Nenhum chamado em aberto</h2><p>Quando você abrir um chamado, o andamento aparece aqui.</p></div></div>
@@ -193,10 +197,10 @@
                     </div>
                     <button class="button button-primary" type="button" data-route="fila-atendimento">Ver fila de atendimento</button>
                 </div>
-                <div class="overview-grid technical-summary-grid" aria-label="Resumo de chamados (relatórios ainda não disponíveis)">
-                    <article class="summary-card metric-today"><p>Chamados hoje</p><strong>—</strong><span>Relatório ainda não disponível</span></article>
-                    <article class="summary-card metric-week"><p>Nesta semana</p><strong>—</strong><span>Relatório ainda não disponível</span></article>
-                    <article class="summary-card metric-month"><p>Neste mês</p><strong>—</strong><span>Relatório ainda não disponível</span></article>
+                <div class="overview-grid technical-summary-grid" aria-label="Resumo de chamados">
+                    <article class="summary-card metric-today"><p>Chamados hoje</p><strong id="resumo-chamados-hoje">—</strong><span id="resumo-chamados-hoje-legenda">Carregando...</span></article>
+                    <article class="summary-card metric-week"><p>Nesta semana</p><strong id="resumo-chamados-semana">—</strong><span id="resumo-chamados-semana-legenda">Carregando...</span></article>
+                    <article class="summary-card metric-month"><p>Neste mês</p><strong id="resumo-chamados-mes">—</strong><span id="resumo-chamados-mes-legenda">Carregando...</span></article>
                 </div>
                 <div class="technical-dashboard-grid">
                     <section class="surface-card action-hub-card">

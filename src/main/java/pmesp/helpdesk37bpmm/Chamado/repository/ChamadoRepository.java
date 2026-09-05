@@ -5,6 +5,7 @@ import pmesp.helpdesk37bpmm.Chamado.enums.ChamadoStatus;
 import pmesp.helpdesk37bpmm.Chamado.model.ChamadoModel;
 import pmesp.helpdesk37bpmm.Tecnico.model.TecnicoModel;
 import pmesp.helpdesk37bpmm.Usuario.model.UsuarioModel;
+import java.time.LocalDateTime;
 import java.util.List;
 
 public interface ChamadoRepository extends JpaRepository<ChamadoModel, Long> {
@@ -20,4 +21,8 @@ public interface ChamadoRepository extends JpaRepository<ChamadoModel, Long> {
 
     // Buscar chamados de um status do mais antigo para o mais recente
     List<ChamadoModel> findByStatusOrderByDataAberturaAsc(ChamadoStatus status);
+
+    // Contar chamados abertos em um período, sem contar os cancelados (usado nos
+    // cartões "Chamados hoje/semana/mês" da Central Técnica)
+    long countByDataAberturaBetweenAndStatusNot(LocalDateTime inicio, LocalDateTime fim, ChamadoStatus statusExcluido);
 }

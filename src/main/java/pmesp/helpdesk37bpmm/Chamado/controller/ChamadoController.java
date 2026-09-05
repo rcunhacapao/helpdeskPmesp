@@ -5,6 +5,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 import pmesp.helpdesk37bpmm.Chamado.dto.ChamadoDTO;
 import pmesp.helpdesk37bpmm.Chamado.dto.ChamadoRespostaDTO;
+import pmesp.helpdesk37bpmm.Chamado.dto.ResumoChamadosDTO;
 import pmesp.helpdesk37bpmm.Chamado.enums.ChamadoPrioridade;
 import pmesp.helpdesk37bpmm.Chamado.service.ChamadoService;
 
@@ -49,6 +50,13 @@ public class ChamadoController {
     @GetMapping("/em-atendimento")
     public List<ChamadoRespostaDTO> listarChamadosEmAtendimento() {
         return chamadoService.listarChamadosEmAtendimento();
+    }
+
+
+    // Contagem de chamados hoje/semana/mês para os cartões da Central Técnica
+    @GetMapping("/resumo")
+    public ResumoChamadosDTO obterResumoDeChamados() {
+        return chamadoService.obterResumoDeChamados();
     }
 
 

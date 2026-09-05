@@ -32,7 +32,7 @@ public class SecurityConfig {
     // e as ações que conduzem a fila de atendimento.
     private static final String[] ROTAS_EXCLUSIVAS_DE_TECNICO = {
             "/usuarios/**", "/tecnicos/**",
-            "/chamados/fila", "/chamados/em-atendimento",
+            "/chamados/fila", "/chamados/em-atendimento", "/chamados/resumo",
             "/chamados/atualizar-dados/**", "/chamados/iniciar-atendimento/**",
             "/chamados/transferir-responsavel/**", "/chamados/finalizar/**"
     };

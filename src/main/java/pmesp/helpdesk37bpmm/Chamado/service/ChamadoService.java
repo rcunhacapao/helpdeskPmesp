@@ -5,6 +5,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import pmesp.helpdesk37bpmm.Chamado.dto.ChamadoDTO;
 import pmesp.helpdesk37bpmm.Chamado.dto.ChamadoRespostaDTO;
+import pmesp.helpdesk37bpmm.Chamado.dto.ResumoChamadosDTO;
 import pmesp.helpdesk37bpmm.Chamado.enums.ChamadoPrioridade;
 import pmesp.helpdesk37bpmm.Chamado.enums.ChamadoStatus;
 import pmesp.helpdesk37bpmm.Chamado.mapper.ChamadoMapper;
@@ -19,6 +20,8 @@ import pmesp.helpdesk37bpmm.Usuario.ValidadorDeRe;
 import pmesp.helpdesk37bpmm.Usuario.model.UsuarioModel;
 import pmesp.helpdesk37bpmm.Usuario.repository.UsuarioRepository;
 
+import java.time.DayOfWeek;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -127,6 +130,23 @@ public class ChamadoService {
         }
 
         return resposta;
+    }
+
+
+    // Contar chamados abertos hoje, nesta semana e neste mês, para os cartões da Central
+    // Técnica. Chamados cancelados nunca contam, em nenhum dos três períodos: um chamado
+    // cancelado não representa demanda real de atendimento.
+    public ResumoChamadosDTO obterResumoDeChamados() {
+        LocalDateTime inicioHoje = LocalDate.now().atStartOfDay();
+        LocalDateTime inicioSemana = LocalDate.now().with(DayOfWeek.MONDAY).atStartOfDay();
+        LocalDateTime inicioMes = LocalDate.now().withDayOfMonth(1).atStartOfDay();
+        LocalDateTime agora = LocalDateTime.now();
+
+        long chamadosHoje = chamadoRepository.countByDataAberturaBetweenAndStatusNot(inicioHoje, agora, ChamadoStatus.CANCELADO);
+        long chamadosSemana = chamadoRepository.countByDataAberturaBetweenAndStatusNot(inicioSemana, agora, ChamadoStatus.CANCELADO);
+        long chamadosMes = chamadoRepository.countByDataAberturaBetweenAndStatusNot(inicioMes, agora, ChamadoStatus.CANCELADO);
+
+        return new ResumoChamadosDTO(chamadosHoje, chamadosSemana, chamadosMes);
     }
 
 

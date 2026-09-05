@@ -24,11 +24,14 @@ import pmesp.helpdesk37bpmm.Tecnico.service.TecnicoService;
 import pmesp.helpdesk37bpmm.Usuario.model.UsuarioModel;
 import pmesp.helpdesk37bpmm.Usuario.repository.UsuarioRepository;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -230,6 +233,20 @@ class ChamadoServiceTest {
 
         assertEquals(null, chamado.getSolucao());
         assertEquals(ChamadoStatus.FECHADO, chamado.getStatus());
+    }
+
+
+    @Test
+    void resumoDeChamadosNuncaContaChamadosCancelados() {
+        when(chamadoRepository.countByDataAberturaBetweenAndStatusNot(
+                any(LocalDateTime.class), any(LocalDateTime.class), eq(ChamadoStatus.CANCELADO)))
+                .thenReturn(5L);
+
+        var resumo = chamadoService.obterResumoDeChamados();
+
+        assertEquals(5L, resumo.getChamadosHoje());
+        assertEquals(5L, resumo.getChamadosSemana());
+        assertEquals(5L, resumo.getChamadosMes());
     }
 
 

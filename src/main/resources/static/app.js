@@ -289,10 +289,15 @@ async function carregarVisaoGeral() {
     if (!document.querySelector('#overview-ticket-card')) return;
     try {
         const chamados = await apiFetch('/chamados/meus');
-        const emAndamento = chamados.find((chamado) => chamado.status === 'ABERTO' || chamado.status === 'EM_ATENDIMENTO');
-        exibirResumoDoChamado(emAndamento);
+        const ativos = chamados.filter((chamado) => chamado.status === 'ABERTO' || chamado.status === 'EM_ATENDIMENTO');
+        // Quando há mais de um chamado ativo, prioriza mostrar o que já está em
+        // atendimento (informação mais relevante do que um chamado ainda na fila) —
+        // a lista vem do backend do mais recente para o mais antigo, então o find()
+        // já pega o mais recente dentro de cada status.
+        const destaque = ativos.find((chamado) => chamado.status === 'EM_ATENDIMENTO') || ativos[0];
+        exibirResumoDoChamado(destaque, ativos.length);
     } catch (erro) {
-        exibirResumoDoChamado(null);
+        exibirResumoDoChamado(null, 0);
     }
 }
 
@@ -305,7 +310,7 @@ function atualizarProgresso(card, status) {
     });
 }
 
-function exibirResumoDoChamado(chamado) {
+function exibirResumoDoChamado(chamado, totalAtivos = 0) {
     const card = document.querySelector('#overview-ticket-card');
     const vazio = document.querySelector('#overview-sem-chamado');
 
@@ -313,6 +318,19 @@ function exibirResumoDoChamado(chamado) {
         card.hidden = true;
         vazio.hidden = false;
         return;
+    }
+
+    // Quando há mais de um chamado ativo, só um aparece em destaque aqui — avisa que
+    // existem outros, para o usuário não pensar que só tem um chamado aberto.
+    const avisoOutros = document.querySelector('#overview-outros-chamados');
+    const outrosAtivos = totalAtivos - 1;
+    if (outrosAtivos > 0) {
+        document.querySelector('#overview-outros-chamados-texto').textContent = outrosAtivos === 1
+            ? 'Você tem mais 1 chamado em aberto.'
+            : `Você tem mais ${outrosAtivos} chamados em aberto.`;
+        avisoOutros.hidden = false;
+    } else {
+        avisoOutros.hidden = true;
     }
 
     vazio.hidden = true;
@@ -519,12 +537,28 @@ function atualizarToggleDisponibilidade(botao, disponivel) {
 
 async function carregarCentralTecnica() {
     const botao = document.querySelector('#alternar-disponibilidade');
-    if (!botao || !sessaoAtual) return;
+    if (botao && sessaoAtual) {
+        try {
+            const tecnico = await apiFetch(`/tecnicos/buscar/${sessaoAtual.re}`);
+            atualizarToggleDisponibilidade(botao, tecnico.disponivel);
+        } catch (erro) {
+            // Sem dado real disponível agora; mantém o último estado visual conhecido.
+        }
+    }
+
     try {
-        const tecnico = await apiFetch(`/tecnicos/buscar/${sessaoAtual.re}`);
-        atualizarToggleDisponibilidade(botao, tecnico.disponivel);
+        const resumo = await apiFetch('/chamados/resumo');
+        document.querySelector('#resumo-chamados-hoje').textContent = resumo.chamadosHoje;
+        document.querySelector('#resumo-chamados-hoje-legenda').textContent = 'Registrados desde o início do dia';
+        document.querySelector('#resumo-chamados-semana').textContent = resumo.chamadosSemana;
+        document.querySelector('#resumo-chamados-semana-legenda').textContent = 'Chamados registrados nos últimos dias';
+        document.querySelector('#resumo-chamados-mes').textContent = resumo.chamadosMes;
+        document.querySelector('#resumo-chamados-mes-legenda').textContent = 'Total de chamados registrados no mês';
     } catch (erro) {
-        // Sem dado real disponível agora; mantém o último estado visual conhecido.
+        ['hoje', 'semana', 'mes'].forEach((periodo) => {
+            document.querySelector(`#resumo-chamados-${periodo}`).textContent = '—';
+            document.querySelector(`#resumo-chamados-${periodo}-legenda`).textContent = 'Não foi possível carregar.';
+        });
     }
 }
 

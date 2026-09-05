@@ -508,6 +508,7 @@ h3 { font-size: clamp(.9rem, 1.2vw, 1rem); margin: 0; }
 .technician-management-card .eyebrow, .ticket-list-card .eyebrow, .history-card .eyebrow {
     margin-bottom: 6px;
 }
+#overview-outros-chamados { align-items: center; display: flex; gap: 8px; margin-top: 4px; }
 .ticket-progress {
     align-items: flex-start;
     display: grid;
@@ -889,6 +890,7 @@ h3 { font-size: clamp(.9rem, 1.2vw, 1rem); margin: 0; }
 .attachment-area strong { display: block; font-size: .875rem;}
 .attachment-area small { display: block; color: var(--muted); font-size: .7rem; margin-top: 2px; }
 .attachment-area + .form-message { margin-top: 14px; }
+button + .form-message, .form-actions + .form-message { margin-top: 12px; }
 
 .form-actions {
     border-top: 1px solid var(--border);
