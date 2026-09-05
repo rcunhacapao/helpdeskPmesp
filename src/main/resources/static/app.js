@@ -19,6 +19,29 @@ const queueSearch = document.querySelector('#busca-chamado');
 const queueDetailContent = document.querySelector('#conteudo-detalhe-chamado');
 const queueDetailEmpty = document.querySelector('#detalhe-chamado-vazio');
 
+// Elementos consultados repetidamente pelas funções de renderização da fila;
+// cacheados uma única vez em vez de buscados no DOM a cada nova renderização.
+const resumoFilaQuantidade = document.querySelector('#resumo-fila-quantidade');
+const tituloDetalheChamado = document.querySelector('#titulo-detalhe-chamado');
+const resumoFilaDescricao = document.querySelector('#resumo-fila-descricao');
+const detalheCodigo = document.querySelector('#detalhe-codigo');
+const detalheAssunto = document.querySelector('#detalhe-assunto');
+const detalheAbertura = document.querySelector('#detalhe-abertura');
+const detalheStatus = document.querySelector('#detalhe-status');
+const detalheSolicitante = document.querySelector('#detalhe-solicitante');
+const detalheLocal = document.querySelector('#detalhe-local');
+const detalheCategoria = document.querySelector('#detalhe-categoria');
+const detalheResponsavel = document.querySelector('#detalhe-responsavel');
+const detalheDescricao = document.querySelector('#detalhe-descricao');
+const detalhePrioridadeElemento = document.querySelector('#detalhe-prioridade');
+const acoesChamadoAberto = document.querySelector('#acoes-chamado-aberto');
+const acoesTransferencia = document.querySelector('#acoes-transferencia');
+const acoesChamadoAtendimento = document.querySelector('#acoes-chamado-atendimento');
+const contadorFilaAberta = document.querySelector('#contador-fila-aberta');
+const contadorEmAtendimento = document.querySelector('#contador-em-atendimento');
+const contadorChamadosAtivos = document.querySelector('#contador-chamados-ativos');
+const filtrosDaFila = document.querySelectorAll('[data-queue-filter]');
+
 const perfilDemonstracao = new URLSearchParams(window.location.search).get('perfil') === 'tecnico'
     ? 'tecnico'
     : 'usuario';
@@ -201,11 +224,11 @@ function renderizarDetalheDoChamado() {
         const exibindoPendentes = filtroFilaAtual === 'ABERTO';
         const quantidade = exibindoPendentes ? pendentes : emAtendimento;
 
-        document.querySelector('#resumo-fila-quantidade').textContent = quantidade;
-        document.querySelector('#titulo-detalhe-chamado').textContent = exibindoPendentes
+        resumoFilaQuantidade.textContent = quantidade;
+        tituloDetalheChamado.textContent = exibindoPendentes
             ? 'Chamados pendentes'
             : 'Chamados em atendimento';
-        document.querySelector('#resumo-fila-descricao').textContent = exibindoPendentes
+        resumoFilaDescricao.textContent = exibindoPendentes
             ? quantidade === 0
                 ? 'Não há chamados pendentes no momento.'
                 : `${quantidade} ${quantidade === 1 ? 'chamado aguarda' : 'chamados aguardam'} atendimento. Selecione um item na lista para continuar.`
@@ -217,21 +240,20 @@ function renderizarDetalheDoChamado() {
 
     queueDetailContent.hidden = false;
     queueDetailEmpty.hidden = true;
-    document.querySelector('#detalhe-codigo').textContent = `Chamado #${chamado.codigo}`;
-    document.querySelector('#detalhe-assunto').textContent = chamado.assunto;
-    document.querySelector('#detalhe-abertura').textContent = `Aberto ${chamado.dataAbertura.toLocaleLowerCase('pt-BR')}`;
-    document.querySelector('#detalhe-status').textContent = nomeDoStatus[chamado.status];
-    document.querySelector('#detalhe-solicitante').textContent = chamado.solicitante;
-    document.querySelector('#detalhe-local').textContent = chamado.local;
-    document.querySelector('#detalhe-categoria').textContent = chamado.categoria;
-    document.querySelector('#detalhe-responsavel').textContent = chamado.responsavel || 'Aguardando assunção';
-    document.querySelector('#detalhe-descricao').textContent = chamado.descricao;
-    const detalhePrioridade = document.querySelector('#detalhe-prioridade');
-    detalhePrioridade.textContent = nomeDaPrioridade[chamado.prioridade];
-    detalhePrioridade.className = `priority-label priority-${chamado.prioridade.toLocaleLowerCase('pt-BR')}`;
-    document.querySelector('#acoes-chamado-aberto').hidden = chamado.status !== 'ABERTO';
-    document.querySelector('#acoes-transferencia').hidden = !podeSerConduzido;
-    document.querySelector('#acoes-chamado-atendimento').hidden = chamado.status !== 'EM_ATENDIMENTO';
+    detalheCodigo.textContent = `Chamado #${chamado.codigo}`;
+    detalheAssunto.textContent = chamado.assunto;
+    detalheAbertura.textContent = `Aberto ${chamado.dataAbertura.toLocaleLowerCase('pt-BR')}`;
+    detalheStatus.textContent = nomeDoStatus[chamado.status];
+    detalheSolicitante.textContent = chamado.solicitante;
+    detalheLocal.textContent = chamado.local;
+    detalheCategoria.textContent = chamado.categoria;
+    detalheResponsavel.textContent = chamado.responsavel || 'Aguardando assunção';
+    detalheDescricao.textContent = chamado.descricao;
+    detalhePrioridadeElemento.textContent = nomeDaPrioridade[chamado.prioridade];
+    detalhePrioridadeElemento.className = `priority-label priority-${chamado.prioridade.toLocaleLowerCase('pt-BR')}`;
+    acoesChamadoAberto.hidden = chamado.status !== 'ABERTO';
+    acoesTransferencia.hidden = !podeSerConduzido;
+    acoesChamadoAtendimento.hidden = chamado.status !== 'EM_ATENDIMENTO';
 }
 
 // Monta o card de um chamado da fila usando textContent (nunca innerHTML) para que
@@ -284,11 +306,11 @@ function renderizarFilaAtendimento() {
     const aguardando = chamadosDemonstracao.filter((chamado) => chamado.status === 'ABERTO').length;
     const emAtendimento = chamadosDemonstracao.filter((chamado) => chamado.status === 'EM_ATENDIMENTO').length;
 
-    document.querySelector('#contador-fila-aberta').textContent = aguardando;
-    document.querySelector('#contador-em-atendimento').textContent = emAtendimento;
-    document.querySelector('#contador-chamados-ativos').textContent = `${aguardando + emAtendimento} ativos`;
+    contadorFilaAberta.textContent = aguardando;
+    contadorEmAtendimento.textContent = emAtendimento;
+    contadorChamadosAtivos.textContent = `${aguardando + emAtendimento} ativos`;
 
-    document.querySelectorAll('[data-queue-filter]').forEach((button) => {
+    filtrosDaFila.forEach((button) => {
         const isActive = button.dataset.queueFilter === filtroFilaAtual;
         button.classList.toggle('is-active', isActive);
         button.setAttribute('aria-selected', String(isActive));
@@ -426,7 +448,7 @@ document.querySelector('[data-close-cancel]')?.addEventListener('click', () => {
     cancelTicketMessage.textContent = '';
 });
 
-document.querySelectorAll('[data-queue-filter]').forEach((button) => {
+filtrosDaFila.forEach((button) => {
     button.addEventListener('click', () => {
         filtroFilaAtual = button.dataset.queueFilter;
         termoBuscaFila = '';
