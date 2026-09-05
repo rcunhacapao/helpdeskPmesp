@@ -1,270 +1,320 @@
 # Helpdesk Telemática - PMESP
 
-> Sistema em desenvolvimento para organizar os chamados de suporte de Telemática, acompanhar os atendimentos e gerar dados úteis para o setor.
+Sistema web de helpdesk criado para centralizar solicitações de suporte, organizar a fila de atendimento e manter um histórico confiável do trabalho realizado pela equipe de Telemática.
 
-## Sobre o projeto
+O projeto reúne frontend e backend na mesma aplicação Spring Boot. A interface é servida pelo próprio backend, consome a API real e utiliza PostgreSQL como banco principal. Esta é uma versão de estudo e portfólio, ainda identificada como beta, construída a partir de situações comuns da rotina de suporte técnico.
 
-Este projeto foi pensado para centralizar pedidos de suporte que normalmente chegam por telefone, mensagem ou conversa pessoal. A ideia é dar visibilidade ao que está pendente, definir o que deve ser atendido primeiro e manter um histórico confiável dos atendimentos.
+## Interface
 
-O objetivo é criar uma solução simples para quem solicita ajuda e organizada para quem atende. Cada unidade poderá manter a sua própria instalação, com sua base de usuários e seus dados. O repositório servirá como uma base que outros batalhões poderão adaptar à própria realidade.
+| Atendimento guiado ao usuário | Abertura direta pelo técnico |
+| --- | --- |
+| ![Atendimento guiado pelo Mike para abertura de chamado](docs/screenshots/abertura-chamado-mike.png) | ![Formulário técnico para registrar um chamado](docs/screenshots/abertura-chamado-tecnico.png) |
 
-## O que o sistema busca resolver
+| Central técnica | Fila de atendimento |
+| --- | --- |
+| ![Painel da central técnica com indicadores](docs/screenshots/central-tecnica.png) | ![Fila de atendimento dos técnicos](docs/screenshots/fila-atendimento.png) |
+
+### Acompanhamento do usuário
+
+![Tela Meus chamados com histórico e detalhes do atendimento](docs/screenshots/meus-chamados.png)
+
+## Problema que o sistema resolve
 
 | Situação | Como o Helpdesk ajuda |
 | --- | --- |
-| Pedidos em vários canais | Cada solicitação fica registrada em um único lugar. |
-| Dificuldade para definir o próximo atendimento | A fila respeita a prioridade de cada chamado. |
-| Histórico perdido | Chamados fechados e cancelados continuam disponíveis para consultas e relatórios. |
-| Falta de dados para planejamento | Os registros poderão mostrar volume, tempo de atendimento e problemas recorrentes. |
+| Pedidos recebidos por telefone, mensagem ou conversa | Cada solicitação fica registrada em um único lugar. |
+| Dificuldade para escolher o próximo atendimento | A fila ordena chamados por prioridade e, em caso de empate, pelo mais antigo. |
+| Falta de acompanhamento pelo solicitante | O usuário consulta seus chamados, o estado atual e os detalhes do atendimento. |
+| Histórico perdido após a solução | Chamados finalizados e cancelados permanecem disponíveis para consulta. |
+| Poucos dados para organizar o setor | A Central Técnica apresenta indicadores de chamados e do atendimento guiado. |
+| Erros encontrados durante o período beta | Qualquer pessoa autenticada pode enviar um relato estruturado para a equipe técnica. |
 
-## Estado atual
+## Funcionalidades implementadas
 
-O backend e o frontend já estão integrados de verdade: a interface web consome a API real
-(login, chamados, usuários e técnicos), sem dados simulados. As funcionalidades abaixo foram
-validadas por testes automatizados e revisão de código.
+### Para o usuário
 
-### Funcionalidades disponíveis
+- Login por RE e senha, com sessão de até duas horas.
+- Primeiro acesso com RE/RE e troca obrigatória por uma senha pessoal.
+- Triagem guiada do Mike antes da abertura do chamado.
+- Orientações por categoria e problema, apresentadas uma etapa por vez.
+- Encerramento do atendimento sem chamado quando a orientação resolve o problema.
+- Formulário final de abertura quando o caso precisa ser encaminhado à equipe técnica.
+- Consulta dos próprios chamados, incluindo situação, técnico responsável e solução registrada.
+- Cancelamento de chamado aberto com motivo obrigatório.
+- Indicação resumida de chamado na fila ou em atendimento.
+- Relato de erros da aplicação por categorias predefinidas e campo de observação.
 
-- Cadastro de usuários com posto/graduação, nome e RE.
-- Validação de RE: somente números, de 1 a 6 dígitos.
-- Inativação de usuários sem apagar seu histórico.
-- Cancelamento automático de chamados abertos quando o usuário é inativado.
-- Triagem guiada do Mike IA antes da abertura, com uma pergunta por vez e opções simples.
-- Categorias: computador, monitor, impressora, rede/internet, e-mail e outro.
-- Prioridades: baixa, média, alta e urgente.
-- Fluxo de chamado: aberto, em atendimento, fechado e cancelado.
-- A triagem resolvida pelo Mike é registrada como atendimento, sem criar chamado.
-- Histórico das orientações do Mike disponível no detalhe técnico do chamado encaminhado.
-- Cancelamento de chamado aberto com motivo registrado.
-- Fila de atendimento: urgentes primeiro, depois alta, média e baixa prioridade. Dentro da mesma prioridade, o chamado mais antigo vem antes.
-- Consulta de chamados em atendimento, separada da fila de chamados abertos.
-- Login inicial com RE/RE, troca obrigatória de senha, reset manual pelo técnico e perfis de
-  usuário comum/técnico (veja [Autenticação](#autenticação)).
-- Banco PostgreSQL local via Docker para desenvolvimento (veja [Banco de dados](#banco-de-dados-postgresql-via-docker)); H2 permanece só para os testes automatizados.
+### Para o técnico
 
-### Fluxo do chamado
+- Central Técnica com totais do dia, da semana e do mês.
+- Indicadores de atendimentos iniciados, resolvidos, encaminhados e abandonados pelo Mike.
+- Registro direto de chamado, inclusive em nome de outro RE.
+- Fila separada entre chamados pendentes e em atendimento.
+- Busca por protocolo ou assunto.
+- Início, transferência, finalização e cancelamento de atendimento.
+- Registro opcional da solução utilizada ao finalizar.
+- Consulta do diagnóstico feito pelo Mike antes do encaminhamento.
+- Alteração de prioridade pela API.
+- Cadastro, consulta, atualização, inativação e reset de senha de usuários.
+- Cadastro de técnicos e controle manual de disponibilidade.
+- Consulta dos relatos de erro enviados pelos usuários.
+
+### Regras de negócio importantes
+
+- O chamado só é criado depois do envio do formulário final; navegar pela triagem não cria registros incompletos na fila.
+- A fila aceita apenas chamados `ABERTO` e segue a ordem `URGENTE`, `ALTA`, `MEDIA` e `BAIXA`.
+- Dentro da mesma prioridade, o chamado mais antigo aparece primeiro.
+- Um chamado precisa estar `EM_ATENDIMENTO` para ser finalizado.
+- Usuários comuns só consultam e alteram os próprios chamados.
+- A inativação de um usuário preserva o histórico e cancela seus chamados ainda abertos.
+- Chamados não são apagados pela aplicação.
+- O tipo `OUTRO` em um relato de erro exige uma descrição.
+
+## Fluxo principal
 
 ```text
 Usuário ativo -> triagem guiada do Mike
                   |
-                  +-> RESOLVIDO no atendimento do Mike, sem criar chamado
+                  +-> RESOLVIDO pelo Mike -> atendimento registrado sem chamado
                   |
-                  `-> envio do formulário final -> ABERTO -> EM_ATENDIMENTO -> FECHADO
-                                                     |
-                                                     `-> CANCELADO, quando necessário
+                  `-> formulário final -> ABERTO -> EM_ATENDIMENTO -> FECHADO
+                                             |
+                                             `-> CANCELADO, quando necessário
 
-Triagem do Mike -> ABANDONADO, quando não houver interação por 24 horas
+Triagem sem interação por 24 horas -> ABANDONADO
 ```
 
-Regras importantes:
+O Mike desta versão é um atendimento guiado por categorias, problemas e respostas predefinidas. Ele ainda não utiliza um modelo de linguagem. A integração futura com Gemini Flash será uma evolução separada, mantendo autorização e regras de negócio no backend.
 
-- Escolher categoria, problema ou respostas não cria chamado.
-- O chamado `ABERTO` só nasce quando o usuário envia o formulário final de encaminhamento.
-- Técnico abre diretamente como `ABERTO`, inclusive quando registra em nome de outro RE.
-- Somente chamados `ABERTOS` aparecem na fila.
-- O técnico inicia o atendimento e muda o status para `EM_ATENDIMENTO`.
-- Somente chamados em atendimento podem ser finalizados.
-- Chamados não são apagados pela aplicação: o histórico será importante para os relatórios futuros.
-- A posição numérica na fila para o solicitante ainda será implementada.
+## Tecnologias
 
-## Rotas disponíveis
+- Java 26
+- Spring Boot 4.1.1
+- Spring Web MVC
+- Spring Data JPA e Hibernate
+- Spring Security com autenticação por sessão
+- PostgreSQL 16
+- Flyway
+- H2 apenas nos testes automatizados
+- Maven
+- HTML, CSS e JavaScript sem framework no frontend
+- JUnit, Mockito e MockMvc
+- Springdoc OpenAPI / Swagger UI
+- Docker Compose para o PostgreSQL local
 
-Rotas marcadas como **pública** não exigem login. Todas as outras exigem uma sessão autenticada
-(veja [Autenticação](#autenticação)); as marcadas como **técnico** só funcionam para quem tem
-esse perfil.
+## Arquitetura
+
+```text
+Navegador
+   |
+   | HTML, CSS, JavaScript + requisições HTTP
+   v
+Controllers REST
+   |
+   v
+Services (regras de negócio e autorização)
+   |
+   v
+Repositories JPA
+   |
+   v
+PostgreSQL
+
+Flyway -> controla a evolução do banco
+Spring Security -> controla sessão e perfis
+TratadorDeExcecoes -> padroniza os erros da API
+```
+
+Estrutura principal:
+
+```text
+src/main/java/pmesp/helpdesk37bpmm
+├── Autenticacao
+├── Chamado
+├── Exception
+├── MikeIA
+├── RelatoErro
+├── Seguranca
+├── Tecnico
+└── Usuario
+
+src/main/resources
+├── db/migration       # migrations V1 a V8
+└── static             # frontend servido pelo Spring Boot
+```
+
+## Como executar no Windows
+
+### Pré-requisitos
+
+- Git
+- JDK 26
+- Docker Desktop com Docker Compose
+
+### 1. Baixe o projeto
+
+```powershell
+git clone https://github.com/rcunhacapao/helpdeskPmesp.git
+cd helpdeskPmesp
+```
+
+### 2. Configure o PostgreSQL
+
+Crie um arquivo `.env` na raiz do projeto. Ele é ignorado pelo Git e deve permanecer somente na sua máquina:
+
+```env
+POSTGRES_DB=helpdesk
+POSTGRES_USER=helpdesk
+POSTGRES_PASSWORD=escolha_uma_senha
+POSTGRES_PORT=5432
+```
+
+Suba o banco:
+
+```powershell
+docker compose up -d
+docker compose ps
+```
+
+O volume `helpdesk_pg_data` mantém os dados entre reinicializações. `docker compose down` para o contêiner sem apagar o volume; use `docker compose down -v` somente quando quiser excluir definitivamente os dados locais.
+
+### 3. Configure a aplicação
+
+O Docker Compose lê o `.env`, mas o Spring Boot não carrega esse arquivo automaticamente. Antes de iniciar o backend no PowerShell, defina as mesmas informações como variáveis de ambiente:
+
+```powershell
+$env:DATABASE_URL = "jdbc:postgresql://localhost:5432/helpdesk"
+$env:DATABASE_USERNAME = "helpdesk"
+$env:DATABASE_PASSWORD = "escolha_uma_senha"
+```
+
+Se executar pelo IntelliJ IDEA, informe essas três variáveis na configuração de execução da classe `Helpdesk37bpmmApplication`.
+
+### 4. Crie o primeiro técnico
+
+Enquanto ainda não existir técnico no banco, também configure:
+
+```powershell
+$env:BOOTSTRAP_TECNICO_RE = "100001"
+$env:BOOTSTRAP_TECNICO_NOME = "Nome do técnico"
+$env:BOOTSTRAP_TECNICO_EMAIL = "tecnico@policiamilitar.sp.gov.br"
+$env:BOOTSTRAP_TECNICO_SENHA = "escolha_uma_senha_forte"
+$env:BOOTSTRAP_TECNICO_POSTO = "SGT_3"
+```
+
+Esse cadastro automático só acontece quando ainda não existe nenhum técnico. Depois dele, os demais usuários e técnicos são cadastrados pela própria aplicação.
+
+### 5. Inicie o sistema
+
+Pelo Maven Wrapper:
+
+```powershell
+.\mvnw.cmd spring-boot:run
+```
+
+Ou execute `Helpdesk37bpmmApplication` pela IDE. Depois, acesse:
+
+- Aplicação: `http://localhost:8080/`
+- Swagger UI: `http://localhost:8080/swagger-ui/index.html`
+
+## Gerar e executar o JAR
+
+Com as variáveis do PostgreSQL configuradas:
+
+```powershell
+.\mvnw.cmd clean package
+java -jar target\helpdesk37bpmm-0.0.1-SNAPSHOT.jar
+```
+
+O `.jar` contém o backend, o frontend e as dependências de produção. O PostgreSQL continua sendo um serviço separado e precisa estar acessível quando a aplicação iniciar.
+
+## Testes
+
+A validação mais recente executou **55 testes, sem falhas, erros ou testes ignorados**. A suíte cobre regras de chamados, autenticação, troca e reset de senha, segurança, concorrência da fila, migrations, Mike, relatos de erro e estrutura do frontend.
+
+Como o H2 existe somente no escopo de testes, a suíte pode ser executada sem usar os dados do PostgreSQL:
+
+```powershell
+$env:DATABASE_URL = "jdbc:h2:mem:helpdesk_test;DB_CLOSE_DELAY=-1"
+$env:DATABASE_USERNAME = "sa"
+$env:DATABASE_PASSWORD = ""
+.\mvnw.cmd test
+```
+
+Também existe um teste JavaScript puro para o fluxo de triagem:
+
+```powershell
+npm test
+```
+
+## Rotas principais
+
+Rotas públicas não exigem login. As demais dependem de sessão; as identificadas como técnico exigem esse perfil.
 
 | Método | Rota | Finalidade | Acesso |
 | --- | --- | --- | --- |
 | `POST` | `/auth/login` | Autentica com RE e senha. | pública |
 | `GET` | `/auth/sessao` | Recupera os dados da sessão atual. | logado |
-| `POST` | `/auth/trocar-senha` | Define a senha pessoal quando existe troca obrigatória pendente. | logado com troca pendente |
-| `POST` | `/logout` | Encerra a sessão. | logado |
-| `POST` | `/usuarios/cadastrar` | Cadastra um usuário com e-mail opcional e senha inicial igual ao RE. | técnico |
-| `GET` | `/usuarios/buscar/{re}` | Busca usuário pelo RE. | técnico |
+| `POST` | `/auth/trocar-senha` | Define a senha pessoal quando existe troca obrigatória. | troca pendente |
+| `POST` | `/logout` | Encerra e invalida a sessão. | logado |
+| `POST` | `/usuarios/cadastrar` | Cadastra usuário com senha temporária igual ao RE. | técnico |
+| `GET` | `/usuarios/buscar/{re}` | Busca um usuário pelo RE. | técnico |
 | `PUT` | `/usuarios/atualizar-dados/{re}` | Atualiza nome e posto/graduação. | técnico |
-| `PATCH` | `/usuarios/inativar/{re}` | Inativa usuário e cancela seus chamados abertos. | técnico |
-| `PATCH` | `/usuarios/resetar-senha/{re}` | Volta a senha temporária para o RE e exige nova troca. | técnico |
-| `POST` | `/tecnicos/cadastrar` | Torna um usuário existente um técnico. | técnico |
-| `GET` | `/tecnicos` | Lista todos os técnicos, disponíveis ou não. | técnico |
-| `GET` | `/tecnicos/buscar/{re}` | Busca técnico pelo RE do usuário. | técnico |
-| `GET` | `/tecnicos/disponiveis` | Lista técnicos disponíveis no momento. | técnico |
+| `PATCH` | `/usuarios/inativar/{re}` | Inativa o usuário e cancela chamados abertos. | técnico |
+| `PATCH` | `/usuarios/resetar-senha/{re}` | Restaura RE/RE e exige uma nova troca. | técnico |
+| `POST` | `/tecnicos/cadastrar` | Torna um usuário existente técnico. | técnico |
+| `GET` | `/tecnicos` | Lista todos os técnicos. | técnico |
 | `PATCH` | `/tecnicos/ficar-disponivel/{re}` | Marca o técnico como disponível. | técnico |
 | `PATCH` | `/tecnicos/ficar-indisponivel/{re}` | Marca o técnico como indisponível. | técnico |
-| `POST` | `/chamados/cadastrar` | Abre chamado completo, inclusive para outro RE. | técnico |
-| `GET` | `/chamados/buscar/{id}` | Busca chamado pelo identificador (usuário comum só vê os próprios). | logado |
-| `GET` | `/chamados/meus` | Lista os chamados do usuário autenticado. | logado |
-| `GET` | `/chamados/fila` | Mostra a fila de chamados abertos. | técnico |
-| `GET` | `/chamados/em-atendimento` | Mostra os chamados que já estão sendo atendidos. | técnico |
-| `PUT` | `/chamados/atualizar-dados/{id}?prioridade=ALTA` | Altera a prioridade de um chamado aberto. | técnico |
-| `PATCH` | `/chamados/iniciar-atendimento/{id}?reTecnico={re}` | Técnico assume e inicia o atendimento. | técnico |
-| `PATCH` | `/chamados/transferir-responsavel/{id}?reTecnico={re}` | Transfere o chamado para outro técnico. | técnico |
-| `PATCH` | `/chamados/finalizar/{id}` | Finaliza um chamado em atendimento. | técnico |
-| `PATCH` | `/chamados/cancelar/{id}?motivoCancelamento=OUTRO` | Cancela um chamado aberto (usuário comum só o próprio). | logado |
-| `POST` | `/mike-ia/iniciar` | Registra temporariamente o início da triagem, sem criar chamado. | usuário comum |
-| `GET` | `/mike-ia/em-diagnostico` | Recupera o diagnóstico em andamento após recarregar a página. | usuário comum |
-| `PATCH` | `/mike-ia/concluir/{atendimentoId}` | Conclui uma triagem resolvida sem criar chamado. | usuário comum |
-| `PATCH` | `/mike-ia/encaminhar/{atendimentoId}` | Cria o chamado somente após o envio do formulário final. | usuário comum |
-| `GET` | `/mike-ia/chamado/{chamadoId}` | Consulta o histórico do Mike no detalhe técnico do chamado. | técnico |
-| `GET` | `/mike-ia/metricas` | Consulta totais e taxa inicial de resolução automática. | técnico |
+| `POST` | `/chamados/cadastrar` | Registra um chamado completo. | logado |
+| `GET` | `/chamados/meus` | Lista os chamados da sessão atual. | logado |
+| `GET` | `/chamados/buscar/{id}` | Busca um chamado permitido para a sessão. | logado |
+| `GET` | `/chamados/fila` | Lista chamados abertos na ordem da fila. | técnico |
+| `GET` | `/chamados/em-atendimento` | Lista chamados já assumidos. | técnico |
+| `GET` | `/chamados/resumo` | Retorna totais do dia, da semana e do mês. | técnico |
+| `PUT` | `/chamados/atualizar-dados/{id}?prioridade=ALTA` | Altera a prioridade. | técnico |
+| `PATCH` | `/chamados/iniciar-atendimento/{id}?reTecnico={re}` | Assume o chamado. | técnico |
+| `PATCH` | `/chamados/transferir-responsavel/{id}?reTecnico={re}` | Transfere para outro técnico. | técnico |
+| `PATCH` | `/chamados/finalizar/{id}?solucao={texto}` | Finaliza e registra a solução opcional. | técnico |
+| `PATCH` | `/chamados/cancelar/{id}?motivoCancelamento={motivo}` | Cancela um chamado aberto. | logado |
+| `POST` | `/mike-ia/iniciar` | Inicia a triagem sem criar chamado. | usuário |
+| `GET` | `/mike-ia/em-diagnostico` | Recupera a triagem em andamento. | usuário |
+| `PATCH` | `/mike-ia/concluir/{atendimentoId}` | Registra uma resolução sem chamado. | usuário |
+| `PATCH` | `/mike-ia/encaminhar/{atendimentoId}` | Cria chamado após o formulário final. | usuário |
+| `PATCH` | `/mike-ia/abandonar/{atendimentoId}` | Registra abandono da triagem. | usuário |
+| `GET` | `/mike-ia/chamado/{chamadoId}` | Consulta o histórico da triagem. | técnico |
+| `GET` | `/mike-ia/metricas` | Consulta os indicadores do Mike. | técnico |
+| `POST` | `/relatos-erro` | Registra um erro encontrado na aplicação. | logado |
+| `GET` | `/relatos-erro` | Lista os relatos recebidos. | técnico |
 
-## Autenticação
+## Segurança e integridade
 
-O técnico cadastra o usuário previamente com RE, nome, posto/graduação e, se disponível,
-e-mail funcional `@policiamilitar.sp.gov.br`. O e-mail permanece no cadastro, mas é opcional
-e não participa da autenticação. Depois disso:
+- Senhas armazenadas com BCrypt; o RE usado no primeiro acesso também é persistido apenas como hash.
+- Autorização por perfil aplicada no backend, independentemente do que a interface exibe.
+- Sessão invalidada no logout.
+- Troca obrigatória impede o acesso às demais APIs até a criação da senha pessoal.
+- DTOs com validação de entrada.
+- Respostas de erro padronizadas.
+- Migrations versionadas pelo Flyway.
+- Controle de concorrência ao assumir chamados da fila.
+- Dados sensíveis, `.env`, bancos locais e artefatos de build ignorados pelo Git.
 
-1. O cadastro salva o hash do RE como senha temporária e marca a troca de senha como obrigatória.
-2. O usuário entra pela tela normal com RE como login e senha.
-3. A sessão fica limitada à rota `POST /auth/trocar-senha` até ele definir uma senha pessoal.
-4. Depois da troca, ele usa RE + senha pessoal e o RE deixa de funcionar como senha.
-5. Se esquecer a senha, procura a Telemática; um técnico usa `PATCH /usuarios/resetar-senha/{re}`
-   e o ciclo RE/RE com troca obrigatória acontece novamente.
-6. O login fica valendo por sessão (cookie), por até 2 horas.
+## Limites da versão beta
 
-Existem dois perfis: **usuário comum** (só acessa os próprios chamados) e **técnico** (acessa
-tudo). Um usuário vira técnico quando alguém já técnico chama `POST /tecnicos/cadastrar` para
-o RE dele. Para o primeiro técnico do sistema (antes de existir qualquer técnico), configure as
-variáveis de ambiente `BOOTSTRAP_TECNICO_RE`, `BOOTSTRAP_TECNICO_NOME`, `BOOTSTRAP_TECNICO_EMAIL`
-e `BOOTSTRAP_TECNICO_SENHA` — a aplicação cria esse técnico automaticamente na primeira vez que
-subir.
-
-### Exemplos para teste
-
-Cadastro de usuário:
-
-```json
-{
-  "postoGraduacao": "SD PM",
-  "nome": "Nome de teste",
-  "re": "123456",
-  "email": "nome.teste@policiamilitar.sp.gov.br"
-}
-```
-
-Cadastro de chamado:
-
-```json
-{
-  "re": "123456",
-  "descricao": "Monitor não apresenta imagem.",
-  "categoria": "MONITOR",
-  "localAtendimento": "Sala do P1",
-  "prioridade": "MEDIA"
-}
-```
-
-## Tecnologias utilizadas
-
-- Java
-- Spring Boot
-- Spring Data JPA
-- Spring Security
-- PostgreSQL (Docker) para desenvolvimento; H2 só nos testes automatizados
-- Flyway
-- Lombok
-- Maven
-- Postman para testes manuais
-- Git e GitHub
-
-## Banco de dados (PostgreSQL via Docker)
-
-Pré-requisito: Docker instalado.
-
-Subir o PostgreSQL:
-
-```bash
-docker compose up -d
-```
-
-Ver containers:
-
-```bash
-docker compose ps
-```
-
-Parar:
-
-```bash
-docker compose down
-```
-
-Os dados ficam em um volume Docker nomeado, então persistem entre `docker compose down`/`up`
-(sem `-v`, o volume não é apagado). Depois de o banco estar no ar, siga a seção abaixo para
-rodar o backend normalmente.
-
-## Como executar localmente
-
-1. Suba o PostgreSQL (`docker compose up -d`) e configure os dados de conexão no arquivo `.env`.
-2. Abra o projeto em uma IDE Java, como o IntelliJ IDEA.
-3. Execute a classe principal da aplicação.
-4. Use o Postman para testar as rotas em `http://localhost:8080`.
-
-Exemplo de estrutura do `.env`:
-
-```env
-POSTGRES_DB=helpdesk
-POSTGRES_USER=seu_usuario_local
-POSTGRES_PASSWORD=sua_senha_local
-POSTGRES_PORT=5432
-
-DATABASE_URL=jdbc:postgresql://localhost:5432/helpdesk
-DATABASE_USERNAME=seu_usuario_local
-DATABASE_PASSWORD=sua_senha_local
-```
-
-Os testes automatizados (`mvn test`) continuam usando H2 em memória, sem precisar do Docker.
-
-> O arquivo `.env`, dados reais e o arquivo do banco não devem ser enviados ao GitHub.
-
-### Primeiro técnico (bootstrap)
-
-Como só um técnico pode cadastrar usuários e técnicos, a aplicação cria automaticamente o
-primeiro técnico ao subir, **somente se ainda não existir nenhum** e estas variáveis de
-ambiente estiverem definidas:
-
-```env
-BOOTSTRAP_TECNICO_RE=100001
-BOOTSTRAP_TECNICO_NOME=Fulano de Tal
-BOOTSTRAP_TECNICO_EMAIL=fulano.detal@policiamilitar.sp.gov.br
-BOOTSTRAP_TECNICO_SENHA=uma-senha-forte
-BOOTSTRAP_TECNICO_POSTO=SGT_3
-```
-
-Com isso, já é possível logar em `POST /auth/login` com esse RE e senha e usar a tela de
-Gestão de usuários para cadastrar o restante da equipe. Usuários cadastrados por um técnico
-entram inicialmente com RE/RE e precisam criar uma senha pessoal antes de acessar o sistema.
-
-### Frontend
-
-O frontend (`src/main/resources/static`) é servido pela própria aplicação Spring, na mesma
-origem — acesse `http://localhost:8080/` no navegador. Ele já está conectado à API real
-(login, chamados, usuários e técnicos); não usa mais dados simulados.
+- O Mike usa um roteiro guiado local; a integração com Gemini Flash ainda não foi iniciada.
+- A área de anexos está preparada visualmente, mas o envio de arquivos ainda não está conectado.
+- Relatórios analíticos avançados ainda serão desenvolvidos.
+- Antes de uso real na intranet, ainda serão definidas as configurações finais de servidor, backup, credenciais e operação.
 
 ## Próximas etapas
 
-1. ~~Melhorar as mensagens de erro da API.~~ ✅ concluído.
-2. ~~Criar testes automatizados para as regras principais.~~ ✅ concluído.
-3. Criar filtros de chamados por status, prioridade, categoria e período.
-4. Implementar a posição do solicitante na fila.
-5. ~~Registrar solução ou observação ao finalizar um chamado.~~ ✅ concluído.
-6. ~~Conectar o frontend (hoje um protótipo visual) à API real.~~ ✅ concluído.
-7. ~~Criar login inicial RE/RE com troca obrigatória e reset manual pelo técnico.~~ ✅ concluído.
-8. ~~Migrar o banco de H2 para PostgreSQL e preparar a aplicação para Docker.~~ ✅ concluído.
-9. Criar relatórios de volume, tempo médio de atendimento, categorias mais frequentes e chamados por usuário/local. Os dados de diagnóstico, resolução pelo Mike e abandono já ficam registrados para essa etapa.
-10. Permitir alterar a prioridade de um chamado diretamente na tela de fila do técnico (o endpoint já existe: `PUT /chamados/atualizar-dados/{id}`).
-11. Avaliar separadamente uma camada adicional de confirmação de identidade, sem dependência preparada no fluxo atual.
+1. Integrar o Mike a um modelo Gemini Flash por meio de ferramentas controladas pelo backend.
+2. Criar filtros por status, prioridade, categoria e período.
+3. Implementar relatórios de volume, tempo médio e problemas recorrentes.
+4. Conectar o envio de anexos aos chamados.
+5. Preparar a instalação e a operação da versão destinada à intranet.
 
-## Visão futura
-
-O planejamento pode evoluir conforme os testes e as necessidades do setor, mas a direção atual do projeto inclui:
-
-- Tela para abertura e acompanhamento de chamados.
-- Painel do técnico com fila, chamados em atendimento, finalizados e filtros.
-- Indicadores para ajudar o setor a entender volume de trabalho, tempo médio e problemas mais frequentes.
-- Instalação independente para outras unidades.
-- **Mike IA** integrado à abertura com fluxo guiado por decisões e estrutura preparada para evoluir para uma base aprovada, RAG ou LLM.
-
-## Identidade visual planejada
+## Identidade visual
 
 | Elemento | Cor |
 | --- | --- |
@@ -273,7 +323,9 @@ O planejamento pode evoluir conforme os testes e as necessidades do setor, mas a
 | Cards | `#FFFFFF` |
 | Ações principais | `#8B0000` |
 | Alertas e urgências | `#DC3545` |
+| Informação e andamento | `#2D5F8B` |
+| Destaques do Mike | `#C79A32` |
 
 ---
 
-Projeto pessoal de estudo e portfólio, desenvolvido de forma gradual para representar uma solução real para a rotina de Telemática.
+Projeto pessoal de estudo e portfólio, desenvolvido de forma incremental para representar uma solução real de suporte técnico.
