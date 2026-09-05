@@ -10,6 +10,7 @@ import pmesp.helpdesk37bpmm.Tecnico.dto.TecnicoRespostaDTO;
 import pmesp.helpdesk37bpmm.Tecnico.mapper.TecnicoMapper;
 import pmesp.helpdesk37bpmm.Tecnico.model.TecnicoModel;
 import pmesp.helpdesk37bpmm.Tecnico.repository.TecnicoRepository;
+import pmesp.helpdesk37bpmm.Usuario.ValidadorDeRe;
 import pmesp.helpdesk37bpmm.Usuario.model.UsuarioModel;
 import pmesp.helpdesk37bpmm.Usuario.repository.UsuarioRepository;
 
@@ -21,11 +22,11 @@ import java.util.Optional;
 public class TecnicoService {
 
     @Autowired
-    TecnicoRepository tecnicoRepository;
+    private TecnicoRepository tecnicoRepository;
     @Autowired
-    UsuarioRepository usuarioRepository;
+    private UsuarioRepository usuarioRepository;
     @Autowired
-    TecnicoMapper tecnicoMapper;
+    private TecnicoMapper tecnicoMapper;
 
     // Cadastrar um usuário ativo como técnico da equipe
     public TecnicoRespostaDTO criar(TecnicoDTO tecnicoDTO) {
@@ -36,7 +37,7 @@ public class TecnicoService {
         }
 
         // Procurar o usuário que será transformado em técnico
-        validarRe(tecnicoDTO.getRe());
+        ValidadorDeRe.validar(tecnicoDTO.getRe());
         Optional<UsuarioModel> usuarioAtual = usuarioRepository.findByRe(tecnicoDTO.getRe());
         if (usuarioAtual.isEmpty()) {
             throw new RecursoNaoEncontradoException("USUARIO_NAO_ENCONTRADO", "Usuário não encontrado.");
@@ -71,7 +72,7 @@ public class TecnicoService {
 
     // Buscar técnico pelo RE para regras de chamado
     public Optional<TecnicoModel> buscarPorReComoModel(String re) {
-        validarRe(re);
+        ValidadorDeRe.validar(re);
         return tecnicoRepository.findByUsuarioRe(re);
     }
 
@@ -157,7 +158,7 @@ public class TecnicoService {
 
     // Buscar técnico pelo RE e informar quando ele não existir
     private TecnicoModel buscarTecnicoPorRe(String re) {
-        validarRe(re);
+        ValidadorDeRe.validar(re);
         Optional<TecnicoModel> tecnico = tecnicoRepository.findByUsuarioRe(re);
 
         if (tecnico.isPresent()) {
@@ -165,13 +166,5 @@ public class TecnicoService {
         }
 
         throw new RecursoNaoEncontradoException("TECNICO_NAO_ENCONTRADO", "Técnico não encontrado.");
-    }
-
-
-    // Validar o RE informado sem o dígito
-    private void validarRe(String re) {
-        if (re == null || !re.matches("[0-9]{1,6}")) {
-            throw new RegraDeNegocioException("RE_INVALIDO", "Informe o RE sem o dígito.");
-        }
     }
 }

@@ -1,6 +1,7 @@
 package pmesp.helpdesk37bpmm.Chamado.service;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import pmesp.helpdesk37bpmm.Chamado.dto.ChamadoDTO;
 import pmesp.helpdesk37bpmm.Chamado.dto.ChamadoRespostaDTO;
@@ -9,10 +10,12 @@ import pmesp.helpdesk37bpmm.Chamado.enums.ChamadoStatus;
 import pmesp.helpdesk37bpmm.Chamado.mapper.ChamadoMapper;
 import pmesp.helpdesk37bpmm.Chamado.model.ChamadoModel;
 import pmesp.helpdesk37bpmm.Chamado.repository.ChamadoRepository;
+import pmesp.helpdesk37bpmm.Exception.AcessoNegadoException;
 import pmesp.helpdesk37bpmm.Exception.RecursoNaoEncontradoException;
 import pmesp.helpdesk37bpmm.Exception.RegraDeNegocioException;
 import pmesp.helpdesk37bpmm.Tecnico.model.TecnicoModel;
 import pmesp.helpdesk37bpmm.Tecnico.service.TecnicoService;
+import pmesp.helpdesk37bpmm.Usuario.ValidadorDeRe;
 import pmesp.helpdesk37bpmm.Usuario.model.UsuarioModel;
 import pmesp.helpdesk37bpmm.Usuario.repository.UsuarioRepository;
 
@@ -25,13 +28,13 @@ import java.util.Optional;
 public class ChamadoService {
 
     @Autowired
-    ChamadoRepository chamadoRepository;
+    private ChamadoRepository chamadoRepository;
     @Autowired
-    UsuarioRepository usuarioRepository;
+    private UsuarioRepository usuarioRepository;
     @Autowired
-    ChamadoMapper chamadoMapper;
+    private ChamadoMapper chamadoMapper;
     @Autowired
-    TecnicoService tecnicoService;
+    private TecnicoService tecnicoService;
 
     // Cadastrar novo chamado usando os dados do ChamadoDTO
     public ChamadoRespostaDTO criar(ChamadoDTO chamadoDTO) {
@@ -52,12 +55,22 @@ public class ChamadoService {
                     "Não é possível abrir chamado para um usuário inativo.");
         }
 
+        // Um usuário comum só pode abrir chamado para si mesmo; só o técnico pode abrir em nome de outro
+        UsuarioModel usuarioAutenticado = usuarioAutenticado();
+        boolean abrindoParaOutraPessoa = !usuarioAutenticado.getId().equals(solicitante.getId());
+        if (abrindoParaOutraPessoa && !autenticadoETecnico()) {
+            throw new AcessoNegadoException("ABERTURA_EM_NOME_DE_OUTRO_NAO_PERMITIDA",
+                    "Somente um técnico pode abrir um chamado em nome de outra pessoa.");
+        }
+
         // Definir responsável automático somente quando houver um técnico disponível
         TecnicoModel tecnicoResponsavel = tecnicoService.buscarTecnicoDisponivelParaNovoChamado();
         ChamadoModel chamadoNovo = chamadoMapper.map(chamadoDTO);
 
         // Definir os dados que são regras do sistema
         chamadoNovo.setSolicitante(solicitante);
+        // "Aberto por" só é preenchido quando o técnico registra em nome de outra pessoa
+        chamadoNovo.setAbertoPor(abrindoParaOutraPessoa ? usuarioAutenticado : null);
         chamadoNovo.setTecnicoResponsavel(tecnicoResponsavel);
         chamadoNovo.setDataAbertura(LocalDateTime.now());
         chamadoNovo.setStatus(ChamadoStatus.ABERTO);
@@ -70,7 +83,9 @@ public class ChamadoService {
 
     // Pesquisar chamado por ID
     public ChamadoRespostaDTO buscarPorId(Long chamadoId) {
-        return chamadoMapper.map(buscarChamadoPorId(chamadoId));
+        ChamadoModel chamado = buscarChamadoPorId(chamadoId);
+        garantirAcessoAoChamado(chamado);
+        return chamadoMapper.map(chamado);
     }
 
 
@@ -207,6 +222,7 @@ public class ChamadoService {
     // Cancelar apenas chamado que ainda está aberto
     public ChamadoRespostaDTO cancelarChamado(Long chamadoId, String motivoCancelamento) {
         ChamadoModel chamado = buscarChamadoPorId(chamadoId);
+        garantirAcessoAoChamado(chamado);
 
         // Aceitar somente os motivos de cancelamento definidos pelo sistema
         if (!motivoCancelamentoValido(motivoCancelamento)) {
@@ -266,9 +282,7 @@ public class ChamadoService {
         }
 
         // Conferir cada campo que a pessoa precisa informar
-        if (chamadoDTO.getRe() == null || !chamadoDTO.getRe().matches("[0-9]{1,6}")) {
-            throw new RegraDeNegocioException("RE_SOLICITANTE_OBRIGATORIO", "Informe o seu RE.");
-        }
+        ValidadorDeRe.validar(chamadoDTO.getRe());
 
         if (chamadoDTO.getDescricao() == null || chamadoDTO.getDescricao().isBlank()) {
             throw new RegraDeNegocioException("PROBLEMA_OBRIGATORIO", "Informe o problema.");
@@ -313,6 +327,36 @@ public class ChamadoService {
     }
 
 
+    // Um usuário comum só pode acessar os próprios chamados; o técnico pode acessar todos.
+    // Fica centralizado aqui para que, quando existir separação por equipe/unidade no futuro,
+    // baste ajustar esta regra em um único lugar.
+    private void garantirAcessoAoChamado(ChamadoModel chamado) {
+        if (autenticadoETecnico()) {
+            return;
+        }
+
+        UsuarioModel usuarioAutenticado = usuarioAutenticado();
+        if (!chamado.getSolicitante().getId().equals(usuarioAutenticado.getId())) {
+            throw new AcessoNegadoException("CHAMADO_DE_OUTRO_USUARIO", "Você não tem acesso a este chamado.");
+        }
+    }
+
+
+    // Descobrir, pela sessão autenticada, qual usuário está fazendo a requisição
+    private UsuarioModel usuarioAutenticado() {
+        String re = SecurityContextHolder.getContext().getAuthentication().getName();
+        return usuarioRepository.findByRe(re)
+                .orElseThrow(() -> new RecursoNaoEncontradoException("USUARIO_NAO_ENCONTRADO", "Usuário não encontrado."));
+    }
+
+
+    // Confirmar se quem está autenticado tem o perfil de técnico
+    private boolean autenticadoETecnico() {
+        return SecurityContextHolder.getContext().getAuthentication().getAuthorities().stream()
+                .anyMatch(autoridade -> autoridade.getAuthority().equals("ROLE_TECNICO"));
+    }
+
+
     // TODO: antes de abrir chamado, oferecer chatbot com orientações e opções pré-definidas.
-    // TODO: criar fila de chamados por prioridade e informar a posição na fila.
+
 }

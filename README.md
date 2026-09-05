@@ -34,6 +34,8 @@ O projeto está na fase de construção e teste da API. As funcionalidades abaix
 - Cancelamento de chamado aberto com motivo registrado.
 - Fila de atendimento: urgentes primeiro, depois alta, média e baixa prioridade. Dentro da mesma prioridade, o chamado mais antigo vem antes.
 - Consulta de chamados em atendimento, separada da fila de chamados abertos.
+- Login com RE e senha, primeiro acesso com confirmação de e-mail funcional, e perfis de
+  usuário comum/técnico (veja [Autenticação](#autenticação)).
 - Banco H2 local para desenvolvimento e testes.
 
 ### Fluxo do chamado
@@ -55,20 +57,49 @@ Regras importantes:
 
 ## Rotas disponíveis
 
-| Método | Rota | Finalidade |
-| --- | --- | --- |
-| `POST` | `/usuarios/cadastrar` | Cadastra um usuário. |
-| `GET` | `/usuarios/buscar/{re}` | Busca usuário pelo RE. |
-| `PUT` | `/usuarios/atualizar-dados/{re}` | Atualiza nome e posto/graduação. |
-| `PATCH` | `/usuarios/inativar/{re}` | Inativa usuário e cancela seus chamados abertos. |
-| `POST` | `/chamados/cadastrar` | Abre um chamado. |
-| `GET` | `/chamados/buscar/{id}` | Busca chamado pelo identificador. |
-| `GET` | `/chamados/fila` | Mostra a fila de chamados abertos. |
-| `GET` | `/chamados/em-atendimento` | Mostra os chamados que já estão sendo atendidos. |
-| `PUT` | `/chamados/atualizar-dados/{id}?prioridade=ALTA` | Altera a prioridade de um chamado aberto. |
-| `PATCH` | `/chamados/iniciar-atendimento/{id}` | Inicia o atendimento. |
-| `PATCH` | `/chamados/finalizar/{id}` | Finaliza um chamado em atendimento. |
-| `PATCH` | `/chamados/cancelar/{id}?motivoCancelamento=OUTRO` | Cancela um chamado aberto. |
+Rotas marcadas como **pública** não exigem login. Todas as outras exigem uma sessão autenticada
+(veja [Autenticação](#autenticação)); as marcadas como **técnico** só funcionam para quem tem
+esse perfil.
+
+| Método | Rota | Finalidade | Acesso |
+| --- | --- | --- | --- |
+| `POST` | `/auth/login` | Autentica com RE e senha. | pública |
+| `POST` | `/auth/primeiro-acesso` | Confirma RE + e-mail funcional e define a senha. | pública |
+| `POST` | `/logout` | Encerra a sessão. | logado |
+| `POST` | `/usuarios/cadastrar` | Cadastra um usuário. | técnico |
+| `GET` | `/usuarios/buscar/{re}` | Busca usuário pelo RE. | técnico |
+| `PUT` | `/usuarios/atualizar-dados/{re}` | Atualiza nome e posto/graduação. | técnico |
+| `PATCH` | `/usuarios/inativar/{re}` | Inativa usuário e cancela seus chamados abertos. | técnico |
+| `POST` | `/tecnicos/cadastrar` | Torna um usuário existente um técnico. | técnico |
+| `GET` | `/tecnicos/buscar/{re}` | Busca técnico pelo RE do usuário. | técnico |
+| `GET` | `/tecnicos/disponiveis` | Lista técnicos disponíveis no momento. | técnico |
+| `PATCH` | `/tecnicos/ficar-disponivel/{re}` | Marca o técnico como disponível. | técnico |
+| `PATCH` | `/tecnicos/ficar-indisponivel/{re}` | Marca o técnico como indisponível. | técnico |
+| `POST` | `/chamados/cadastrar` | Abre um chamado. | logado |
+| `GET` | `/chamados/buscar/{id}` | Busca chamado pelo identificador (usuário comum só vê os próprios). | logado |
+| `GET` | `/chamados/fila` | Mostra a fila de chamados abertos. | técnico |
+| `GET` | `/chamados/em-atendimento` | Mostra os chamados que já estão sendo atendidos. | técnico |
+| `PUT` | `/chamados/atualizar-dados/{id}?prioridade=ALTA` | Altera a prioridade de um chamado aberto. | técnico |
+| `PATCH` | `/chamados/iniciar-atendimento/{id}?reTecnico={re}` | Técnico assume e inicia o atendimento. | técnico |
+| `PATCH` | `/chamados/transferir-responsavel/{id}?reTecnico={re}` | Transfere o chamado para outro técnico. | técnico |
+| `PATCH` | `/chamados/finalizar/{id}` | Finaliza um chamado em atendimento. | técnico |
+| `PATCH` | `/chamados/cancelar/{id}?motivoCancelamento=OUTRO` | Cancela um chamado aberto (usuário comum só o próprio). | logado |
+
+## Autenticação
+
+O técnico cadastra o usuário previamente (RE, nome, posto/graduação e e-mail funcional
+`@policiamilitar.sp.gov.br`). Depois disso:
+
+1. O usuário chama `POST /auth/primeiro-acesso` com RE, e-mail funcional e a senha desejada.
+2. A partir daí, ele loga com `POST /auth/login` (RE + senha).
+3. O login fica valendo por sessão (cookie), por até 2 horas.
+
+Existem dois perfis: **usuário comum** (só acessa os próprios chamados) e **técnico** (acessa
+tudo). Um usuário vira técnico quando alguém já técnico chama `POST /tecnicos/cadastrar` para
+o RE dele. Para o primeiro técnico do sistema (antes de existir qualquer técnico), configure as
+variáveis de ambiente `BOOTSTRAP_TECNICO_RE`, `BOOTSTRAP_TECNICO_NOME`, `BOOTSTRAP_TECNICO_EMAIL`
+e `BOOTSTRAP_TECNICO_SENHA` — a aplicação cria esse técnico automaticamente na primeira vez que
+subir.
 
 ### Exemplos para teste
 
@@ -78,7 +109,8 @@ Cadastro de usuário:
 {
   "postoGraduacao": "SD PM",
   "nome": "Nome de teste",
-  "re": "123456"
+  "re": "123456",
+  "email": "nome.teste@policiamilitar.sp.gov.br"
 }
 ```
 
@@ -99,6 +131,7 @@ Cadastro de chamado:
 - Java
 - Spring Boot
 - Spring Data JPA
+- Spring Security
 - H2 Database
 - Lombok
 - Maven
@@ -122,15 +155,17 @@ DATABASE_PASSWORD=sua_senha_local
 
 > O arquivo `.env`, dados reais e o arquivo do banco não devem ser enviados ao GitHub.
 
+Para acessar o console do H2 (`/h2-console`) em desenvolvimento, ative o profile `dev` ao rodar a aplicação (ex.: `--spring.profiles.active=dev` ou a variável de ambiente `SPRING_PROFILES_ACTIVE=dev`). Por padrão o console fica desligado.
+
 ## Próximas etapas
 
-1. Melhorar as mensagens de erro da API.
-2. Criar testes automatizados para as regras principais.
+1. ~~Melhorar as mensagens de erro da API.~~ ✅ concluído.
+2. ~~Criar testes automatizados para as regras principais.~~ ✅ concluído.
 3. Criar filtros de chamados por status, prioridade, categoria e período.
 4. Implementar a posição do solicitante na fila.
 5. Registrar solução ou observação ao finalizar um chamado.
-6. Desenvolver o frontend para solicitante e técnico.
-7. Criar login com primeiro acesso por RE e senha própria do Helpdesk.
+6. Conectar o frontend (hoje um protótipo visual) à API real.
+7. ~~Criar login com primeiro acesso por RE e senha própria do Helpdesk.~~ ✅ concluído.
 8. Migrar o banco de H2 para PostgreSQL e preparar a aplicação para Docker.
 9. Criar relatórios de volume, tempo médio de atendimento, categorias mais frequentes e chamados por usuário/local.
 

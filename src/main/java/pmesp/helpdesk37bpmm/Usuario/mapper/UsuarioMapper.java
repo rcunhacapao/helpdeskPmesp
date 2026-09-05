@@ -14,6 +14,7 @@ public class UsuarioMapper {
         usuarioModel.setPostoGraduacao(usuarioDTO.getPostoGraduacao());
         usuarioModel.setNome(usuarioDTO.getNome());
         usuarioModel.setRe(usuarioDTO.getRe());
+        usuarioModel.setEmail(usuarioDTO.getEmail());
 
         return usuarioModel;
     }
@@ -25,6 +26,7 @@ public class UsuarioMapper {
         usuarioRespostaDTO.setPostoGraduacao(usuarioModel.getPostoGraduacao());
         usuarioRespostaDTO.setNome(usuarioModel.getNome());
         usuarioRespostaDTO.setRe(usuarioModel.getRe());
+        usuarioRespostaDTO.setEmail(usuarioModel.getEmail());
         usuarioRespostaDTO.setAtivo(usuarioModel.isAtivo());
 
         return usuarioRespostaDTO;

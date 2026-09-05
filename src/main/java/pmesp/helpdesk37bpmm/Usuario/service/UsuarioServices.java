@@ -2,12 +2,14 @@ package pmesp.helpdesk37bpmm.Usuario.service;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import pmesp.helpdesk37bpmm.Chamado.service.ChamadoService;
 import pmesp.helpdesk37bpmm.Exception.ConflitoException;
 import pmesp.helpdesk37bpmm.Exception.RecursoNaoEncontradoException;
 import pmesp.helpdesk37bpmm.Exception.RegraDeNegocioException;
 import pmesp.helpdesk37bpmm.Tecnico.model.TecnicoModel;
 import pmesp.helpdesk37bpmm.Tecnico.service.TecnicoService;
+import pmesp.helpdesk37bpmm.Usuario.ValidadorDeRe;
 import pmesp.helpdesk37bpmm.Usuario.dto.UsuarioAtualizacaoDTO;
 import pmesp.helpdesk37bpmm.Usuario.dto.UsuarioDTO;
 import pmesp.helpdesk37bpmm.Usuario.dto.UsuarioRespostaDTO;
@@ -21,16 +23,16 @@ import java.util.Optional;
 public class UsuarioServices {
 
     @Autowired
-    UsuarioRepository usuarioRespository;
+    private UsuarioRepository usuarioRepository;
 
     @Autowired
-    ChamadoService chamadoService;
+    private ChamadoService chamadoService;
 
     @Autowired
-    TecnicoService tecnicoService;
+    private TecnicoService tecnicoService;
 
     @Autowired
-    UsuarioMapper usuarioMapper;
+    private UsuarioMapper usuarioMapper;
 
     // Cadastrar novo usuario
     public UsuarioRespostaDTO criar(UsuarioDTO usuarioDTO) {
@@ -41,7 +43,7 @@ public class UsuarioServices {
         }
 
         // Conferir os dados que o usuário precisa preencher
-        validarRe(usuarioDTO.getRe());
+        ValidadorDeRe.validar(usuarioDTO.getRe());
 
         if (usuarioDTO.getNome() == null || usuarioDTO.getNome().isBlank()) {
             throw new RegraDeNegocioException("NOME_USUARIO_OBRIGATORIO", "Informe o nome do usuário.");
@@ -52,9 +54,16 @@ public class UsuarioServices {
                     "Informe o posto ou graduação do usuário.");
         }
 
+        validarEmailFuncional(usuarioDTO.getEmail());
+
         // Impedir dois cadastros usando o mesmo RE
-        if (usuarioRespository.findByRe(usuarioDTO.getRe()).isPresent()) {
+        if (usuarioRepository.findByRe(usuarioDTO.getRe()).isPresent()) {
             throw new ConflitoException("RE_JA_CADASTRADO", "Já existe um usuário cadastrado com este RE.");
+        }
+
+        // Impedir dois cadastros usando o mesmo e-mail funcional
+        if (usuarioRepository.findByEmail(usuarioDTO.getEmail()).isPresent()) {
+            throw new ConflitoException("EMAIL_JA_CADASTRADO", "Já existe um usuário cadastrado com este e-mail.");
         }
 
 
@@ -65,15 +74,15 @@ public class UsuarioServices {
         usuarioNovo.setAtivo(true);
 
         // Transformar o usuario salvo em resposta para a API
-        return usuarioMapper.map(usuarioRespository.save(usuarioNovo));
+        return usuarioMapper.map(usuarioRepository.save(usuarioNovo));
     }
 
 
     // Pesquisar usuario por RE
     public UsuarioRespostaDTO buscarPorRe(String re)  {
         // Conferir se o RE informado pode ser pesquisado
-        validarRe(re);
-        Optional<UsuarioModel> buscarRe = usuarioRespository.findByRe(re);
+        ValidadorDeRe.validar(re);
+        Optional<UsuarioModel> buscarRe = usuarioRepository.findByRe(re);
         if (buscarRe.isPresent()) {
             return usuarioMapper.map(buscarRe.get());
         }
@@ -82,10 +91,14 @@ public class UsuarioServices {
 
 
     // Inativar usuario por RE (Transferencia de BTL)
+    // @Transactional garante que inativar o usuário, tornar o técnico indisponível e cancelar
+    // os chamados abertos aconteçam como uma única operação: se algo falhar no meio do caminho,
+    // nada fica salvo pela metade.
+    @Transactional
     public boolean inativarPolicialPorRe(String re) {
         // Conferir o RE antes de procurar o usuário
-        validarRe(re);
-        Optional<UsuarioModel> policial = usuarioRespository.findByRe(re);
+        ValidadorDeRe.validar(re);
+        Optional<UsuarioModel> policial = usuarioRepository.findByRe(re);
         if (policial.isPresent()) {
             UsuarioModel usuario = policial.get();
             Optional<TecnicoModel> tecnico = tecnicoService.buscarPorUsuario(usuario);
@@ -102,7 +115,7 @@ public class UsuarioServices {
                 tecnicoService.tornarIndisponivel(tecnico.get());
             }
             chamadoService.cancelarChamadosAbertosDoUsuario(usuario);
-            usuarioRespository.save(usuario);
+            usuarioRepository.save(usuario);
             return true;
         }
         throw new RecursoNaoEncontradoException("USUARIO_NAO_ENCONTRADO", "Usuário não encontrado.");
@@ -112,7 +125,7 @@ public class UsuarioServices {
     // Atualizar apenas nome e posto/graduação do usuario
     public UsuarioRespostaDTO atualizarUsuario(String re, UsuarioAtualizacaoDTO dadosAtualizados) {
         // Conferir o RE e os novos dados antes de atualizar no banco
-        validarRe(re);
+        ValidadorDeRe.validar(re);
 
         if (dadosAtualizados == null) {
             throw new RegraDeNegocioException("DADOS_USUARIO_INVALIDOS",
@@ -128,23 +141,24 @@ public class UsuarioServices {
                     "Informe o posto ou graduação do usuário.");
         }
 
-        Optional<UsuarioModel> usuarioAtual = usuarioRespository.findByRe(re);
+        Optional<UsuarioModel> usuarioAtual = usuarioRepository.findByRe(re);
         if (usuarioAtual.isPresent()) {
             UsuarioModel usuario = usuarioAtual.get();
             usuario.setNome(dadosAtualizados.getNome());
             usuario.setPostoGraduacao(dadosAtualizados.getPostoGraduacao());
 
             // Transformar o usuario atualizado em resposta para a API
-            return usuarioMapper.map(usuarioRespository.save(usuario));
+            return usuarioMapper.map(usuarioRepository.save(usuario));
         }
         throw new RecursoNaoEncontradoException("USUARIO_NAO_ENCONTRADO", "Usuário não encontrado.");
     }
 
 
-    // Validar o RE informado sem o dígito
-    private void validarRe(String re) {
-        if (re == null || !re.matches("[0-9]{1,6}")) {
-            throw new RegraDeNegocioException("RE_INVALIDO", "Informe o RE sem o dígito.");
+    // O e-mail funcional é usado no primeiro acesso, por isso precisa ser do domínio institucional
+    private void validarEmailFuncional(String email) {
+        if (email == null || !email.toLowerCase().endsWith("@policiamilitar.sp.gov.br")) {
+            throw new RegraDeNegocioException("EMAIL_FUNCIONAL_INVALIDO",
+                    "Informe um e-mail funcional válido, terminado em @policiamilitar.sp.gov.br.");
         }
     }
 }

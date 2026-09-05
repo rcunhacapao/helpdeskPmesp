@@ -1,7 +1,12 @@
 package pmesp.helpdesk37bpmm.Exception;
 
 import org.junit.jupiter.api.Test;
+import org.springframework.core.MethodParameter;
 import org.springframework.http.ResponseEntity;
+import org.springframework.validation.BeanPropertyBindingResult;
+import org.springframework.validation.BindingResult;
+import org.springframework.validation.FieldError;
+import org.springframework.web.bind.MethodArgumentNotValidException;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -46,5 +51,35 @@ class TratadorDeExcecoesTest {
 
         assertEquals(409, resposta.getStatusCode().value());
         assertEquals("RE_JA_CADASTRADO", resposta.getBody().getCodigo());
+    }
+
+
+    @Test
+    void deveRetornar403QuandoAcessoForNegado() {
+        TratadorDeExcecoes tratador = new TratadorDeExcecoes();
+        AcessoNegadoException excecao = new AcessoNegadoException(
+                "CHAMADO_DE_OUTRO_USUARIO", "Você não tem acesso a este chamado.");
+
+        ResponseEntity<RespostaErroDTO> resposta = tratador.tratarAcessoNegado(excecao);
+
+        assertEquals(403, resposta.getStatusCode().value());
+        assertEquals("CHAMADO_DE_OUTRO_USUARIO", resposta.getBody().getCodigo());
+    }
+
+
+    @Test
+    void deveRetornar400ComAMensagemDoCampoInvalidoDoDto() throws NoSuchMethodException {
+        TratadorDeExcecoes tratador = new TratadorDeExcecoes();
+        BindingResult bindingResult = new BeanPropertyBindingResult(new Object(), "chamadoDTO");
+        bindingResult.addError(new FieldError("chamadoDTO", "re", "Informe o seu RE."));
+        MethodParameter parametro = new MethodParameter(
+                TratadorDeExcecoes.class.getMethod("tratarCamposInvalidos", MethodArgumentNotValidException.class), 0);
+        MethodArgumentNotValidException excecao = new MethodArgumentNotValidException(parametro, bindingResult);
+
+        ResponseEntity<RespostaErroDTO> resposta = tratador.tratarCamposInvalidos(excecao);
+
+        assertEquals(400, resposta.getStatusCode().value());
+        assertEquals("DADOS_INVALIDOS", resposta.getBody().getCodigo());
+        assertEquals("Informe o seu RE.", resposta.getBody().getMensagem());
     }
 }

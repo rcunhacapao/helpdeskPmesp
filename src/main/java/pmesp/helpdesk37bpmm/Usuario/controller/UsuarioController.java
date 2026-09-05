@@ -1,4 +1,5 @@
 package pmesp.helpdesk37bpmm.Usuario.controller;
+import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 import pmesp.helpdesk37bpmm.Usuario.dto.UsuarioAtualizacaoDTO;
@@ -15,7 +16,7 @@ public class UsuarioController {
 
     // Cadastrar usuario
     @PostMapping("/cadastrar")
-    public UsuarioRespostaDTO cadastrarUsuario(@RequestBody UsuarioDTO usuarioDTO) {
+    public UsuarioRespostaDTO cadastrarUsuario(@Valid @RequestBody UsuarioDTO usuarioDTO) {
         return usuarioServices.criar(usuarioDTO);
     }
 
@@ -29,7 +30,7 @@ public class UsuarioController {
 
     // Atualizar dados
     @PutMapping("/atualizar-dados/{re}")
-    public UsuarioRespostaDTO atualizarUsuario(@PathVariable String re, @RequestBody UsuarioAtualizacaoDTO dadosAtualizados) {
+    public UsuarioRespostaDTO atualizarUsuario(@PathVariable String re, @Valid @RequestBody UsuarioAtualizacaoDTO dadosAtualizados) {
         return usuarioServices.atualizarUsuario(re, dadosAtualizados);
     }
 

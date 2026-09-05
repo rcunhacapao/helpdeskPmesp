@@ -31,6 +31,12 @@ public class ChamadoModel {
     @JoinColumn(name = "solicitante_id", nullable = false)
     private UsuarioModel solicitante;
 
+    // Fica nulo quando o próprio solicitante abriu o chamado. É preenchido só quando um técnico
+    // registra o atendimento em nome de outra pessoa (ex.: policial relatou o problema pessoalmente).
+    @ManyToOne
+    @JoinColumn(name = "aberto_por_id")
+    private UsuarioModel abertoPor;
+
     // Técnico que será responsável pelo atendimento
     @ManyToOne
     @JoinColumn(name = "tecnico_id")

@@ -1,10 +1,14 @@
 package pmesp.helpdesk37bpmm.Chamado.service;
 
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.context.SecurityContextHolder;
 import pmesp.helpdesk37bpmm.Chamado.dto.ChamadoDTO;
 import pmesp.helpdesk37bpmm.Chamado.enums.ChamadoCategoria;
 import pmesp.helpdesk37bpmm.Chamado.enums.ChamadoPrioridade;
@@ -12,12 +16,15 @@ import pmesp.helpdesk37bpmm.Chamado.enums.ChamadoStatus;
 import pmesp.helpdesk37bpmm.Chamado.mapper.ChamadoMapper;
 import pmesp.helpdesk37bpmm.Chamado.model.ChamadoModel;
 import pmesp.helpdesk37bpmm.Chamado.repository.ChamadoRepository;
+import pmesp.helpdesk37bpmm.Exception.AcessoNegadoException;
 import pmesp.helpdesk37bpmm.Exception.RecursoNaoEncontradoException;
 import pmesp.helpdesk37bpmm.Exception.RegraDeNegocioException;
 import pmesp.helpdesk37bpmm.Tecnico.model.TecnicoModel;
 import pmesp.helpdesk37bpmm.Tecnico.service.TecnicoService;
+import pmesp.helpdesk37bpmm.Usuario.model.UsuarioModel;
 import pmesp.helpdesk37bpmm.Usuario.repository.UsuarioRepository;
 
+import java.util.List;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -38,6 +45,25 @@ class ChamadoServiceTest {
 
     @InjectMocks
     ChamadoService chamadoService;
+
+    @AfterEach
+    void limparContextoDeSeguranca() {
+        SecurityContextHolder.clearContext();
+    }
+
+    // Simula um técnico autenticado, que tem acesso a qualquer chamado
+    private void autenticarComoTecnico() {
+        SecurityContextHolder.getContext().setAuthentication(
+                new UsernamePasswordAuthenticationToken("999999", null,
+                        List.of(new SimpleGrantedAuthority("ROLE_TECNICO"))));
+    }
+
+    // Simula um usuário comum autenticado com o RE informado
+    private void autenticarComoUsuarioComum(String re) {
+        SecurityContextHolder.getContext().setAuthentication(
+                new UsernamePasswordAuthenticationToken(re, null,
+                        List.of(new SimpleGrantedAuthority("ROLE_USUARIO"))));
+    }
 
     @Test
     void deveExigirProblemaAoAbrirChamado() {
@@ -93,6 +119,7 @@ class ChamadoServiceTest {
 
     @Test
     void deveImpedirCancelamentoComMotivoInvalido() {
+        autenticarComoTecnico();
         ChamadoModel chamado = new ChamadoModel();
         chamado.setStatus(ChamadoStatus.ABERTO);
         when(chamadoRepository.findById(1L)).thenReturn(Optional.of(chamado));
@@ -101,6 +128,47 @@ class ChamadoServiceTest {
                 () -> chamadoService.cancelarChamado(1L, "NAO_SEI"));
 
         assertEquals("MOTIVO_CANCELAMENTO_INVALIDO", excecao.getCodigo());
+    }
+
+
+    @Test
+    void deveNegarAberturaDeChamadoEmNomeDeOutroQuandoNaoForTecnico() {
+        ChamadoDTO chamadoDTO = criarChamadoValido();
+
+        UsuarioModel solicitante = new UsuarioModel();
+        solicitante.setId(1L);
+        solicitante.setAtivo(true);
+        when(usuarioRepository.findByRe("250861")).thenReturn(Optional.of(solicitante));
+
+        UsuarioModel usuarioAutenticado = new UsuarioModel();
+        usuarioAutenticado.setId(2L);
+        when(usuarioRepository.findByRe("111111")).thenReturn(Optional.of(usuarioAutenticado));
+        autenticarComoUsuarioComum("111111");
+
+        AcessoNegadoException excecao = assertThrows(AcessoNegadoException.class,
+                () -> chamadoService.criar(chamadoDTO));
+
+        assertEquals("ABERTURA_EM_NOME_DE_OUTRO_NAO_PERMITIDA", excecao.getCodigo());
+    }
+
+
+    @Test
+    void deveNegarAcessoAChamadoDeOutroUsuario() {
+        UsuarioModel solicitante = new UsuarioModel();
+        solicitante.setId(1L);
+        ChamadoModel chamado = new ChamadoModel();
+        chamado.setSolicitante(solicitante);
+        when(chamadoRepository.findById(1L)).thenReturn(Optional.of(chamado));
+
+        UsuarioModel usuarioAutenticado = new UsuarioModel();
+        usuarioAutenticado.setId(2L);
+        when(usuarioRepository.findByRe("111111")).thenReturn(Optional.of(usuarioAutenticado));
+        autenticarComoUsuarioComum("111111");
+
+        AcessoNegadoException excecao = assertThrows(AcessoNegadoException.class,
+                () -> chamadoService.buscarPorId(1L));
+
+        assertEquals("CHAMADO_DE_OUTRO_USUARIO", excecao.getCodigo());
     }
 
 

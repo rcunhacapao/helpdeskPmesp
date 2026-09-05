@@ -1,5 +1,6 @@
 package pmesp.helpdesk37bpmm.Tecnico.controller;
 
+import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 import pmesp.helpdesk37bpmm.Tecnico.dto.TecnicoDTO;
@@ -17,7 +18,7 @@ public class TecnicoController {
 
     // Cadastrar usuário existente como técnico
     @PostMapping("/cadastrar")
-    public TecnicoRespostaDTO cadastrarTecnico(@RequestBody TecnicoDTO tecnicoDTO) {
+    public TecnicoRespostaDTO cadastrarTecnico(@Valid @RequestBody TecnicoDTO tecnicoDTO) {
         return tecnicoService.criar(tecnicoDTO);
     }
 

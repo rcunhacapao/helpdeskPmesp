@@ -1,5 +1,6 @@
 package pmesp.helpdesk37bpmm.Chamado.controller;
 
+import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 import pmesp.helpdesk37bpmm.Chamado.dto.ChamadoDTO;
@@ -18,7 +19,7 @@ public class ChamadoController {
 
     // Cadastrar novo chamado
     @PostMapping("/cadastrar")
-    public ChamadoRespostaDTO cadastrarChamado(@RequestBody ChamadoDTO chamadoDTO) {
+    public ChamadoRespostaDTO cadastrarChamado(@Valid @RequestBody ChamadoDTO chamadoDTO) {
         return chamadoService.criar(chamadoDTO);
     }
 
@@ -45,8 +46,10 @@ public class ChamadoController {
 
 
     // Atualizar prioridade do chamado
+    // Nome do método mais específico que o da rota (/atualizar-dados) de propósito: hoje só
+    // a prioridade é atualizável por aqui. A URL não muda para não quebrar o frontend.
     @PutMapping("/atualizar-dados/{chamadoId}")
-    public ChamadoRespostaDTO atualizarDadosChamado(@PathVariable Long chamadoId, @RequestParam ChamadoPrioridade prioridade) {
+    public ChamadoRespostaDTO atualizarPrioridadeDoChamado(@PathVariable Long chamadoId, @RequestParam ChamadoPrioridade prioridade) {
         return chamadoService.atualizarPrioridade(chamadoId, prioridade);
     }
 

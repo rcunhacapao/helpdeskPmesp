@@ -15,5 +15,6 @@ public class UsuarioRespostaDTO {
     private UsuarioPostoGraduacao postoGraduacao;
     private String nome;
     private String re;
+    private String email;
     private boolean ativo;
 }

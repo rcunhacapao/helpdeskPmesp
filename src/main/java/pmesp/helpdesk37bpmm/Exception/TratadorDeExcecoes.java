@@ -3,12 +3,15 @@ package pmesp.helpdesk37bpmm.Exception;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
+import org.springframework.validation.FieldError;
+import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 
 import java.time.LocalDateTime;
+import java.util.stream.Collectors;
 
 // Transformar exceções do sistema em respostas claras para a API
 @RestControllerAdvice
@@ -32,11 +35,28 @@ public class TratadorDeExcecoes {
         return criarResposta(HttpStatus.CONFLICT, excecao.getCodigo(), excecao.getMessage());
     }
 
+    // Responder com 403 quando o usuário autenticado não puder acessar o recurso
+    @ExceptionHandler(AcessoNegadoException.class)
+    public ResponseEntity<RespostaErroDTO> tratarAcessoNegado(AcessoNegadoException excecao) {
+        return criarResposta(HttpStatus.FORBIDDEN, excecao.getCodigo(), excecao.getMessage());
+    }
+
     // Responder com 400 quando o JSON estiver mal preenchido
     @ExceptionHandler(HttpMessageNotReadableException.class)
     public ResponseEntity<RespostaErroDTO> tratarDadosInvalidos() {
         return criarResposta(HttpStatus.BAD_REQUEST, "DADOS_INVALIDOS",
                 "Os dados enviados estão em um formato inválido.");
+    }
+
+    // Responder com 400 quando os campos enviados no corpo da requisição (@Valid) não passarem
+    // nas validações estruturais dos DTOs, como campos obrigatórios em branco
+    @ExceptionHandler(MethodArgumentNotValidException.class)
+    public ResponseEntity<RespostaErroDTO> tratarCamposInvalidos(MethodArgumentNotValidException excecao) {
+        String mensagem = excecao.getBindingResult().getFieldErrors().stream()
+                .map(FieldError::getDefaultMessage)
+                .collect(Collectors.joining(" "));
+
+        return criarResposta(HttpStatus.BAD_REQUEST, "DADOS_INVALIDOS", mensagem);
     }
 
     // Responder com 400 quando faltar uma informação na URL
