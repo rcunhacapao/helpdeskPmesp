@@ -7,11 +7,14 @@ const views = document.querySelectorAll('[data-view]');
 const navigationLinks = document.querySelectorAll('.nav-link');
 const ticketForm = document.querySelector('#formulario-chamado');
 const ticketMessage = document.querySelector('#mensagem-chamado');
-const formularioAberturaUsuario = document.querySelector('#formulario-abertura-usuario');
-const mensagemAberturaUsuario = document.querySelector('#mensagem-abertura-usuario');
+const chatMike = document.querySelector('#mike-chat');
+const mensagensChatMike = document.querySelector('#mike-chat-mensagens');
+const acoesChatMike = document.querySelector('#mike-chat-acoes');
+const instrucaoChatMike = document.querySelector('#mike-chat-instrucao');
+const opcoesChatMike = document.querySelector('#mike-chat-opcoes');
+const mensagemChatMike = document.querySelector('#mensagem-mike-chat');
 const anexoAberturaUsuario = document.querySelector('#abertura-anexo');
 const statusAnexoAberturaUsuario = document.querySelector('#abertura-anexo-status');
-const diagnosticoMike = document.querySelector('#diagnostico-mike');
 const formularioEncaminhamentoMike = document.querySelector('#formulario-encaminhamento-mike');
 const cancelTicketForm = document.querySelector('#formulario-cancelamento');
 const cancelTicketMessage = document.querySelector('#mensagem-cancelamento');
@@ -136,7 +139,7 @@ function aplicarSessaoNaInterface() {
     if (descricaoAbertura) {
         descricaoAbertura.textContent = sessaoAtual.tecnico
             ? 'Preencha as informações para registrar o atendimento, inclusive em nome de outro RE quando necessário.'
-            : 'Descreva o problema para iniciarmos seu atendimento.';
+            : 'Converse com o Mike para receber orientações rápidas ou abrir um chamado.';
     }
 
     document.querySelector('#identificacao-sidebar').textContent = sessaoAtual.identificacaoCompleta;
@@ -397,8 +400,7 @@ function exibirResumoDoChamado(chamado, totalAtivos = 0) {
     vazio.hidden = true;
     card.hidden = false;
     document.querySelector('#overview-ticket-titulo').textContent = tituloDoChamado(chamado);
-    document.querySelector('#overview-ticket-info').textContent = `Chamado #${chamado.id} · aberto em ${chamado.dataAbertura}`;
-    document.querySelector('#overview-ticket-status').textContent = nomeDoStatus[chamado.status];
+    document.querySelector('#overview-ticket-id').textContent = `#${chamado.id}`;
 
     const emFila = chamado.status === 'ABERTO';
     const emAtendimento = chamado.status === 'EM_ATENDIMENTO';
@@ -533,6 +535,446 @@ cancelTicketForm?.addEventListener('submit', async (event) => {
 // Só existe para o usuário comum. O técnico usa o formulário completo e a decisão é
 // feita pelo perfil autenticado, nunca pelo RE que pode ser informado para o solicitante.
 let atendimentoMikeAtual = null;
+let estadoTriagemMike = null;
+let historicoDeEstadosMike = [];
+let processandoAcaoMike = false;
+const TEMPO_PADRAO_DE_DIGITACAO_MIKE_EM_MS = 900;
+const VERSAO_DA_TRIAGEM_MIKE = 2;
+let conversaVisivelDuranteRespostaMike = null;
+let mikeEstaDigitando = false;
+let timerRespostaMike = null;
+let resolverEsperaRespostaMike = null;
+let versaoDaInteracaoMike = 0;
+let operacaoBackendMike = null;
+let cancelandoTriagemMike = false;
+
+function chaveDaTriagemMike() {
+    return `helpdesk.mike.triagem.${sessaoAtual?.re || 'usuario'}`;
+}
+
+function copiarEstadoMike(estado) {
+    return JSON.parse(JSON.stringify(estado));
+}
+
+function limparTriagemMikeArmazenada() {
+    window.sessionStorage.removeItem(chaveDaTriagemMike());
+}
+
+function salvarTriagemMike() {
+    // O CPF nunca é salvo no navegador. Se a página for recarregada, o fluxo volta
+    // ao pedido do CPF e o usuário o informa novamente.
+    if (!estadoTriagemMike || estadoTriagemMike.dados?.cpf) return;
+
+    window.sessionStorage.setItem(chaveDaTriagemMike(), JSON.stringify({
+        versao: VERSAO_DA_TRIAGEM_MIKE,
+        atendimentoId: atendimentoMikeAtual?.atendimentoId || null,
+        estado: estadoTriagemMike,
+        historico: historicoDeEstadosMike
+    }));
+}
+
+function carregarTriagemMikeArmazenada() {
+    try {
+        const dados = JSON.parse(window.sessionStorage.getItem(chaveDaTriagemMike()));
+        if (dados?.versao !== VERSAO_DA_TRIAGEM_MIKE) {
+            limparTriagemMikeArmazenada();
+            return null;
+        }
+        if (!dados.estado?.etapaAtual || !Array.isArray(dados.estado.conversa)) return null;
+        return dados;
+    } catch (erro) {
+        limparTriagemMikeArmazenada();
+        return null;
+    }
+}
+
+function mostrarMensagemChatMike(texto = '', erro = false) {
+    mensagemChatMike.textContent = texto;
+    mensagemChatMike.classList.toggle('is-error', erro);
+}
+
+function definirControlesDoMikeComoDesabilitados(desabilitados) {
+    opcoesChatMike.querySelectorAll('button, input').forEach((controle) => {
+        controle.disabled = desabilitados;
+    });
+}
+
+function criarBotaoMike(texto, estilo, acao) {
+    const botao = document.createElement('button');
+    botao.type = 'button';
+    botao.className = `button ${estilo} mike-chat-opcao`;
+    botao.textContent = texto;
+    botao.disabled = processandoAcaoMike;
+    botao.addEventListener('click', acao);
+    return botao;
+}
+
+function adicionarBotaoVoltarMike() {
+    if (historicoDeEstadosMike.length === 0) return;
+    opcoesChatMike.appendChild(criarBotaoMike('Voltar', 'button-secondary', voltarTriagemMike));
+}
+
+function renderizarPerguntaMike(etapa) {
+    etapa.opcoes.forEach((opcao) => {
+        const estilo = opcao.id === 'resolvido' ? 'button-primary' : 'button-secondary';
+        opcoesChatMike.appendChild(criarBotaoMike(opcao.texto, estilo, () => processarOpcaoMike(opcao.id)));
+    });
+    adicionarBotaoVoltarMike();
+}
+
+function renderizarEntradaMike(etapa) {
+    const formulario = document.createElement('form');
+    formulario.className = 'mike-chat-formulario';
+    const solicitaCpf = etapa.campos.some((campo) => campo.formato === 'cpf');
+    if (solicitaCpf) formulario.classList.add('mike-chat-formulario-cpf');
+
+    etapa.campos.forEach((campo) => {
+        const grupo = document.createElement('label');
+        grupo.className = 'mike-chat-grupo-campo';
+        grupo.textContent = campo.rotulo;
+
+        const entrada = document.createElement('input');
+        entrada.className = 'mike-chat-campo-livre';
+        entrada.name = campo.id;
+        entrada.required = campo.obrigatorio === true;
+        entrada.autocomplete = 'off';
+        if (campo.formato === 'cpf') {
+            entrada.inputMode = 'numeric';
+            entrada.maxLength = 11;
+            // Sem "pattern": um formato inválido deve cair no catch de processarDadosMike,
+            // que mostra "Informe um CPF com 11 números." em vez do aviso nativo do navegador.
+        }
+
+        grupo.appendChild(entrada);
+        formulario.appendChild(grupo);
+    });
+
+    const botaoContinuar = criarBotaoMike('Continuar', 'button-primary', () => formulario.requestSubmit());
+    formulario.appendChild(botaoContinuar);
+    formulario.addEventListener('submit', processarDadosMike);
+    if (solicitaCpf) adicionarBotaoVoltarMike();
+    opcoesChatMike.appendChild(formulario);
+    if (!solicitaCpf) adicionarBotaoVoltarMike();
+    formulario.querySelector('input')?.focus();
+}
+
+function abrirFormularioEncaminhamentoMike() {
+    if (!atendimentoMikeAtual || !estadoTriagemMike) {
+        mostrarMensagemChatMike('Não foi possível recuperar este atendimento. Inicie uma nova conversa.', true);
+        return;
+    }
+
+    document.querySelector('#encaminhamento-categoria').value = estadoTriagemMike.categoria || '';
+    chatMike.hidden = true;
+    formularioEncaminhamentoMike.hidden = false;
+    const mensagem = document.querySelector('#mensagem-encaminhamento-mike');
+    mensagem.textContent = '';
+    mensagem.classList.remove('is-error');
+    document.querySelector('#encaminhamento-local').focus();
+}
+
+function renderizarEncaminhamentoMike(etapa) {
+    opcoesChatMike.appendChild(criarBotaoMike(etapa.botao, 'button-primary', abrirFormularioEncaminhamentoMike));
+    adicionarBotaoVoltarMike();
+    if (etapa.cancelar) {
+        opcoesChatMike.appendChild(criarBotaoMike('Cancelar atendimento', 'button-secondary', cancelarTriagemMike));
+    }
+}
+
+function iniciarNovaConversaMike() {
+    versaoDaInteracaoMike += 1;
+    cancelarEsperaDaRespostaMike();
+    processandoAcaoMike = false;
+    atendimentoMikeAtual = null;
+    estadoTriagemMike = FluxoTriagemMike.criarEstadoInicial();
+    historicoDeEstadosMike = [];
+    limparTriagemMikeArmazenada();
+    salvarTriagemMike();
+    revelarSaudacaoInicialMike();
+}
+
+// A saudação chega em duas mensagens, como uma conversa real: a primeira aparece na
+// hora e a segunda (com as opções de categoria) só depois do mesmo intervalo de
+// "digitando" usado no restante da conversa.
+function revelarSaudacaoInicialMike() {
+    const versaoDestaInteracao = versaoDaInteracaoMike;
+    conversaVisivelDuranteRespostaMike = estadoTriagemMike.conversa.slice(0, 1);
+    mikeEstaDigitando = true;
+    renderizarChatMike({ forcarRolagem: true });
+
+    aguardarRespostaVisualMike().then(() => {
+        if (versaoDestaInteracao !== versaoDaInteracaoMike) return;
+        conversaVisivelDuranteRespostaMike = null;
+        mikeEstaDigitando = false;
+        renderizarChatMike({ forcarRolagem: true, focarPrimeiroControle: true });
+    });
+}
+
+function renderizarConclusaoMike() {
+    opcoesChatMike.appendChild(criarBotaoMike('Voltar ao início', 'button-primary', () => showRoute('visao-geral')));
+}
+
+function usuarioEstaPertoDoFimDaConversaMike() {
+    const distanciaDoFim = mensagensChatMike.scrollHeight
+        - mensagensChatMike.scrollTop
+        - mensagensChatMike.clientHeight;
+    return distanciaDoFim < 80;
+}
+
+function criarBolhaDaConversaMike(mensagem) {
+    const bolha = document.createElement('div');
+    bolha.className = `mike-chat-bolha mike-chat-bolha-${mensagem.autor}`;
+    bolha.textContent = mensagem.texto;
+    return bolha;
+}
+
+function criarIndicadorDeDigitacaoMike() {
+    const bolha = document.createElement('div');
+    bolha.className = 'mike-chat-bolha mike-chat-bolha-mike mike-chat-digitando';
+    bolha.setAttribute('aria-label', 'Mike está digitando');
+    for (let indice = 0; indice < 3; indice += 1) {
+        const ponto = document.createElement('span');
+        ponto.setAttribute('aria-hidden', 'true');
+        bolha.appendChild(ponto);
+    }
+    return bolha;
+}
+
+function atualizarInstrucaoDasOpcoesMike(etapa) {
+    if (mikeEstaDigitando) {
+        acoesChatMike.hidden = true;
+        return;
+    }
+
+    acoesChatMike.hidden = false;
+    opcoesChatMike.setAttribute('aria-labelledby', 'mike-chat-instrucao');
+    opcoesChatMike.removeAttribute('aria-label');
+    if (etapa.tipo === 'pergunta') instrucaoChatMike.textContent = 'Escolha uma opção:';
+    if (etapa.tipo === 'entrada') instrucaoChatMike.textContent = 'Preencha as informações:';
+    if (etapa.tipo === 'encaminhamento') instrucaoChatMike.textContent = 'Próximo passo:';
+    if (etapa.tipo === 'resolvido') {
+        instrucaoChatMike.hidden = true;
+        opcoesChatMike.removeAttribute('aria-labelledby');
+        opcoesChatMike.setAttribute('aria-label', 'Atendimento concluído');
+    } else {
+        instrucaoChatMike.hidden = false;
+    }
+}
+
+function renderizarChatMike({ forcarRolagem = false, focarPrimeiroControle = false } = {}) {
+    if (!estadoTriagemMike || !mensagensChatMike || !opcoesChatMike) return;
+
+    const acompanharConversa = forcarRolagem || usuarioEstaPertoDoFimDaConversaMike();
+    const posicaoAnterior = mensagensChatMike.scrollTop;
+    mensagensChatMike.innerHTML = '';
+    const conversaVisivel = conversaVisivelDuranteRespostaMike || estadoTriagemMike.conversa;
+    conversaVisivel.forEach((mensagem) => mensagensChatMike.appendChild(criarBolhaDaConversaMike(mensagem)));
+    if (mikeEstaDigitando) mensagensChatMike.appendChild(criarIndicadorDeDigitacaoMike());
+    mensagensChatMike.setAttribute('aria-busy', String(mikeEstaDigitando));
+
+    opcoesChatMike.innerHTML = '';
+    const etapa = FluxoTriagemMike.obterEtapa(estadoTriagemMike);
+    atualizarInstrucaoDasOpcoesMike(etapa);
+    if (!mikeEstaDigitando) {
+        if (etapa.tipo === 'pergunta') renderizarPerguntaMike(etapa);
+        if (etapa.tipo === 'entrada') renderizarEntradaMike(etapa);
+        if (etapa.tipo === 'encaminhamento') renderizarEncaminhamentoMike(etapa);
+        if (etapa.tipo === 'resolvido') renderizarConclusaoMike();
+    }
+
+    window.requestAnimationFrame(() => {
+        if (acompanharConversa) {
+            mensagensChatMike.scrollTo({
+                top: mensagensChatMike.scrollHeight,
+                behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth'
+            });
+        } else {
+            mensagensChatMike.scrollTop = posicaoAnterior;
+        }
+        if (focarPrimeiroControle) opcoesChatMike.querySelector('button, input')?.focus();
+    });
+}
+
+function cancelarEsperaDaRespostaMike() {
+    if (timerRespostaMike !== null) window.clearTimeout(timerRespostaMike);
+    timerRespostaMike = null;
+    if (resolverEsperaRespostaMike) resolverEsperaRespostaMike();
+    resolverEsperaRespostaMike = null;
+}
+
+function aguardarRespostaVisualMike() {
+    cancelarEsperaDaRespostaMike();
+    const reduzirMovimento = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const tempoDeEspera = reduzirMovimento ? 0 : TEMPO_PADRAO_DE_DIGITACAO_MIKE_EM_MS;
+    return new Promise((resolver) => {
+        resolverEsperaRespostaMike = resolver;
+        timerRespostaMike = window.setTimeout(() => {
+            timerRespostaMike = null;
+            resolverEsperaRespostaMike = null;
+            resolver();
+        }, tempoDeEspera);
+    });
+}
+
+function mostrarRespostaDoUsuarioEDigitacaoMike(proximoEstado) {
+    definirControlesDoMikeComoDesabilitados(true);
+    conversaVisivelDuranteRespostaMike = proximoEstado.conversa.slice(0, -1);
+    mikeEstaDigitando = true;
+    renderizarChatMike({ forcarRolagem: true });
+}
+
+async function iniciarAtendimentoMikeSeNecessario(estadoAnterior, proximoEstado) {
+    if (atendimentoMikeAtual || estadoAnterior.problema || !proximoEstado.problema) return;
+
+    atendimentoMikeAtual = await apiFetch('/mike-ia/iniciar', {
+        method: 'POST',
+        body: {
+            descricaoProblema: proximoEstado.problema,
+            categoria: proximoEstado.categoria
+        }
+    });
+}
+
+async function atualizarAtendimentoMikeNoBackend(estadoAnterior, proximoEstado) {
+    await iniciarAtendimentoMikeSeNecessario(estadoAnterior, proximoEstado);
+    const proximaEtapa = FluxoTriagemMike.obterEtapa(proximoEstado);
+    if (proximaEtapa.tipo !== 'resolvido') return;
+
+    await apiFetch(`/mike-ia/concluir/${atendimentoMikeAtual.atendimentoId}`, {
+        method: 'PATCH',
+        body: { resumoAtendimento: FluxoTriagemMike.montarResumo(proximoEstado, true) }
+    });
+    atendimentoMikeAtual = null;
+    limparTriagemMikeArmazenada();
+}
+
+async function concluirTransicaoDoChatMike(estadoAnterior, proximoEstado) {
+    const versaoDestaInteracao = ++versaoDaInteracaoMike;
+    processandoAcaoMike = true;
+    mostrarRespostaDoUsuarioEDigitacaoMike(proximoEstado);
+
+    const esperaVisual = aguardarRespostaVisualMike();
+    operacaoBackendMike = atualizarAtendimentoMikeNoBackend(estadoAnterior, proximoEstado);
+
+    try {
+        await Promise.all([operacaoBackendMike, esperaVisual]);
+        if (versaoDestaInteracao !== versaoDaInteracaoMike) return;
+
+        historicoDeEstadosMike.push(estadoAnterior);
+        estadoTriagemMike = proximoEstado;
+        if (FluxoTriagemMike.obterEtapa(proximoEstado).tipo !== 'resolvido') salvarTriagemMike();
+        mostrarMensagemChatMike();
+    } catch (erro) {
+        if (versaoDestaInteracao === versaoDaInteracaoMike) {
+            mostrarMensagemChatMike('Não foi possível continuar agora. Tente novamente.', true);
+        }
+    } finally {
+        if (versaoDestaInteracao === versaoDaInteracaoMike) {
+            cancelarEsperaDaRespostaMike();
+            conversaVisivelDuranteRespostaMike = null;
+            mikeEstaDigitando = false;
+            processandoAcaoMike = false;
+            operacaoBackendMike = null;
+            renderizarChatMike({ forcarRolagem: true, focarPrimeiroControle: true });
+        }
+    }
+}
+
+async function processarOpcaoMike(opcaoId) {
+    if (processandoAcaoMike || !estadoTriagemMike) return;
+
+    mostrarMensagemChatMike();
+    const estadoAnterior = copiarEstadoMike(estadoTriagemMike);
+    let proximoEstado;
+    try {
+        proximoEstado = FluxoTriagemMike.avancarComOpcao(estadoAnterior, opcaoId);
+    } catch (erro) {
+        mostrarMensagemChatMike(erro.message, true);
+        return;
+    }
+
+    await concluirTransicaoDoChatMike(estadoAnterior, proximoEstado);
+}
+
+async function processarDadosMike(event) {
+    event.preventDefault();
+    if (processandoAcaoMike || !estadoTriagemMike) return;
+
+    if (!event.currentTarget.checkValidity()) {
+        event.currentTarget.reportValidity();
+        return;
+    }
+
+    const estadoAnterior = copiarEstadoMike(estadoTriagemMike);
+    let proximoEstado;
+    try {
+        proximoEstado = FluxoTriagemMike.avancarComDados(
+            estadoAnterior,
+            Object.fromEntries(new FormData(event.currentTarget).entries())
+        );
+    } catch (erro) {
+        mostrarMensagemChatMike(erro.message, true);
+        return;
+    }
+
+    await concluirTransicaoDoChatMike(estadoAnterior, proximoEstado);
+}
+
+async function voltarTriagemMike() {
+    if (processandoAcaoMike || historicoDeEstadosMike.length === 0) return;
+
+    const estadoAnterior = historicoDeEstadosMike[historicoDeEstadosMike.length - 1];
+    processandoAcaoMike = true;
+    renderizarChatMike();
+    try {
+        if (atendimentoMikeAtual && !estadoAnterior.problema) {
+            await apiFetch(`/mike-ia/abandonar/${atendimentoMikeAtual.atendimentoId}`, { method: 'PATCH' });
+            atendimentoMikeAtual = null;
+        }
+        historicoDeEstadosMike.pop();
+        estadoTriagemMike = estadoAnterior;
+        salvarTriagemMike();
+        mostrarMensagemChatMike();
+    } catch (erro) {
+        mostrarMensagemChatMike(erro.message, true);
+    } finally {
+        processandoAcaoMike = false;
+        renderizarChatMike();
+    }
+}
+
+async function cancelarTriagemMike() {
+    if (cancelandoTriagemMike) return;
+
+    cancelandoTriagemMike = true;
+    versaoDaInteracaoMike += 1;
+    cancelarEsperaDaRespostaMike();
+    conversaVisivelDuranteRespostaMike = null;
+    mikeEstaDigitando = false;
+    processandoAcaoMike = true;
+    document.querySelector('#mike-chat-cancelar').disabled = true;
+    try {
+        if (operacaoBackendMike) {
+            try {
+                await operacaoBackendMike;
+            } catch (erro) {
+                // O cancelamento continua mesmo se a operação anterior tiver falhado.
+            }
+        }
+        if (atendimentoMikeAtual) {
+            await apiFetch(`/mike-ia/abandonar/${atendimentoMikeAtual.atendimentoId}`, { method: 'PATCH' });
+        }
+        iniciarNovaConversaMike();
+    } catch (erro) {
+        mostrarMensagemChatMike('Não foi possível cancelar agora. Tente novamente.', true);
+    } finally {
+        operacaoBackendMike = null;
+        processandoAcaoMike = false;
+        cancelandoTriagemMike = false;
+        document.querySelector('#mike-chat-cancelar').disabled = false;
+        renderizarChatMike();
+    }
+}
 
 anexoAberturaUsuario?.addEventListener('change', () => {
     const imagemSelecionada = anexoAberturaUsuario.files[0];
@@ -542,125 +984,53 @@ anexoAberturaUsuario?.addEventListener('change', () => {
 });
 
 async function carregarAberturaDeChamado() {
-    if (!sessaoAtual || sessaoAtual.tecnico) {
-        return;
-    }
+    if (!sessaoAtual || sessaoAtual.tecnico) return;
 
-    formularioAberturaUsuario.hidden = false;
-    diagnosticoMike.hidden = true;
+    chatMike.hidden = false;
     formularioEncaminhamentoMike.hidden = true;
-    mensagemAberturaUsuario.textContent = '';
-    mensagemAberturaUsuario.classList.remove('is-error');
+    mostrarMensagemChatMike();
 
     try {
         const diagnosticoEmAndamento = await apiFetch('/mike-ia/em-diagnostico');
+        const dadosArmazenados = carregarTriagemMikeArmazenada();
         if (diagnosticoEmAndamento) {
-            exibirDiagnosticoMike(diagnosticoEmAndamento);
-        }
-    } catch (erro) {
-        // O formulário continua disponível: a mensagem só é necessária quando o usuário
-        // enviar os dados, evitando um bloqueio visual se a recuperação falhar.
-    }
-}
-
-function exibirDiagnosticoMike(atendimento) {
-    atendimentoMikeAtual = atendimento;
-    formularioAberturaUsuario.hidden = true;
-    formularioEncaminhamentoMike.hidden = true;
-
-    const listaDePassos = document.querySelector('#mike-diagnostico-passos');
-    listaDePassos.innerHTML = '';
-    atendimento.sugestoes.split('\n').filter(Boolean).forEach((passo) => {
-        const item = document.createElement('li');
-        item.textContent = passo;
-        listaDePassos.appendChild(item);
-    });
-
-    const possuiOrientacaoTestavel = atendimento.possuiOrientacaoTestavel === true;
-    document.querySelector('#mike-pergunta-resolvido').hidden = !possuiOrientacaoTestavel;
-    document.querySelector('#mike-resolveu').hidden = !possuiOrientacaoTestavel;
-
-    diagnosticoMike.hidden = false;
-    diagnosticoMike.focus();
-}
-
-formularioAberturaUsuario?.addEventListener('submit', async (event) => {
-    event.preventDefault();
-
-    if (!formularioAberturaUsuario.checkValidity()) {
-        mensagemAberturaUsuario.classList.add('is-error');
-        mensagemAberturaUsuario.textContent = 'Descreva o problema para continuar o atendimento.';
-        formularioAberturaUsuario.reportValidity();
-        return;
-    }
-
-    const corpo = {
-        descricaoProblema: document.querySelector('#abertura-descricao').value.trim(),
-        categoria: document.querySelector('#abertura-categoria').value || null
-    };
-
-    await executarComEstadoDeEnvio(formularioAberturaUsuario.querySelector('button[type="submit"]'),
-        'Iniciando...', async () => {
-            try {
-                const atendimento = await apiFetch('/mike-ia/iniciar', { method: 'POST', body: corpo });
-                exibirDiagnosticoMike(atendimento);
-            } catch (erro) {
-                mensagemAberturaUsuario.classList.add('is-error');
-                mensagemAberturaUsuario.textContent = erro.message;
+            atendimentoMikeAtual = diagnosticoEmAndamento;
+            if (dadosArmazenados?.atendimentoId === diagnosticoEmAndamento.atendimentoId) {
+                estadoTriagemMike = dadosArmazenados.estado;
+                historicoDeEstadosMike = dadosArmazenados.historico || [];
+            } else {
+                estadoTriagemMike = FluxoTriagemMike.restaurarPeloAtendimento(diagnosticoEmAndamento);
+                historicoDeEstadosMike = [];
             }
-        });
-});
-
-document.querySelector('#mike-resolveu')?.addEventListener('click', async () => {
-    if (!atendimentoMikeAtual) return;
-
-    const botao = document.querySelector('#mike-resolveu');
-    await executarComEstadoDeEnvio(botao, 'Concluindo...', async () => {
-        try {
-            await apiFetch(`/mike-ia/concluir/${atendimentoMikeAtual.atendimentoId}`, { method: 'PATCH' });
-            await showRoute('mike-resolvido');
-        } catch (erro) {
-            const mensagem = document.querySelector('#mensagem-diagnostico-mike');
-            mensagem.classList.add('is-error');
-            mensagem.textContent = erro.message;
-        }
-    });
-});
-
-document.querySelector('#mike-voltar')?.addEventListener('click', async () => {
-    if (!atendimentoMikeAtual) return;
-
-    const botao = document.querySelector('#mike-voltar');
-    await executarComEstadoDeEnvio(botao, 'Voltando...', async () => {
-        try {
-            await apiFetch(`/mike-ia/abandonar/${atendimentoMikeAtual.atendimentoId}`, { method: 'PATCH' });
+        } else if (dadosArmazenados && !dadosArmazenados.atendimentoId && !dadosArmazenados.estado.problema) {
             atendimentoMikeAtual = null;
-            await showRoute('abrir-chamado');
-        } catch (erro) {
-            const mensagem = document.querySelector('#mensagem-diagnostico-mike');
-            mensagem.classList.add('is-error');
-            mensagem.textContent = erro.message;
+            estadoTriagemMike = dadosArmazenados.estado;
+            historicoDeEstadosMike = dadosArmazenados.historico || [];
+        } else {
+            iniciarNovaConversaMike();
         }
-    });
-});
+        salvarTriagemMike();
+        renderizarChatMike();
+    } catch (erro) {
+        if (!estadoTriagemMike) estadoTriagemMike = FluxoTriagemMike.criarEstadoInicial();
+        renderizarChatMike();
+        mostrarMensagemChatMike('Não foi possível recuperar uma conversa anterior. Você pode iniciar novamente.', true);
+    }
+}
 
-document.querySelector('#mike-nao-resolveu')?.addEventListener('click', () => {
-    if (!atendimentoMikeAtual) return;
-
-    document.querySelector('#encaminhamento-categoria').value = atendimentoMikeAtual.categoria || '';
-    diagnosticoMike.hidden = true;
-    formularioEncaminhamentoMike.hidden = false;
-    document.querySelector('#encaminhamento-local').focus();
-});
+document.querySelector('#mike-chat-cancelar')?.addEventListener('click', cancelarTriagemMike);
 
 document.querySelector('#mike-voltar-ao-diagnostico')?.addEventListener('click', () => {
-    if (!atendimentoMikeAtual) return;
-    exibirDiagnosticoMike(atendimentoMikeAtual);
+    if (processandoAcaoMike) return;
+    formularioEncaminhamentoMike.hidden = true;
+    chatMike.hidden = false;
+    renderizarChatMike();
 });
 
 formularioEncaminhamentoMike?.addEventListener('submit', async (event) => {
     event.preventDefault();
     const mensagem = document.querySelector('#mensagem-encaminhamento-mike');
+    if (processandoAcaoMike) return;
 
     if (!formularioEncaminhamentoMike.checkValidity()) {
         mensagem.classList.add('is-error');
@@ -672,26 +1042,38 @@ formularioEncaminhamentoMike?.addEventListener('submit', async (event) => {
     const corpo = {
         categoria: document.querySelector('#encaminhamento-categoria').value,
         prioridade: document.querySelector('#encaminhamento-prioridade').value,
-        localAtendimento: document.querySelector('#encaminhamento-local').value.trim()
+        localAtendimento: document.querySelector('#encaminhamento-local').value.trim(),
+        resumoAtendimento: FluxoTriagemMike.montarResumo(estadoTriagemMike, false),
+        cpf: estadoTriagemMike.dados?.cpf || ''
     };
 
-    await executarComEstadoDeEnvio(formularioEncaminhamentoMike.querySelector('button[type="submit"]'),
-        'Encaminhando...', async () => {
+    processandoAcaoMike = true;
+    try {
+        await executarComEstadoDeEnvio(formularioEncaminhamentoMike.querySelector('button[type="submit"]'),
+            'Encaminhando...', async () => {
             try {
                 await apiFetch(`/mike-ia/encaminhar/${atendimentoMikeAtual.atendimentoId}`, {
                     method: 'PATCH', body: corpo
                 });
                 formularioEncaminhamentoMike.reset();
                 atendimentoMikeAtual = null;
+                estadoTriagemMike = null;
+                historicoDeEstadosMike = [];
+                limparTriagemMikeArmazenada();
                 const botaoAcompanhar = document.querySelector('#botao-sucesso-acompanhar');
+                document.querySelector('#titulo-chamado-sucesso').textContent = 'Chamado aberto com sucesso!';
+                document.querySelector('#mensagem-chamado-sucesso').textContent = 'A equipe técnica recebeu as informações da triagem.';
                 botaoAcompanhar.textContent = 'Ver meus chamados';
                 botaoAcompanhar.dataset.route = 'meus-chamados';
                 await showRoute('chamado-sucesso');
             } catch (erro) {
                 mensagem.classList.add('is-error');
-                mensagem.textContent = erro.message;
+                mensagem.textContent = 'Não foi possível abrir o chamado agora. Tente novamente.';
             }
-        });
+            });
+    } finally {
+        processandoAcaoMike = false;
+    }
 });
 
 // ============================================================
@@ -727,6 +1109,8 @@ ticketForm?.addEventListener('submit', async (event) => {
             document.querySelector('#prioridade').value = 'MEDIA';
 
             const botaoAcompanhar = document.querySelector('#botao-sucesso-acompanhar');
+            document.querySelector('#titulo-chamado-sucesso').textContent = 'Chamado registrado com sucesso!';
+            document.querySelector('#mensagem-chamado-sucesso').textContent = 'A equipe técnica foi notificada. Você pode acompanhar o andamento a qualquer momento.';
             if (sessaoAtual.tecnico) {
                 botaoAcompanhar.textContent = 'Ver central técnica';
                 botaoAcompanhar.dataset.route = 'central-tecnica';
@@ -776,6 +1160,42 @@ async function carregarCentralTecnica() {
             document.querySelector(`#resumo-chamados-${periodo}`).textContent = '—';
             document.querySelector(`#resumo-chamados-${periodo}-legenda`).textContent = 'Não foi possível carregar.';
         });
+    }
+
+    try {
+        const metricas = await apiFetch('/mike-ia/metricas');
+        document.querySelector('#mike-metrica-iniciados').textContent = metricas.totalAtendimentosIniciados;
+        document.querySelector('#mike-metrica-resolvidos').textContent = metricas.totalResolvidosPeloMike;
+        document.querySelector('#mike-metrica-encaminhados').textContent = metricas.totalEncaminhadosParaTecnico;
+        document.querySelector('#mike-metrica-taxa').textContent = `${Math.round(metricas.taxaResolucaoAutomatica)}%`;
+
+        const mensagem = document.querySelector('#mensagem-metricas-mike');
+        mensagem.classList.remove('is-error');
+        // Com zero atendimentos, "0%" pareceria que o Mike não está funcionando, quando
+        // na verdade ninguém usou ainda — mensagem evita essa leitura errada.
+        mensagem.textContent = metricas.totalAtendimentosIniciados === 0
+            ? 'Ainda não há atendimentos registrados pelo Mike IA.'
+            : '';
+
+        // Abandonado fica à parte dos indicadores principais porque não representa
+        // resolução nem encaminhamento e só precisa aparecer quando realmente existir.
+        const notaAbandonados = document.querySelector('#mike-metrica-abandonados');
+        if (metricas.totalAbandonados > 0) {
+            notaAbandonados.hidden = false;
+            notaAbandonados.textContent = metricas.totalAbandonados === 1
+                ? '1 atendimento foi abandonado pelo usuário antes de uma resposta.'
+                : `${metricas.totalAbandonados} atendimentos foram abandonados pelos usuários antes de uma resposta.`;
+        } else {
+            notaAbandonados.hidden = true;
+        }
+    } catch (erro) {
+        ['iniciados', 'resolvidos', 'encaminhados', 'taxa'].forEach((campo) => {
+            document.querySelector(`#mike-metrica-${campo}`).textContent = '—';
+        });
+        document.querySelector('#mike-metrica-abandonados').hidden = true;
+        const mensagemDeErro = document.querySelector('#mensagem-metricas-mike');
+        mensagemDeErro.classList.add('is-error');
+        mensagemDeErro.textContent = 'Não foi possível carregar as métricas do Mike IA agora.';
     }
 }
 

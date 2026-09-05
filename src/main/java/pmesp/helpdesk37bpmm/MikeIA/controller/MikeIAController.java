@@ -5,6 +5,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import pmesp.helpdesk37bpmm.MikeIA.dto.AtendimentoMikeIARespostaDTO;
+import pmesp.helpdesk37bpmm.MikeIA.dto.ConcluirAtendimentoMikeIADTO;
 import pmesp.helpdesk37bpmm.MikeIA.dto.EncaminharChamadoDoMikeDTO;
 import pmesp.helpdesk37bpmm.MikeIA.dto.IniciarAtendimentoMikeIADTO;
 import pmesp.helpdesk37bpmm.MikeIA.dto.MetricasMikeIADTO;
@@ -44,10 +45,11 @@ public class MikeIAController {
         return mikeIAService.obterMetricasParaTecnico();
     }
 
-    // O usuário confirmou que as orientações resolveram o problema.
+    // O usuário confirmou que as orientações resolveram o problema; nenhum chamado é criado.
     @PatchMapping("/concluir/{atendimentoId}")
-    public AtendimentoMikeIARespostaDTO concluirComoResolvido(@PathVariable Long atendimentoId) {
-        return mikeIAService.concluirComoResolvido(atendimentoId);
+    public AtendimentoMikeIARespostaDTO concluirComoResolvido(@PathVariable Long atendimentoId,
+                                                                @Valid @RequestBody ConcluirAtendimentoMikeIADTO dto) {
+        return mikeIAService.concluirComoResolvido(atendimentoId, dto.getResumoAtendimento());
     }
 
     // O Mike não resolveu; o formulário enviado cria o chamado para a fila técnica.

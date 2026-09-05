@@ -21,6 +21,7 @@ class FrontendEstaticoTest {
         String pagina = Files.readString(DIRETORIO_ESTATICO.resolve("index.html")).replace("\r\n", "\n");
         String estilos = Files.readString(DIRETORIO_ESTATICO.resolve("styles.css")).replace("\r\n", "\n");
         String comportamento = Files.readString(DIRETORIO_ESTATICO.resolve("app.js")).replace("\r\n", "\n");
+        String fluxoMike = Files.readString(DIRETORIO_ESTATICO.resolve("mike-triagem.js")).replace("\r\n", "\n");
 
         assertAll(
                 () -> assertTrue(Files.exists(DIRETORIO_ESTATICO.resolve("logo-pmesp.png"))),
@@ -33,8 +34,9 @@ class FrontendEstaticoTest {
 
                 // Telas principais continuam presentes
                 () -> assertTrue(pagina.contains("id=\"pagina-login\"")),
-                () -> assertTrue(pagina.contains("styles.css?v=0.0.1-beta.29")),
-                () -> assertTrue(pagina.contains("app.js?v=0.0.1-beta.28")),
+                () -> assertTrue(pagina.contains("styles.css?v=0.0.1-beta.46")),
+                () -> assertTrue(pagina.contains("mike-triagem.js?v=0.0.1-beta.38")),
+                () -> assertTrue(pagina.contains("app.js?v=0.0.1-beta.40")),
                 () -> assertTrue(pagina.contains("id=\"visao-geral\"")),
                 () -> assertTrue(pagina.contains("id=\"meus-chamados\"")),
                 () -> assertTrue(pagina.contains("id=\"abrir-chamado\"")),
@@ -70,6 +72,9 @@ class FrontendEstaticoTest {
 
                 () -> assertTrue(pagina.contains("id=\"overview-ticket-card\"")),
                 () -> assertTrue(pagina.contains("id=\"overview-sem-chamado\"")),
+                () -> assertTrue(pagina.contains("id=\"overview-ticket-id\"")),
+                () -> assertFalse(pagina.contains("id=\"overview-ticket-info\"")),
+                () -> assertFalse(pagina.contains("id=\"overview-ticket-status\"")),
                 () -> assertTrue(pagina.contains("Avisos gerais")),
                 () -> assertTrue(pagina.contains("Gestão de usuários")),
                 () -> assertTrue(pagina.contains("Controle de acesso")),
@@ -147,35 +152,41 @@ class FrontendEstaticoTest {
                 () -> assertTrue(pagina.contains("id=\"chamado-sucesso\"")),
                 () -> assertTrue(pagina.contains("class=\"success-check\"")),
 
-                // O Mike faz parte do atendimento já iniciado. O técnico continua no
-                // formulário completo, inclusive quando registra para outro RE.
+                // O usuário recebe a triagem guiada. O técnico continua no formulário
+                // completo, inclusive quando registra para outro RE, sem passar pelo chat.
                 () -> assertTrue(pagina.contains("id=\"abertura-usuario\"")),
                 () -> assertTrue(pagina.contains("id=\"abertura-tecnico\"")),
-                () -> assertTrue(pagina.contains("id=\"mike-resolvido\"")),
-                () -> assertTrue(pagina.contains("id=\"diagnostico-mike\"")),
-                () -> assertTrue(pagina.contains("id=\"mike-pergunta-resolvido\"")),
+                () -> assertTrue(pagina.contains("id=\"mike-chat\"")),
+                () -> assertTrue(pagina.contains("id=\"mike-chat-mensagens\"")),
+                () -> assertTrue(pagina.contains("id=\"mike-chat-opcoes\"")),
+                () -> assertTrue(pagina.contains("id=\"mike-chat-instrucao\"")),
+                () -> assertTrue(pagina.contains("id=\"mike-chat-cancelar\"")),
                 () -> assertTrue(pagina.contains("id=\"formulario-encaminhamento-mike\"")),
                 () -> assertTrue(pagina.contains("id=\"abertura-anexo\"")),
                 () -> assertTrue(pagina.contains("accept=\"image/png,image/jpeg,image/webp\"")),
                 () -> assertTrue(pagina.contains("O envio será conectado ao backend posteriormente.")),
-                () -> assertTrue(pagina.contains("type=\"submit\">Continuar</button>")),
                 () -> assertTrue(pagina.contains("id=\"historico-mike-tecnico\"")),
                 () -> assertTrue(pagina.contains("class=\"ticket-layout-com-mike\" id=\"abertura-tecnico\"")),
                 () -> assertTrue(pagina.contains("class=\"abertura-usuario-layout\"")),
                 () -> assertTrue(pagina.contains("src=\"mike-ia-abertura.png\"")),
                 () -> assertTrue(estilos.contains(".ticket-layout-com-mike,")),
                 () -> assertTrue(estilos.contains(".mike-abertura-avatar")),
-                () -> assertTrue(estilos.contains(".abertura-inicial-form { padding: 16px 20px; }")),
-                () -> assertTrue(estilos.contains(".abertura-inicial-form textarea { height: clamp(80px, 12vh, 104px); min-height: 80px; }")),
-                () -> assertTrue(estilos.contains(".abertura-inicial-form .attachment-area")),
-                () -> assertTrue(estilos.contains(".diagnostico-mike-cabecalho .eyebrow { color: var(--primary);")),
+                () -> assertTrue(estilos.contains(".mike-chat-card")),
+                () -> assertTrue(estilos.contains("flex-direction: column")),
+                () -> assertTrue(estilos.contains(".mike-chat-formulario")),
+                () -> assertTrue(estilos.contains(".mike-chat-bolha-usuario")),
+                () -> assertTrue(estilos.contains(".mike-chat-digitando")),
+                () -> assertTrue(estilos.contains(".mike-chat-instrucao")),
+                () -> assertTrue(estilos.contains("@keyframes mikeDigitando")),
+                () -> assertTrue(estilos.contains("prefers-reduced-motion: reduce")),
                 () -> assertTrue(estilos.contains(".complemento-encaminhamento > .eyebrow { color: var(--primary); }")),
                 () -> assertTrue(estilos.contains(".current-ticket-card .eyebrow { color: var(--primary); }")),
                 () -> assertTrue(estilos.contains("#visao-geral .page-heading .eyebrow { color: var(--primary); }")),
                 () -> assertTrue(estilos.contains("#meus-chamados .page-heading .eyebrow { color: var(--primary); }")),
                 () -> assertTrue(estilos.contains(".ticket-list-card .eyebrow { color: var(--primary); }")),
                 () -> assertTrue(estilos.contains(".queue-position-value > strong { color: var(--danger);")),
-                () -> assertTrue(estilos.contains(".queue-position-value > strong.is-in-service { color: var(--success-bright); font-size:")),
+                () -> assertTrue(estilos.contains(".queue-position-value > strong.is-in-service { color: var(--success); font-size:")),
+                () -> assertTrue(estilos.contains(".mike-chat-formulario-cpf { flex-basis: 520px; }")),
                 () -> assertTrue(estilos.contains(".progress-step.is-current span { background: var(--primary); border-color: var(--primary);")),
                 () -> assertTrue(estilos.contains("#abrir-chamado { overflow: hidden; }")),
                 () -> assertTrue(estilos.contains("@media (max-height: 920px)")),
@@ -186,12 +197,27 @@ class FrontendEstaticoTest {
                 () -> assertFalse(pagina.contains("Antes de abrir seu chamado")),
                 () -> assertFalse(pagina.contains("id=\"formulario-mike\"")),
                 () -> assertTrue(comportamento.contains("apiFetch('/mike-ia/iniciar'")),
-                () -> assertTrue(comportamento.contains("atendimento.possuiOrientacaoTestavel === true")),
-                () -> assertTrue(comportamento.contains("#mike-pergunta-resolvido")),
+                () -> assertTrue(comportamento.contains("FluxoTriagemMike.avancarComOpcao")),
+                () -> assertTrue(comportamento.contains("FluxoTriagemMike.montarResumo")),
+                () -> assertTrue(comportamento.contains("processandoAcaoMike")),
+                () -> assertTrue(comportamento.contains("TEMPO_PADRAO_DE_DIGITACAO_MIKE_EM_MS = 900")),
+                () -> assertTrue(comportamento.contains("VERSAO_DA_TRIAGEM_MIKE = 2")),
+                () -> assertTrue(comportamento.contains("aria-label', 'Mike está digitando'")),
+                () -> assertTrue(comportamento.contains("cancelarEsperaDaRespostaMike")),
+                () -> assertTrue(comportamento.contains("iniciarNovaConversaMike();")),
+                // A saudação chega em duas mensagens separadas, com o mesmo intervalo de
+                // "digitando" do resto da conversa entre a primeira e a segunda.
+                () -> assertTrue(comportamento.contains("revelarSaudacaoInicialMike")),
+                () -> assertFalse(comportamento.contains("await showRoute('visao-geral');")),
+                () -> assertTrue(comportamento.contains("usuarioEstaPertoDoFimDaConversaMike")),
+                () -> assertTrue(comportamento.contains("Não foi possível continuar agora. Tente novamente.")),
+                () -> assertTrue(comportamento.contains("window.sessionStorage")),
                 () -> assertTrue(comportamento.contains("anexoAberturaUsuario?.addEventListener('change'")),
                 () -> assertTrue(comportamento.contains("Envio ao chamado ainda não disponível.")),
                 () -> assertTrue(comportamento.contains("emAtendimento ? 'Em atendimento' : (emFila ? 'Na fila' : '—')")),
                 () -> assertTrue(comportamento.contains("classList.toggle('is-in-service', emAtendimento)")),
+                () -> assertTrue(comportamento.contains("#overview-ticket-id').textContent = `#${chamado.id}`")),
+                () -> assertFalse(comportamento.contains("#overview-ticket-status")),
                 () -> assertTrue(comportamento.contains("apiFetch('/mike-ia/em-diagnostico'")),
                 () -> assertTrue(comportamento.contains("/mike-ia/concluir/")),
                 () -> assertTrue(comportamento.contains("/mike-ia/encaminhar/")),
@@ -199,7 +225,23 @@ class FrontendEstaticoTest {
                 () -> assertTrue(comportamento.contains("/mike-ia/chamado/")),
                 () -> assertTrue(comportamento.contains("sessaoAtual.tecnico")),
                 () -> assertFalse(comportamento.contains("pularMikeIA")),
-                () -> assertFalse(comportamento.contains("mike-triagem"))
+                () -> assertFalse(pagina.contains("id=\"diagnostico-mike\"")),
+                () -> assertFalse(pagina.contains("id=\"mike-resolvido\"")),
+                () -> assertTrue(fluxoMike.contains("Não sei")),
+                () -> assertTrue(fluxoMike.contains("Olá! Sou o Mike IA. Irei te ajudar a abrir o chamado.")),
+                () -> assertTrue(fluxoMike.contains("Para iniciar, escolha o equipamento ou serviço que você precisa de suporte.")),
+                () -> assertTrue(fluxoMike.contains("TRIAGEM MIKE IA")),
+                () -> assertTrue(fluxoMike.contains("Atendimento encerrado sem chamado.")),
+                () -> assertTrue(fluxoMike.contains("Equipe técnica local.")),
+
+                // Métricas do Mike IA na Central Técnica: numeros acumulados, separados
+                // visualmente dos cartões "chamados hoje/semana/mês" (que são por período)
+                () -> assertTrue(pagina.contains("id=\"mike-metrica-iniciados\"")),
+                () -> assertTrue(pagina.contains("id=\"mike-metrica-resolvidos\"")),
+                () -> assertTrue(pagina.contains("id=\"mike-metrica-encaminhados\"")),
+                () -> assertTrue(pagina.contains("id=\"mike-metrica-taxa\"")),
+                () -> assertTrue(comportamento.contains("apiFetch('/mike-ia/metricas'")),
+                () -> assertTrue(comportamento.contains("Ainda não há atendimentos registrados pelo Mike IA."))
         );
     }
 }

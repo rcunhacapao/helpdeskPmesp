@@ -12,7 +12,6 @@ import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import pmesp.helpdesk37bpmm.Chamado.enums.ChamadoCategoria;
 import pmesp.helpdesk37bpmm.Chamado.enums.ChamadoPrioridade;
-import pmesp.helpdesk37bpmm.Chamado.enums.ChamadoResolvidoPor;
 import pmesp.helpdesk37bpmm.Chamado.enums.ChamadoStatus;
 import pmesp.helpdesk37bpmm.Chamado.model.ChamadoModel;
 import pmesp.helpdesk37bpmm.Chamado.repository.ChamadoRepository;
@@ -39,6 +38,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -49,7 +49,6 @@ class MikeIAServiceTest {
     @Mock ChamadoRepository chamadoRepository;
     @Mock UsuarioRepository usuarioRepository;
     @Mock TecnicoService tecnicoService;
-    @Mock MotorDeResolucaoMikeIA motorDeResolucao;
     @Mock AtendimentoMikeIAMapper atendimentoMikeIAMapper;
     @InjectMocks MikeIAService mikeIAService;
 
@@ -65,8 +64,6 @@ class MikeIAServiceTest {
         when(usuarioRepository.findByRe("250861")).thenReturn(Optional.of(usuario));
         when(atendimentoMikeIARepository.findFirstByUsuarioAndResultadoIsNullOrderByDataInicioDesc(usuario))
                 .thenReturn(Optional.empty());
-        when(motorDeResolucao.buscarSugestoes("Impressora não imprime", ChamadoCategoria.IMPRESSORA))
-                .thenReturn(new OrientacaoDoMike("Verifique o papel.", true));
         when(atendimentoMikeIARepository.save(any(AtendimentoMikeIA.class))).thenAnswer(chamada -> chamada.getArgument(0));
         when(atendimentoMikeIAMapper.map(any(AtendimentoMikeIA.class))).thenReturn(new AtendimentoMikeIARespostaDTO());
 
@@ -90,37 +87,19 @@ class MikeIAServiceTest {
     }
 
     @Test
-    void deveCriarChamadoFechadoSomenteQuandoUsuarioConfirmarResolucao() {
+    void deveEncerrarAtendimentoSemCriarChamadoQuandoUsuarioConfirmarResolucao() {
         UsuarioModel usuario = criarUsuario(1L, "250861");
         AtendimentoMikeIA atendimento = criarDiagnostico(usuario, true);
         autenticarComoUsuario("250861");
         when(usuarioRepository.findByRe("250861")).thenReturn(Optional.of(usuario));
-        when(atendimentoMikeIARepository.findById(10L)).thenReturn(Optional.of(atendimento));
-        when(chamadoRepository.save(any(ChamadoModel.class))).thenAnswer(chamada -> chamada.getArgument(0));
+        when(atendimentoMikeIARepository.buscarPorIdParaAtualizacao(10L)).thenReturn(Optional.of(atendimento));
         when(atendimentoMikeIARepository.save(any(AtendimentoMikeIA.class))).thenAnswer(chamada -> chamada.getArgument(0));
         when(atendimentoMikeIAMapper.map(any(AtendimentoMikeIA.class))).thenReturn(new AtendimentoMikeIARespostaDTO());
 
-        mikeIAService.concluirComoResolvido(10L);
+        mikeIAService.concluirComoResolvido(10L, "TRIAGEM MIKE IA\n\nResultado: Problema resolvido.");
 
-        assertEquals(ChamadoStatus.FECHADO, atendimento.getChamado().getStatus());
-        assertEquals(ChamadoResolvidoPor.MIKE_IA, atendimento.getChamado().getResolvidoPor());
-        assertNull(atendimento.getChamado().getPrioridade());
+        assertNull(atendimento.getChamado());
         assertEquals(AtendimentoMikeIAResultado.RESOLVIDO, atendimento.getResultado());
-        verify(chamadoRepository).save(atendimento.getChamado());
-    }
-
-    @Test
-    void deveExigirEncaminhamentoQuandoNaoHouverOrientacaoTestavel() {
-        UsuarioModel usuario = criarUsuario(1L, "250861");
-        AtendimentoMikeIA atendimento = criarDiagnostico(usuario, false);
-        autenticarComoUsuario("250861");
-        when(usuarioRepository.findByRe("250861")).thenReturn(Optional.of(usuario));
-        when(atendimentoMikeIARepository.findById(10L)).thenReturn(Optional.of(atendimento));
-
-        RegraDeNegocioException excecao = assertThrows(RegraDeNegocioException.class,
-                () -> mikeIAService.concluirComoResolvido(10L));
-
-        assertEquals("ORIENTACAO_NAO_CONFIRMAVEL", excecao.getCodigo());
         verify(chamadoRepository, never()).save(any(ChamadoModel.class));
     }
 
@@ -130,13 +109,15 @@ class MikeIAServiceTest {
         AtendimentoMikeIA atendimento = criarDiagnostico(usuario, false);
         autenticarComoUsuario("250861");
         when(usuarioRepository.findByRe("250861")).thenReturn(Optional.of(usuario));
-        when(atendimentoMikeIARepository.findById(10L)).thenReturn(Optional.of(atendimento));
+        when(atendimentoMikeIARepository.buscarPorIdParaAtualizacao(10L)).thenReturn(Optional.of(atendimento));
         when(chamadoRepository.save(any(ChamadoModel.class))).thenAnswer(chamada -> chamada.getArgument(0));
         when(atendimentoMikeIARepository.save(any(AtendimentoMikeIA.class))).thenAnswer(chamada -> chamada.getArgument(0));
         when(atendimentoMikeIAMapper.map(any(AtendimentoMikeIA.class))).thenReturn(new AtendimentoMikeIARespostaDTO());
 
-        mikeIAService.encaminharParaEquipeTecnica(10L, new EncaminharChamadoDoMikeDTO(
-                ChamadoCategoria.IMPRESSORA, "Administração", ChamadoPrioridade.ALTA));
+        EncaminharChamadoDoMikeDTO dto = new EncaminharChamadoDoMikeDTO(
+                ChamadoCategoria.IMPRESSORA, "Administração", ChamadoPrioridade.ALTA);
+        dto.setResumoAtendimento("TRIAGEM MIKE IA\n\nResultado: Problema não resolvido.");
+        mikeIAService.encaminharParaEquipeTecnica(10L, dto);
 
         assertEquals(ChamadoStatus.ABERTO, atendimento.getChamado().getStatus());
         assertEquals("Administração", atendimento.getChamado().getLocalAtendimento());
@@ -145,12 +126,75 @@ class MikeIAServiceTest {
     }
 
     @Test
+    void deveImpedirChamadoDuplicadoQuandoEncaminhamentoForEnviadoNovamente() {
+        UsuarioModel usuario = criarUsuario(1L, "250861");
+        AtendimentoMikeIA atendimento = criarDiagnostico(usuario, false);
+        autenticarComoUsuario("250861");
+        when(usuarioRepository.findByRe("250861")).thenReturn(Optional.of(usuario));
+        when(atendimentoMikeIARepository.buscarPorIdParaAtualizacao(10L)).thenReturn(Optional.of(atendimento));
+        when(chamadoRepository.save(any(ChamadoModel.class))).thenAnswer(chamada -> chamada.getArgument(0));
+        when(atendimentoMikeIARepository.save(any(AtendimentoMikeIA.class))).thenAnswer(chamada -> chamada.getArgument(0));
+        when(atendimentoMikeIAMapper.map(any(AtendimentoMikeIA.class))).thenReturn(new AtendimentoMikeIARespostaDTO());
+
+        EncaminharChamadoDoMikeDTO dto = new EncaminharChamadoDoMikeDTO(
+                ChamadoCategoria.IMPRESSORA, "Administração", ChamadoPrioridade.ALTA);
+        dto.setResumoAtendimento("TRIAGEM MIKE IA\n\nResultado: Problema não resolvido.");
+
+        mikeIAService.encaminharParaEquipeTecnica(10L, dto);
+        RegraDeNegocioException excecao = assertThrows(RegraDeNegocioException.class,
+                () -> mikeIAService.encaminharParaEquipeTecnica(10L, dto));
+
+        assertEquals("ATENDIMENTO_JA_CONCLUIDO", excecao.getCodigo());
+        verify(chamadoRepository, times(1)).save(any(ChamadoModel.class));
+    }
+
+    @Test
+    void deveGuardarResumoDaTriagemSemCriarChamadoAoConcluir() {
+        UsuarioModel usuario = criarUsuario(1L, "250861");
+        AtendimentoMikeIA atendimento = criarDiagnostico(usuario, true);
+        autenticarComoUsuario("250861");
+        when(usuarioRepository.findByRe("250861")).thenReturn(Optional.of(usuario));
+        when(atendimentoMikeIARepository.buscarPorIdParaAtualizacao(10L)).thenReturn(Optional.of(atendimento));
+        when(atendimentoMikeIARepository.save(any(AtendimentoMikeIA.class))).thenAnswer(chamada -> chamada.getArgument(0));
+        when(atendimentoMikeIAMapper.map(any(AtendimentoMikeIA.class))).thenReturn(new AtendimentoMikeIARespostaDTO());
+
+        mikeIAService.concluirComoResolvido(10L, "TRIAGEM MIKE IA\n\nRespostas:\n- Luz acesa: Sim");
+
+        assertEquals("TRIAGEM MIKE IA\n\nRespostas:\n- Luz acesa: Sim", atendimento.getSugestoesApresentadas());
+        assertNull(atendimento.getChamado());
+        verify(chamadoRepository, never()).save(any(ChamadoModel.class));
+    }
+
+    @Test
+    void deveAnexarResumoDaTriagemGuiadaNaDescricaoDoChamadoAoEncaminhar() {
+        UsuarioModel usuario = criarUsuario(1L, "250861");
+        AtendimentoMikeIA atendimento = criarDiagnostico(usuario, false);
+        autenticarComoUsuario("250861");
+        when(usuarioRepository.findByRe("250861")).thenReturn(Optional.of(usuario));
+        when(atendimentoMikeIARepository.buscarPorIdParaAtualizacao(10L)).thenReturn(Optional.of(atendimento));
+        when(chamadoRepository.save(any(ChamadoModel.class))).thenAnswer(chamada -> chamada.getArgument(0));
+        when(atendimentoMikeIARepository.save(any(AtendimentoMikeIA.class))).thenAnswer(chamada -> chamada.getArgument(0));
+        when(atendimentoMikeIAMapper.map(any(AtendimentoMikeIA.class))).thenReturn(new AtendimentoMikeIARespostaDTO());
+
+        EncaminharChamadoDoMikeDTO dto = new EncaminharChamadoDoMikeDTO(
+                ChamadoCategoria.IMPRESSORA, "Administração", ChamadoPrioridade.ALTA);
+        dto.setResumoAtendimento("TRIAGEM MIKE IA\n\nResultado: Problema não resolvido.");
+        dto.setCpf("12345678901");
+
+        mikeIAService.encaminharParaEquipeTecnica(10L, dto);
+
+        assertTrue(atendimento.getChamado().getDescricao().contains("TRIAGEM MIKE IA"));
+        assertTrue(atendimento.getChamado().getDescricao().contains("CPF informado: 12345678901"));
+        assertTrue(atendimento.getChamado().getDescricao().startsWith("Impressora não imprime"));
+    }
+
+    @Test
     void deveAbandonarDiagnosticoSemCriarChamadoQuandoUsuarioVoltar() {
         UsuarioModel usuario = criarUsuario(1L, "250861");
         AtendimentoMikeIA atendimento = criarDiagnostico(usuario, true);
         autenticarComoUsuario("250861");
         when(usuarioRepository.findByRe("250861")).thenReturn(Optional.of(usuario));
-        when(atendimentoMikeIARepository.findById(10L)).thenReturn(Optional.of(atendimento));
+        when(atendimentoMikeIARepository.buscarPorIdParaAtualizacao(10L)).thenReturn(Optional.of(atendimento));
 
         mikeIAService.abandonarDiagnostico(10L);
 

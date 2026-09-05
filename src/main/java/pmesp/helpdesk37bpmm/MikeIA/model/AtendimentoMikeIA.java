@@ -12,8 +12,7 @@ import pmesp.helpdesk37bpmm.Usuario.model.UsuarioModel;
 import java.time.LocalDateTime;
 
 // Guarda as orientações apresentadas pelo Mike e o resultado do diagnóstico.
-// O chamado só é criado quando o usuário confirma a resolução ou envia o
-// encaminhamento para a equipe técnica.
+// O chamado só é criado quando o usuário envia o encaminhamento para a equipe técnica.
 @Entity
 @Table(name = "tb_atendimento_mike_ia")
 @NoArgsConstructor
@@ -48,8 +47,8 @@ public class AtendimentoMikeIA {
     @Enumerated(EnumType.STRING)
     private AtendimentoMikeIAResultado resultado;
 
-    // Fica nulo enquanto o usuário ainda está avaliando as orientações do Mike.
-    // Depois da confirmação final, aponta para o chamado criado naquele momento.
+    // Permanece nulo quando o Mike resolve ou o usuário abandona a conversa.
+    // Só aponta para um chamado quando há encaminhamento à equipe técnica.
     @OneToOne
     @JoinColumn(name = "chamado_gerado_id", nullable = true)
     private ChamadoModel chamado;

@@ -36,3 +36,6 @@ build/
 .env
 *.mv.db
 *.trace.db
+
+### Node (testes JS puros, sem dependências hoje) ###
+node_modules/

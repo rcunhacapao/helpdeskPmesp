@@ -1,0 +1,8 @@
+{
+  "name": "helpdesk37bpmm-frontend",
+  "private": true,
+  "description": "Testes do JavaScript puro do frontend (sem build, sem dependências).",
+  "scripts": {
+    "test": "node --test src/test/js"
+  }
+}

@@ -11,8 +11,7 @@ public class AtendimentoMikeIAMapper {
     public AtendimentoMikeIARespostaDTO map(AtendimentoMikeIA atendimento) {
         AtendimentoMikeIARespostaDTO resposta = new AtendimentoMikeIARespostaDTO();
         resposta.setAtendimentoId(atendimento.getId());
-        // Registros novos sempre possuem chamado. A verificação evita que um dado
-        // antigo, criado antes da integração, impeça a consulta do restante do histórico.
+        // Somente atendimentos encaminhados para a equipe técnica possuem chamado.
         if (atendimento.getChamado() != null) {
             resposta.setChamadoId(atendimento.getChamado().getId());
         }

@@ -16,6 +16,7 @@ import pmesp.helpdesk37bpmm.Chamado.repository.ChamadoRepository;
 import pmesp.helpdesk37bpmm.MikeIA.dto.AtendimentoMikeIARespostaDTO;
 import pmesp.helpdesk37bpmm.MikeIA.dto.EncaminharChamadoDoMikeDTO;
 import pmesp.helpdesk37bpmm.MikeIA.dto.IniciarAtendimentoMikeIADTO;
+import pmesp.helpdesk37bpmm.MikeIA.enums.AtendimentoMikeIAResultado;
 import pmesp.helpdesk37bpmm.MikeIA.repository.AtendimentoMikeIARepository;
 import pmesp.helpdesk37bpmm.Usuario.enums.UsuarioPostoGraduacao;
 import pmesp.helpdesk37bpmm.Usuario.model.UsuarioModel;
@@ -68,10 +69,12 @@ class MikeIAFluxoIntegrationTest {
         assertNull(diagnostico.getChamadoId());
         assertEquals(0, chamadoRepository.count());
 
+        EncaminharChamadoDoMikeDTO dadosDoEncaminhamento = new EncaminharChamadoDoMikeDTO(
+                ChamadoCategoria.IMPRESSORA, "Laboratório de QA", ChamadoPrioridade.MEDIA);
+        dadosDoEncaminhamento.setResumoAtendimento(
+                "TRIAGEM MIKE IA\n\nProblema: Impressora não imprime\nResultado: Problema não resolvido.");
         AtendimentoMikeIARespostaDTO encaminhamento = mikeIAService.encaminharParaEquipeTecnica(
-                diagnostico.getAtendimentoId(),
-                new EncaminharChamadoDoMikeDTO(
-                        ChamadoCategoria.IMPRESSORA, "Laboratório de QA", ChamadoPrioridade.MEDIA));
+                diagnostico.getAtendimentoId(), dadosDoEncaminhamento);
 
         ChamadoModel chamado = chamadoRepository.findById(encaminhamento.getChamadoId()).orElseThrow();
         assertNotNull(encaminhamento.getChamadoId());
@@ -80,6 +83,25 @@ class MikeIAFluxoIntegrationTest {
         assertEquals("Laboratório de QA", chamado.getLocalAtendimento());
         assertEquals(ChamadoPrioridade.MEDIA, chamado.getPrioridade());
         assertNotNull(atendimentoMikeIARepository.findByChamadoId(chamado.getId()).orElse(null));
+    }
+
+    @Test
+    void deveConcluirTriagemResolvidaSemCriarChamado() {
+        UsuarioModel usuario = criarUsuarioDeTeste();
+        autenticarComo(usuario.getRe());
+
+        AtendimentoMikeIARespostaDTO diagnostico = mikeIAService.iniciar(
+                new IniciarAtendimentoMikeIADTO(
+                        "Computador lento", ChamadoCategoria.COMPUTADOR));
+
+        mikeIAService.concluirComoResolvido(
+                diagnostico.getAtendimentoId(),
+                "TRIAGEM MIKE IA\n\nProblema: Computador lento\nResultado: Problema resolvido.");
+
+        assertEquals(0, chamadoRepository.count());
+        assertNull(atendimentoMikeIARepository.findById(diagnostico.getAtendimentoId()).orElseThrow().getChamado());
+        assertEquals(AtendimentoMikeIAResultado.RESOLVIDO,
+                atendimentoMikeIARepository.findById(diagnostico.getAtendimentoId()).orElseThrow().getResultado());
     }
 
     private UsuarioModel criarUsuarioDeTeste() {

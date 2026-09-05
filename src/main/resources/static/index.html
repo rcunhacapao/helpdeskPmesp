@@ -8,7 +8,7 @@
     <link rel="icon" type="image/png" href="favicon.png?v=0.0.1-beta.18">
     <link rel="apple-touch-icon" href="apple-touch-icon.png?v=0.0.1-beta.18">
     <meta name="theme-color" content="#1A1D20">
-    <link rel="stylesheet" href="styles.css?v=0.0.1-beta.29">
+    <link rel="stylesheet" href="styles.css?v=0.0.1-beta.46">
 </head>
 <body>
     <main class="login-page" id="pagina-login">
@@ -110,9 +110,8 @@
                             <div>
                                 <p class="eyebrow">Acompanhamento do chamado</p>
                                 <h2 id="overview-ticket-titulo">-</h2>
-                                <p id="overview-ticket-info">-</p>
                             </div>
-                            <span class="status-label" id="overview-ticket-status">Aguardando atendimento</span>
+                            <span class="ticket-id-label" id="overview-ticket-id">#-</span>
                         </div>
                         <section class="user-queue-overview" aria-label="Posição do chamado na fila">
                             <div class="queue-position-value"><span>Posição atual na fila</span><strong id="overview-queue-position">2º</strong></div>
@@ -202,6 +201,35 @@
                     <article class="summary-card metric-week"><p>Nesta semana</p><strong id="resumo-chamados-semana">—</strong><span id="resumo-chamados-semana-legenda">Carregando...</span></article>
                     <article class="summary-card metric-month"><p>Neste mês</p><strong id="resumo-chamados-mes">—</strong><span id="resumo-chamados-mes-legenda">Carregando...</span></article>
                 </div>
+                <section class="surface-card mike-metrics-card" aria-labelledby="titulo-metricas-mike">
+                    <div class="card-heading">
+                        <div>
+                            <p class="eyebrow">Mike IA</p>
+                            <h2 id="titulo-metricas-mike">Impacto no atendimento</h2>
+                            <p>Números acumulados desde o início. Quando o Mike resolve sozinho, o atendimento termina sem abrir chamado. Somente os casos encaminhados entram na fila técnica.</p>
+                        </div>
+                    </div>
+                    <div class="mike-metrics-grid">
+                        <div class="mike-metric-item">
+                            <strong id="mike-metrica-iniciados">—</strong>
+                            <span>Atendimentos iniciados pelo Mike</span>
+                        </div>
+                        <div class="mike-metric-item">
+                            <strong id="mike-metrica-resolvidos">—</strong>
+                            <span>Resolvidos pelo Mike sem chamado</span>
+                        </div>
+                        <div class="mike-metric-item">
+                            <strong id="mike-metrica-encaminhados">—</strong>
+                            <span>Encaminhados para um técnico</span>
+                        </div>
+                        <div class="mike-metric-item mike-metric-destaque">
+                            <strong id="mike-metrica-taxa">—</strong>
+                            <span>Taxa de resolução automática</span>
+                        </div>
+                    </div>
+                    <p class="field-help" id="mike-metrica-abandonados" hidden></p>
+                    <p class="form-message" id="mensagem-metricas-mike" role="status" aria-live="polite"></p>
+                </section>
                 <div class="technical-dashboard-grid">
                     <section class="surface-card action-hub-card">
                         <div class="card-heading"><div><p class="eyebrow">Operação</p><h2>Ações do técnico</h2><p>Atalhos para as rotinas mais frequentes.</p></div></div>
@@ -365,24 +393,28 @@
                             <img class="mike-abertura-avatar" src="mike-ia-abertura.png" alt="Mike, assistente virtual da Polícia Militar" width="940" height="1683">
                         </aside>
                         <div class="abertura-usuario-conteudo">
-                    <form class="surface-card ticket-form abertura-inicial-form" id="formulario-abertura-usuario" novalidate>
-                        <h2>Como podemos ajudar?</h2>
-                        <p class="field-help">Conte o que está acontecendo. A partir daí, o atendimento seguirá normalmente.</p>
-                        <div class="field-group">
-                            <label for="abertura-categoria">Categoria (se souber)</label>
-                            <select id="abertura-categoria" name="abertura-categoria">
-                                <option value="">Não sei / prefiro não informar</option>
-                                <option value="COMPUTADOR">Computador</option>
-                                <option value="MONITOR">Monitor</option>
-                                <option value="IMPRESSORA">Impressora</option>
-                                <option value="REDE_INTERNET">Rede / Internet</option>
-                                <option value="E_MAIL">E-mail</option>
-                                <option value="OUTRO">Outro</option>
-                            </select>
+                    <section class="surface-card mike-chat-card" id="mike-chat" aria-labelledby="titulo-mike-chat">
+                        <div class="mike-chat-cabecalho">
+                            <img src="mike-ia-avatar.png" alt="Mike, assistente do atendimento" width="48" height="48">
+                            <div><p class="eyebrow">Atendimento guiado</p><h2 id="titulo-mike-chat">Conversar com o Mike</h2></div>
+                            <button class="text-button" type="button" id="mike-chat-cancelar">Cancelar</button>
                         </div>
-                        <div class="field-group">
-                            <label for="abertura-descricao">O que está acontecendo? <span aria-hidden="true">*</span></label>
-                            <textarea id="abertura-descricao" rows="6" maxlength="2000" placeholder="Ex.: Minha impressora não imprime." required></textarea>
+                        <div class="mike-chat-mensagens" id="mike-chat-mensagens" role="log" aria-live="polite" aria-label="Conversa com o Mike"></div>
+                        <div class="mike-chat-acoes" id="mike-chat-acoes">
+                            <p class="mike-chat-instrucao" id="mike-chat-instrucao">Escolha uma opção:</p>
+                            <div class="mike-chat-opcoes" id="mike-chat-opcoes" aria-labelledby="mike-chat-instrucao"></div>
+                        </div>
+                        <p class="form-message" id="mensagem-mike-chat" role="status" aria-live="polite"></p>
+                    </section>
+
+                    <form class="surface-card ticket-form complemento-encaminhamento" id="formulario-encaminhamento-mike" novalidate hidden>
+                        <p class="eyebrow">Encaminhamento</p>
+                        <h2>Vamos direcionar seu atendimento</h2>
+                        <p class="field-help">As informações da sua conversa com o Mike foram mantidas. Complete apenas estes dados para a equipe técnica.</p>
+                        <div class="form-columns">
+                            <div class="field-group"><label for="encaminhamento-categoria">Categoria <span aria-hidden="true">*</span></label><select id="encaminhamento-categoria" required disabled><option value="">Selecione</option><option value="COMPUTADOR">Computador</option><option value="MONITOR">Monitor</option><option value="IMPRESSORA">Impressora</option><option value="REDE_INTERNET">Rede / Internet</option><option value="E_MAIL">E-mail</option><option value="OUTRO">Outro</option></select></div>
+                            <div class="field-group"><label for="encaminhamento-prioridade">Prioridade <span aria-hidden="true">*</span></label><select id="encaminhamento-prioridade" required><option value="">Selecione</option><option value="BAIXA">Baixa</option><option value="MEDIA" selected>Média</option><option value="ALTA">Alta</option><option value="URGENTE">Urgente</option></select></div>
+                            <div class="field-group"><label for="encaminhamento-local">Local / setor <span aria-hidden="true">*</span></label><input id="encaminhamento-local" type="text" placeholder="Ex.: Administração" required></div>
                         </div>
                         <label class="attachment-area anexo-abertura-usuario" for="abertura-anexo">
                             <span aria-hidden="true">⌕</span>
@@ -392,56 +424,10 @@
                             </span>
                             <input id="abertura-anexo" name="abertura-anexo" type="file" accept="image/png,image/jpeg,image/webp" hidden>
                         </label>
-                        <p class="form-message" id="mensagem-abertura-usuario" role="status" aria-live="polite"></p>
-                        <div class="form-actions">
-                            <button class="button button-secondary" type="button" data-route="visao-geral">Cancelar</button>
-                            <button class="button button-primary" type="submit">Continuar</button>
-                        </div>
-                    </form>
-
-                    <section class="surface-card diagnostico-mike" id="diagnostico-mike" aria-labelledby="titulo-diagnostico-mike" tabindex="-1" hidden>
-                        <div class="diagnostico-mike-cabecalho">
-                            <img src="mike-ia-avatar.png" alt="Mike, assistente do atendimento" width="240" height="240">
-                            <div><p class="eyebrow">Atendimento em andamento</p><h2 id="titulo-diagnostico-mike">Vamos verificar algumas coisas</h2></div>
-                        </div>
-                        <p id="mike-diagnostico-introducao">Entendi. Siga estas orientações e me diga se o problema foi resolvido.</p>
-                        <ol class="passos-mike" id="mike-diagnostico-passos"></ol>
-                        <p class="field-help" id="mike-pergunta-resolvido">Isso resolveu o problema?</p>
-                        <p class="form-message" id="mensagem-diagnostico-mike" role="status" aria-live="polite"></p>
-                        <div class="form-actions" id="acoes-diagnostico-mike">
-                            <button class="button button-secondary" type="button" id="mike-voltar">Voltar</button>
-                            <button class="button button-secondary" type="button" id="mike-nao-resolveu">Ainda preciso de ajuda</button>
-                            <button class="button button-primary" type="button" id="mike-resolveu">Sim, resolveu</button>
-                        </div>
-                    </section>
-
-                    <form class="surface-card ticket-form complemento-encaminhamento" id="formulario-encaminhamento-mike" novalidate hidden>
-                        <p class="eyebrow">Encaminhamento</p>
-                        <h2>Vamos direcionar seu atendimento</h2>
-                        <p class="field-help">As informações que você já enviou foram mantidas. Complete apenas estes dados para a equipe técnica.</p>
-                        <div class="form-columns">
-                            <div class="field-group"><label for="encaminhamento-categoria">Categoria <span aria-hidden="true">*</span></label><select id="encaminhamento-categoria" required><option value="">Selecione</option><option value="COMPUTADOR">Computador</option><option value="MONITOR">Monitor</option><option value="IMPRESSORA">Impressora</option><option value="REDE_INTERNET">Rede / Internet</option><option value="E_MAIL">E-mail</option><option value="OUTRO">Outro</option></select></div>
-                            <div class="field-group"><label for="encaminhamento-prioridade">Prioridade <span aria-hidden="true">*</span></label><select id="encaminhamento-prioridade" required><option value="">Selecione</option><option value="BAIXA">Baixa</option><option value="MEDIA" selected>Média</option><option value="ALTA">Alta</option><option value="URGENTE">Urgente</option></select></div>
-                            <div class="field-group"><label for="encaminhamento-local">Local / setor <span aria-hidden="true">*</span></label><input id="encaminhamento-local" type="text" placeholder="Ex.: Administração" required></div>
-                        </div>
                         <p class="form-message" id="mensagem-encaminhamento-mike" role="status" aria-live="polite"></p>
-                        <div class="form-actions"><button class="button button-secondary" type="button" id="mike-voltar-ao-diagnostico">Voltar</button><button class="button button-primary" type="submit">Encaminhar à equipe técnica</button></div>
+                        <div class="form-actions"><button class="button button-secondary" type="button" id="mike-voltar-ao-diagnostico">Voltar à conversa</button><button class="button button-primary" type="submit">Encaminhar à equipe técnica</button></div>
                     </form>
                         </div>
-                    </div>
-                </div>
-            </section>
-
-            <section class="page-view" id="mike-resolvido" data-view data-profile="usuario" aria-labelledby="titulo-mike-resolvido" hidden>
-                <div class="success-screen">
-                    <svg class="success-check" viewBox="0 0 52 52" aria-hidden="true">
-                        <circle class="success-check-circle" cx="26" cy="26" r="24" fill="none" />
-                        <path class="success-check-mark" fill="none" d="M14 27l7 7 16-16" />
-                    </svg>
-                    <h1 id="titulo-mike-resolvido">Problema resolvido com sucesso!</h1>
-                    <p>Seu atendimento foi concluído e permanece disponível no histórico.</p>
-                    <div class="success-screen-actions">
-                        <button class="button button-primary" type="button" data-route="visao-geral">Voltar à visão geral</button>
                     </div>
                 </div>
             </section>
@@ -453,7 +439,7 @@
                         <path class="success-check-mark" fill="none" d="M14 27l7 7 16-16" />
                     </svg>
                     <h1 id="titulo-chamado-sucesso">Chamado registrado com sucesso!</h1>
-                    <p>A equipe técnica foi notificada. Você pode acompanhar o andamento a qualquer momento.</p>
+                    <p id="mensagem-chamado-sucesso">A equipe técnica foi notificada. Você pode acompanhar o andamento a qualquer momento.</p>
                     <div class="success-screen-actions">
                         <button class="button button-secondary" type="button" data-route="abrir-chamado">Abrir outro chamado</button>
                         <button class="button button-primary" type="button" id="botao-sucesso-acompanhar" data-route="meus-chamados">Ver meus chamados</button>
@@ -485,6 +471,7 @@
         </section>
     </main>
 
-    <script src="app.js?v=0.0.1-beta.28"></script>
+    <script src="mike-triagem.js?v=0.0.1-beta.38"></script>
+    <script src="app.js?v=0.0.1-beta.40"></script>
 </body>
 </html>

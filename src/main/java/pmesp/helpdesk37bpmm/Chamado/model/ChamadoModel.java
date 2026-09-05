@@ -73,8 +73,8 @@ public class ChamadoModel {
     private String solucao;
 
     @Enumerated(EnumType.STRING)
-    // A prioridade só existe quando o chamado precisa ser atendido pela equipe técnica.
-    // Chamados encerrados diretamente pelo Mike IA ficam sem prioridade.
+    // Registros históricos podem não ter prioridade. Todo novo chamado enviado para a
+    // equipe técnica recebe uma prioridade no formulário final.
     @Column
     private ChamadoPrioridade prioridade;
 

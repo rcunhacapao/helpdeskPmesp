@@ -6,7 +6,7 @@ public enum AtendimentoMikeIAResultado {
     // O usuário confirmou que as sugestões resolveram o problema
     RESOLVIDO,
 
-    // As sugestões não resolveram; o mesmo chamado foi encaminhado à equipe técnica
+    // As orientações não resolveram; o formulário final criou um chamado para a equipe técnica
     ENCAMINHADO_PARA_CHAMADO,
 
     // O usuário deixou o diagnóstico sem concluir dentro do prazo definido.
