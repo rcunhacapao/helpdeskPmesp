@@ -9,6 +9,7 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 import pmesp.helpdesk37bpmm.Chamado.enums.ChamadoCategoria;
 import pmesp.helpdesk37bpmm.Chamado.enums.ChamadoPrioridade;
+import pmesp.helpdesk37bpmm.Chamado.enums.ChamadoResolvidoPor;
 import pmesp.helpdesk37bpmm.Chamado.enums.ChamadoStatus;
 import pmesp.helpdesk37bpmm.Tecnico.model.TecnicoModel;
 import pmesp.helpdesk37bpmm.Usuario.model.UsuarioModel;
@@ -47,11 +48,13 @@ public class ChamadoModel {
 
     // Tipo do problema informado no chamado
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
+    // A categoria pode ser completada depois do diagnóstico inicial do Mike IA.
+    @Column
     private ChamadoCategoria categoria;
 
     // Local onde o atendimento será realizado
-    @Column(name = "local_atendimento", nullable = false)
+    // O local é obrigatório antes do encaminhamento técnico, mas não na primeira descrição.
+    @Column(name = "local_atendimento")
     private String localAtendimento;
 
     @Column(name = "motivo_cancelamento", columnDefinition = "TEXT")
@@ -63,16 +66,30 @@ public class ChamadoModel {
     private String solucao;
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
+    // A prioridade só existe quando o chamado precisa ser atendido pela equipe técnica.
+    // Chamados encerrados diretamente pelo Mike IA ficam sem prioridade.
+    @Column
     private ChamadoPrioridade prioridade;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private ChamadoStatus status;
 
+    // Preenchido somente quando o chamado foi resolvido. Mantém o status simples e
+    // permite medir separadamente resoluções do Mike IA e da equipe técnica.
+    @Enumerated(EnumType.STRING)
+    @Column(name = "resolvido_por")
+    private ChamadoResolvidoPor resolvidoPor;
+
     @JsonFormat(pattern = "dd/MM/yyyy 'às' HH:mm")
     @Column(name = "data_abertura", nullable = false, updatable = false)
     private LocalDateTime dataAbertura;
+
+    // Usada para recuperar diagnósticos após recarregar a página e identificar abandono.
+    // Mantido opcional no banco enquanto ainda não há uma migração formal para preencher
+    // registros antigos; todo novo chamado recebe este valor pelo serviço.
+    @Column(name = "data_ultima_interacao")
+    private LocalDateTime dataUltimaInteracao;
 
     // Blindar a data contra alterações manuais
     @Setter(AccessLevel.PRIVATE)
@@ -81,5 +98,10 @@ public class ChamadoModel {
 
     public void finalizarAtendimento() {
         this.dataFinalizacao = LocalDateTime.now();
+        this.dataUltimaInteracao = this.dataFinalizacao;
+    }
+
+    public void registrarInteracao() {
+        this.dataUltimaInteracao = LocalDateTime.now();
     }
 }

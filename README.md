@@ -29,10 +29,12 @@ validadas por testes automatizados e revisão de código.
 - Validação de RE: somente números, de 1 a 6 dígitos.
 - Inativação de usuários sem apagar seu histórico.
 - Cancelamento automático de chamados abertos quando o usuário é inativado.
-- Abertura de chamados com descrição, categoria, local de atendimento e prioridade.
+- Abertura integrada de chamado: o primeiro relato já é registrado e recebe diagnóstico inicial.
 - Categorias: computador, monitor, impressora, rede/internet, e-mail e outro.
 - Prioridades: baixa, média, alta e urgente.
-- Fluxo de status: aberto, em atendimento, fechado e cancelado.
+- Fluxo de status: em diagnóstico, aberto, em atendimento, fechado, cancelado e abandonado.
+- Resolução registrada separadamente: pelo Mike IA ou por técnico.
+- Histórico das orientações do Mike disponível no detalhe técnico do chamado encaminhado.
 - Cancelamento de chamado aberto com motivo registrado.
 - Fila de atendimento: urgentes primeiro, depois alta, média e baixa prioridade. Dentro da mesma prioridade, o chamado mais antigo vem antes.
 - Consulta de chamados em atendimento, separada da fila de chamados abertos.
@@ -43,14 +45,22 @@ validadas por testes automatizados e revisão de código.
 ### Fluxo do chamado
 
 ```text
-Usuário ativo -> abre chamado -> ABERTO -> EM_ATENDIMENTO -> FECHADO
-                              |
-                              `-> CANCELADO, quando necessário
+Usuário ativo -> relata o problema -> EM_DIAGNOSTICO
+                                      |
+                                      +-> FECHADO + resolvidoPor=MIKE_IA
+                                      |
+                                      `-> ABERTO -> EM_ATENDIMENTO -> FECHADO + resolvidoPor=TECNICO
+                                            |
+                                            `-> CANCELADO, quando necessário
+
+EM_DIAGNOSTICO -> ABANDONADO, quando não houver interação por 24 horas
 ```
 
 Regras importantes:
 
-- Um chamado novo sempre começa como `ABERTO`.
+- Para usuário comum, um chamado novo começa como `EM_DIAGNOSTICO` depois do primeiro relato.
+- Somente o encaminhamento não resolvido muda esse mesmo chamado para `ABERTO`.
+- Técnico abre diretamente como `ABERTO`, inclusive quando registra em nome de outro RE.
 - Somente chamados `ABERTOS` aparecem na fila.
 - O técnico inicia o atendimento e muda o status para `EM_ATENDIMENTO`.
 - Somente chamados em atendimento podem ser finalizados.
@@ -78,7 +88,7 @@ esse perfil.
 | `GET` | `/tecnicos/disponiveis` | Lista técnicos disponíveis no momento. | técnico |
 | `PATCH` | `/tecnicos/ficar-disponivel/{re}` | Marca o técnico como disponível. | técnico |
 | `PATCH` | `/tecnicos/ficar-indisponivel/{re}` | Marca o técnico como indisponível. | técnico |
-| `POST` | `/chamados/cadastrar` | Abre um chamado. | logado |
+| `POST` | `/chamados/cadastrar` | Abre chamado completo, inclusive para outro RE. | técnico |
 | `GET` | `/chamados/buscar/{id}` | Busca chamado pelo identificador (usuário comum só vê os próprios). | logado |
 | `GET` | `/chamados/meus` | Lista os chamados do usuário autenticado. | logado |
 | `GET` | `/chamados/fila` | Mostra a fila de chamados abertos. | técnico |
@@ -88,6 +98,12 @@ esse perfil.
 | `PATCH` | `/chamados/transferir-responsavel/{id}?reTecnico={re}` | Transfere o chamado para outro técnico. | técnico |
 | `PATCH` | `/chamados/finalizar/{id}` | Finaliza um chamado em atendimento. | técnico |
 | `PATCH` | `/chamados/cancelar/{id}?motivoCancelamento=OUTRO` | Cancela um chamado aberto (usuário comum só o próprio). | logado |
+| `POST` | `/mike-ia/iniciar` | Cria o chamado em diagnóstico e devolve as orientações iniciais. | usuário comum |
+| `GET` | `/mike-ia/em-diagnostico` | Recupera o diagnóstico em andamento após recarregar a página. | usuário comum |
+| `PATCH` | `/mike-ia/concluir/{chamadoId}` | Fecha o mesmo chamado como resolvido pelo Mike IA. | usuário comum |
+| `PATCH` | `/mike-ia/encaminhar/{chamadoId}` | Completa e encaminha o mesmo chamado para a fila técnica. | usuário comum |
+| `GET` | `/mike-ia/chamado/{chamadoId}` | Consulta o histórico do Mike no detalhe técnico do chamado. | técnico |
+| `GET` | `/mike-ia/metricas` | Consulta totais e taxa inicial de resolução automática. | técnico |
 
 ## Autenticação
 
@@ -195,7 +211,7 @@ origem — acesse `http://localhost:8080/` no navegador. Ele já está conectado
 6. ~~Conectar o frontend (hoje um protótipo visual) à API real.~~ ✅ concluído.
 7. ~~Criar login com primeiro acesso por RE e senha própria do Helpdesk.~~ ✅ concluído.
 8. Migrar o banco de H2 para PostgreSQL e preparar a aplicação para Docker.
-9. Criar relatórios de volume, tempo médio de atendimento, categorias mais frequentes e chamados por usuário/local.
+9. Criar relatórios de volume, tempo médio de atendimento, categorias mais frequentes e chamados por usuário/local. Os dados de diagnóstico, resolução pelo Mike e abandono já ficam registrados para essa etapa.
 10. Permitir alterar a prioridade de um chamado diretamente na tela de fila do técnico (o endpoint já existe: `PUT /chamados/atualizar-dados/{id}`).
 11. Registrar código de confirmação por e-mail no primeiro acesso e recuperação de senha (a estrutura já foi pensada para isso, veja [Autenticação](#autenticação)).
 
@@ -207,8 +223,7 @@ O planejamento pode evoluir conforme os testes e as necessidades do setor, mas a
 - Painel do técnico com fila, chamados em atendimento, finalizados e filtros.
 - Indicadores para ajudar o setor a entender volume de trabalho, tempo médio e problemas mais frequentes.
 - Instalação independente para outras unidades.
-- Assistente com sugestões simples antes da abertura do chamado.
-- **Mike IA**, módulo separado para consultas sobre documentos, normas e procedimentos, sempre com fontes revisadas.
+- **Mike IA** integrado à abertura do chamado, com motor inicial de regras e estrutura preparada para evoluir para base aprovada, RAG ou LLM.
 
 ## Identidade visual planejada
 

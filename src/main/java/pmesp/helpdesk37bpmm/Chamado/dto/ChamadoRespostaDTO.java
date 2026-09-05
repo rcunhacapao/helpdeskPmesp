@@ -6,6 +6,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import pmesp.helpdesk37bpmm.Chamado.enums.ChamadoCategoria;
 import pmesp.helpdesk37bpmm.Chamado.enums.ChamadoPrioridade;
+import pmesp.helpdesk37bpmm.Chamado.enums.ChamadoResolvidoPor;
 import pmesp.helpdesk37bpmm.Chamado.enums.ChamadoStatus;
 
 import java.time.LocalDateTime;
@@ -27,9 +28,13 @@ public class ChamadoRespostaDTO {
     private String solucao;
     private ChamadoPrioridade prioridade;
     private ChamadoStatus status;
+    private ChamadoResolvidoPor resolvidoPor;
 
     @JsonFormat(pattern = "dd/MM/yyyy 'às' HH:mm")
     private LocalDateTime dataAbertura;
+
+    @JsonFormat(pattern = "dd/MM/yyyy 'às' HH:mm")
+    private LocalDateTime dataUltimaInteracao;
 
     @JsonFormat(pattern = "dd/MM/yyyy 'às' HH:mm")
     private LocalDateTime dataFinalizacao;

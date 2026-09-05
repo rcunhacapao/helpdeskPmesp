@@ -7,6 +7,7 @@ import pmesp.helpdesk37bpmm.Chamado.dto.ChamadoDTO;
 import pmesp.helpdesk37bpmm.Chamado.dto.ChamadoRespostaDTO;
 import pmesp.helpdesk37bpmm.Chamado.dto.ResumoChamadosDTO;
 import pmesp.helpdesk37bpmm.Chamado.enums.ChamadoPrioridade;
+import pmesp.helpdesk37bpmm.Chamado.enums.ChamadoResolvidoPor;
 import pmesp.helpdesk37bpmm.Chamado.enums.ChamadoStatus;
 import pmesp.helpdesk37bpmm.Chamado.mapper.ChamadoMapper;
 import pmesp.helpdesk37bpmm.Chamado.model.ChamadoModel;
@@ -41,6 +42,13 @@ public class ChamadoService {
 
     // Cadastrar novo chamado usando os dados do ChamadoDTO
     public ChamadoRespostaDTO criar(ChamadoDTO chamadoDTO) {
+        // Usuários comuns iniciam pelo fluxo integrado com o Mike IA. Esta validação no
+        // backend impede que alguém burle a interface e pule o diagnóstico.
+        if (!autenticadoETecnico()) {
+            throw new AcessoNegadoException("ABERTURA_DIRETA_RESTRITA_A_TECNICO",
+                    "O atendimento deve ser iniciado pela tela de abertura de chamado.");
+        }
+
         // Conferir se todos os dados obrigatórios foram enviados
         validarDadosParaAbrirChamado(chamadoDTO);
 
@@ -76,6 +84,7 @@ public class ChamadoService {
         chamadoNovo.setAbertoPor(abrindoParaOutraPessoa ? usuarioAutenticado : null);
         chamadoNovo.setTecnicoResponsavel(tecnicoResponsavel);
         chamadoNovo.setDataAbertura(LocalDateTime.now());
+        chamadoNovo.setDataUltimaInteracao(LocalDateTime.now());
         chamadoNovo.setStatus(ChamadoStatus.ABERTO);
         chamadoNovo.setMotivoCancelamento(null);
 
@@ -250,6 +259,7 @@ public class ChamadoService {
         // Registrar a data final e marcar o chamado como fechado
         chamado.finalizarAtendimento();
         chamado.setStatus(ChamadoStatus.FECHADO);
+        chamado.setResolvidoPor(ChamadoResolvidoPor.TECNICO);
         if (solucao != null && !solucao.isBlank()) {
             chamado.setSolucao(solucao);
         }
@@ -276,6 +286,7 @@ public class ChamadoService {
 
         chamado.setMotivoCancelamento(motivoCancelamento);
         chamado.setStatus(ChamadoStatus.CANCELADO);
+        chamado.registrarInteracao();
         return chamadoMapper.map(chamadoRepository.save(chamado));
     }
 
@@ -297,6 +308,7 @@ public class ChamadoService {
         for (ChamadoModel chamado : chamadosAbertos) {
             chamado.setMotivoCancelamento("USUARIO_INATIVADO");
             chamado.setStatus(ChamadoStatus.CANCELADO);
+            chamado.registrarInteracao();
             chamadoRepository.save(chamado);
         }
     }
@@ -393,8 +405,4 @@ public class ChamadoService {
         return SecurityContextHolder.getContext().getAuthentication().getAuthorities().stream()
                 .anyMatch(autoridade -> autoridade.getAuthority().equals("ROLE_TECNICO"));
     }
-
-
-    // TODO: antes de abrir chamado, oferecer chatbot com orientações e opções pré-definidas.
-
 }

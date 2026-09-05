@@ -7,10 +7,12 @@ const views = document.querySelectorAll('[data-view]');
 const navigationLinks = document.querySelectorAll('.nav-link');
 const ticketForm = document.querySelector('#formulario-chamado');
 const ticketMessage = document.querySelector('#mensagem-chamado');
-const mikeForm = document.querySelector('#formulario-mike');
-const mikeQuestion = document.querySelector('#pergunta-mike');
-const mikeAnswer = document.querySelector('#resposta-mike');
-const mikeReply = document.querySelector('#retorno-mike');
+const formularioAberturaUsuario = document.querySelector('#formulario-abertura-usuario');
+const mensagemAberturaUsuario = document.querySelector('#mensagem-abertura-usuario');
+const anexoAberturaUsuario = document.querySelector('#abertura-anexo');
+const statusAnexoAberturaUsuario = document.querySelector('#abertura-anexo-status');
+const diagnosticoMike = document.querySelector('#diagnostico-mike');
+const formularioEncaminhamentoMike = document.querySelector('#formulario-encaminhamento-mike');
 const cancelTicketForm = document.querySelector('#formulario-cancelamento');
 const cancelTicketMessage = document.querySelector('#mensagem-cancelamento');
 const queueMessage = document.querySelector('#mensagem-fila');
@@ -111,6 +113,8 @@ async function executarComEstadoDeEnvio(botao, textoEnviando, acaoAssincrona) {
 // Sessão autenticada
 // ============================================================
 let sessaoAtual = null; // { identificacaoCompleta, re, tecnico } — preenchido após /auth/login
+let intervaloDeAtualizacaoDoUsuario = null;
+const INTERVALO_DE_ATUALIZACAO_DO_USUARIO_EM_MS = 5000;
 
 function pertenceAoPerfil(elemento) {
     const perfilPermitido = elemento.dataset.profile || 'todos';
@@ -125,6 +129,15 @@ function aplicarSessaoNaInterface() {
 
     // Só o técnico pode abrir um chamado em nome de outra pessoa
     document.querySelector('#grupo-re-solicitante').hidden = !sessaoAtual.tecnico;
+    document.querySelector('#abertura-tecnico').hidden = !sessaoAtual.tecnico;
+    document.querySelector('#abertura-usuario').hidden = sessaoAtual.tecnico;
+
+    const descricaoAbertura = document.querySelector('#descricao-abrir-chamado');
+    if (descricaoAbertura) {
+        descricaoAbertura.textContent = sessaoAtual.tecnico
+            ? 'Preencha as informações para registrar o atendimento, inclusive em nome de outro RE quando necessário.'
+            : 'Descreva o problema para iniciarmos seu atendimento.';
+    }
 
     document.querySelector('#identificacao-sidebar').textContent = sessaoAtual.identificacaoCompleta;
     document.querySelector('#perfil-sessao').textContent = `Perfil: ${sessaoAtual.tecnico ? 'Técnico' : 'Usuário'}`;
@@ -133,6 +146,21 @@ function aplicarSessaoNaInterface() {
     const saudacaoTecnico = document.querySelector('#saudacao-tecnico');
     if (saudacaoUsuario) saudacaoUsuario.textContent = sessaoAtual.identificacaoCompleta;
     if (saudacaoTecnico) saudacaoTecnico.textContent = sessaoAtual.identificacaoCompleta;
+}
+
+async function restaurarSessaoAoCarregarPagina() {
+    try {
+        sessaoAtual = await apiFetch('/auth/sessao');
+        loginPage.hidden = true;
+        appPage.hidden = false;
+        aplicarSessaoNaInterface();
+        await showRoute(sessaoAtual.tecnico ? 'central-tecnica' : 'visao-geral');
+    } catch (erro) {
+        // Ausência de sessão é o estado normal de quem ainda precisa entrar.
+        sessaoAtual = null;
+        appPage.hidden = true;
+        loginPage.hidden = false;
+    }
 }
 
 // ============================================================
@@ -157,11 +185,42 @@ async function showRoute(route) {
     });
 
     await carregarDadosDaRota(rotaValida);
+    configurarAtualizacaoAutomaticaDoUsuario(rotaValida);
+}
+
+// Enquanto o usuário acompanha um chamado, busca o estado novo periodicamente. Assim,
+// quando o técnico iniciar ou finalizar o atendimento, a tela muda sem exigir F5.
+function configurarAtualizacaoAutomaticaDoUsuario(rotaAtual) {
+    const deveAtualizarAutomaticamente = !sessaoAtual?.tecnico
+        && (rotaAtual === 'visao-geral' || rotaAtual === 'meus-chamados');
+
+    if (!deveAtualizarAutomaticamente) {
+        pararAtualizacaoAutomaticaDoUsuario();
+        return;
+    }
+
+    if (intervaloDeAtualizacaoDoUsuario !== null) return;
+
+    intervaloDeAtualizacaoDoUsuario = window.setInterval(async () => {
+        if (document.hidden) return;
+
+        const rotaVisivel = document.querySelector('[data-view]:not([hidden])')?.id;
+        if (rotaVisivel === 'visao-geral') await carregarVisaoGeral();
+        if (rotaVisivel === 'meus-chamados') await carregarMeusChamados();
+    }, INTERVALO_DE_ATUALIZACAO_DO_USUARIO_EM_MS);
+}
+
+function pararAtualizacaoAutomaticaDoUsuario() {
+    if (intervaloDeAtualizacaoDoUsuario === null) return;
+
+    window.clearInterval(intervaloDeAtualizacaoDoUsuario);
+    intervaloDeAtualizacaoDoUsuario = null;
 }
 
 function carregarDadosDaRota(rota) {
     if (rota === 'visao-geral') return carregarVisaoGeral();
     if (rota === 'meus-chamados') return carregarMeusChamados();
+    if (rota === 'abrir-chamado') return carregarAberturaDeChamado();
     if (rota === 'central-tecnica') return carregarCentralTecnica();
     if (rota === 'fila-atendimento') return carregarFilaAtendimento();
     if (rota === 'gestao-usuarios') return carregarListaTecnicos();
@@ -247,6 +306,7 @@ document.querySelector('#sair')?.addEventListener('click', async () => {
     } catch (erro) {
         // Mesmo se a chamada falhar, a sessão local é encerrada abaixo.
     }
+    pararAtualizacaoAutomaticaDoUsuario();
     sessaoAtual = null;
     appPage.hidden = true;
     loginPage.hidden = false;
@@ -263,8 +323,9 @@ const nomeDaCategoria = {
 };
 const nomeDaPrioridade = { BAIXA: 'Baixa', MEDIA: 'Média', ALTA: 'Alta', URGENTE: 'Urgente' };
 const nomeDoStatus = {
-    ABERTO: 'Aguardando atendimento', EM_ATENDIMENTO: 'Em atendimento',
-    FECHADO: 'Finalizado', CANCELADO: 'Cancelado'
+    EM_DIAGNOSTICO: 'Em diagnóstico', ABERTO: 'Aguardando atendimento',
+    EM_ATENDIMENTO: 'Em atendimento', FECHADO: 'Finalizado',
+    CANCELADO: 'Cancelado', ABANDONADO: 'Atendimento abandonado'
 };
 
 // O backend só devolve a descrição do posto (ex.: "3° SGT PM"), mas o formulário de
@@ -302,7 +363,7 @@ async function carregarVisaoGeral() {
 }
 
 function atualizarProgresso(card, status) {
-    const etapaPorStatus = { ABERTO: 1, EM_ATENDIMENTO: 2, FECHADO: 3, CANCELADO: 3 };
+    const etapaPorStatus = { EM_DIAGNOSTICO: 1, ABERTO: 2, EM_ATENDIMENTO: 3, FECHADO: 4, CANCELADO: 0, ABANDONADO: 0 };
     const etapaAtual = etapaPorStatus[status] ?? 0;
     card.querySelectorAll('.progress-step').forEach((passo, indice) => {
         passo.classList.toggle('is-complete', indice < etapaAtual);
@@ -340,7 +401,10 @@ function exibirResumoDoChamado(chamado, totalAtivos = 0) {
     document.querySelector('#overview-ticket-status').textContent = nomeDoStatus[chamado.status];
 
     const emFila = chamado.status === 'ABERTO';
-    document.querySelector('#overview-queue-position').textContent = emFila ? 'Na fila' : '—';
+    const emAtendimento = chamado.status === 'EM_ATENDIMENTO';
+    const posicaoAtual = document.querySelector('#overview-queue-position');
+    posicaoAtual.textContent = emAtendimento ? 'Em atendimento' : (emFila ? 'Na fila' : '—');
+    posicaoAtual.classList.toggle('is-in-service', emAtendimento);
     document.querySelector('#overview-queue-ahead').textContent = emFila ? 'Aguardando um técnico' : 'Atendimento em andamento';
     document.querySelector('#overview-tech-assignment').textContent = chamado.tecnicoResponsavel
         ? `Técnico responsável: ${chamado.tecnicoResponsavel}.`
@@ -464,6 +528,173 @@ cancelTicketForm?.addEventListener('submit', async (event) => {
 });
 
 // ============================================================
+// Abertura integrada com o Mike IA
+// ============================================================
+// Só existe para o usuário comum. O técnico usa o formulário completo e a decisão é
+// feita pelo perfil autenticado, nunca pelo RE que pode ser informado para o solicitante.
+let atendimentoMikeAtual = null;
+
+anexoAberturaUsuario?.addEventListener('change', () => {
+    const imagemSelecionada = anexoAberturaUsuario.files[0];
+    statusAnexoAberturaUsuario.textContent = imagemSelecionada
+        ? `Selecionada: ${imagemSelecionada.name}. Envio ao chamado ainda não disponível.`
+        : 'O envio será conectado ao backend posteriormente.';
+});
+
+async function carregarAberturaDeChamado() {
+    if (!sessaoAtual || sessaoAtual.tecnico) {
+        return;
+    }
+
+    formularioAberturaUsuario.hidden = false;
+    diagnosticoMike.hidden = true;
+    formularioEncaminhamentoMike.hidden = true;
+    mensagemAberturaUsuario.textContent = '';
+    mensagemAberturaUsuario.classList.remove('is-error');
+
+    try {
+        const diagnosticoEmAndamento = await apiFetch('/mike-ia/em-diagnostico');
+        if (diagnosticoEmAndamento) {
+            exibirDiagnosticoMike(diagnosticoEmAndamento);
+        }
+    } catch (erro) {
+        // O formulário continua disponível: a mensagem só é necessária quando o usuário
+        // enviar os dados, evitando um bloqueio visual se a recuperação falhar.
+    }
+}
+
+function exibirDiagnosticoMike(atendimento) {
+    atendimentoMikeAtual = atendimento;
+    formularioAberturaUsuario.hidden = true;
+    formularioEncaminhamentoMike.hidden = true;
+
+    const listaDePassos = document.querySelector('#mike-diagnostico-passos');
+    listaDePassos.innerHTML = '';
+    atendimento.sugestoes.split('\n').filter(Boolean).forEach((passo) => {
+        const item = document.createElement('li');
+        item.textContent = passo;
+        listaDePassos.appendChild(item);
+    });
+
+    const possuiOrientacaoTestavel = atendimento.possuiOrientacaoTestavel === true;
+    document.querySelector('#mike-pergunta-resolvido').hidden = !possuiOrientacaoTestavel;
+    document.querySelector('#mike-resolveu').hidden = !possuiOrientacaoTestavel;
+
+    diagnosticoMike.hidden = false;
+    diagnosticoMike.focus();
+}
+
+formularioAberturaUsuario?.addEventListener('submit', async (event) => {
+    event.preventDefault();
+
+    if (!formularioAberturaUsuario.checkValidity()) {
+        mensagemAberturaUsuario.classList.add('is-error');
+        mensagemAberturaUsuario.textContent = 'Descreva o problema para continuar o atendimento.';
+        formularioAberturaUsuario.reportValidity();
+        return;
+    }
+
+    const corpo = {
+        descricaoProblema: document.querySelector('#abertura-descricao').value.trim(),
+        categoria: document.querySelector('#abertura-categoria').value || null
+    };
+
+    await executarComEstadoDeEnvio(formularioAberturaUsuario.querySelector('button[type="submit"]'),
+        'Iniciando...', async () => {
+            try {
+                const atendimento = await apiFetch('/mike-ia/iniciar', { method: 'POST', body: corpo });
+                exibirDiagnosticoMike(atendimento);
+            } catch (erro) {
+                mensagemAberturaUsuario.classList.add('is-error');
+                mensagemAberturaUsuario.textContent = erro.message;
+            }
+        });
+});
+
+document.querySelector('#mike-resolveu')?.addEventListener('click', async () => {
+    if (!atendimentoMikeAtual) return;
+
+    const botao = document.querySelector('#mike-resolveu');
+    await executarComEstadoDeEnvio(botao, 'Concluindo...', async () => {
+        try {
+            await apiFetch(`/mike-ia/concluir/${atendimentoMikeAtual.atendimentoId}`, { method: 'PATCH' });
+            await showRoute('mike-resolvido');
+        } catch (erro) {
+            const mensagem = document.querySelector('#mensagem-diagnostico-mike');
+            mensagem.classList.add('is-error');
+            mensagem.textContent = erro.message;
+        }
+    });
+});
+
+document.querySelector('#mike-voltar')?.addEventListener('click', async () => {
+    if (!atendimentoMikeAtual) return;
+
+    const botao = document.querySelector('#mike-voltar');
+    await executarComEstadoDeEnvio(botao, 'Voltando...', async () => {
+        try {
+            await apiFetch(`/mike-ia/abandonar/${atendimentoMikeAtual.atendimentoId}`, { method: 'PATCH' });
+            atendimentoMikeAtual = null;
+            await showRoute('abrir-chamado');
+        } catch (erro) {
+            const mensagem = document.querySelector('#mensagem-diagnostico-mike');
+            mensagem.classList.add('is-error');
+            mensagem.textContent = erro.message;
+        }
+    });
+});
+
+document.querySelector('#mike-nao-resolveu')?.addEventListener('click', () => {
+    if (!atendimentoMikeAtual) return;
+
+    document.querySelector('#encaminhamento-categoria').value = atendimentoMikeAtual.categoria || '';
+    diagnosticoMike.hidden = true;
+    formularioEncaminhamentoMike.hidden = false;
+    document.querySelector('#encaminhamento-local').focus();
+});
+
+document.querySelector('#mike-voltar-ao-diagnostico')?.addEventListener('click', () => {
+    if (!atendimentoMikeAtual) return;
+    exibirDiagnosticoMike(atendimentoMikeAtual);
+});
+
+formularioEncaminhamentoMike?.addEventListener('submit', async (event) => {
+    event.preventDefault();
+    const mensagem = document.querySelector('#mensagem-encaminhamento-mike');
+
+    if (!formularioEncaminhamentoMike.checkValidity()) {
+        mensagem.classList.add('is-error');
+        mensagem.textContent = 'Preencha categoria, prioridade e local para encaminhar o atendimento.';
+        formularioEncaminhamentoMike.reportValidity();
+        return;
+    }
+
+    const corpo = {
+        categoria: document.querySelector('#encaminhamento-categoria').value,
+        prioridade: document.querySelector('#encaminhamento-prioridade').value,
+        localAtendimento: document.querySelector('#encaminhamento-local').value.trim()
+    };
+
+    await executarComEstadoDeEnvio(formularioEncaminhamentoMike.querySelector('button[type="submit"]'),
+        'Encaminhando...', async () => {
+            try {
+                await apiFetch(`/mike-ia/encaminhar/${atendimentoMikeAtual.atendimentoId}`, {
+                    method: 'PATCH', body: corpo
+                });
+                formularioEncaminhamentoMike.reset();
+                atendimentoMikeAtual = null;
+                const botaoAcompanhar = document.querySelector('#botao-sucesso-acompanhar');
+                botaoAcompanhar.textContent = 'Ver meus chamados';
+                botaoAcompanhar.dataset.route = 'meus-chamados';
+                await showRoute('chamado-sucesso');
+            } catch (erro) {
+                mensagem.classList.add('is-error');
+                mensagem.textContent = erro.message;
+            }
+        });
+});
+
+// ============================================================
 // Abrir chamado
 // ============================================================
 ticketForm?.addEventListener('submit', async (event) => {
@@ -509,20 +740,6 @@ ticketForm?.addEventListener('submit', async (event) => {
             ticketMessage.textContent = erro.message;
         }
     });
-});
-
-// ============================================================
-// Mike IA — sem backend ainda; continua sendo uma demonstração visual
-// ============================================================
-mikeForm?.addEventListener('submit', (event) => {
-    event.preventDefault();
-    const message = mikeQuestion.value.trim();
-    if (!message) return;
-
-    mikeAnswer.querySelector('p').textContent = message;
-    mikeAnswer.hidden = false;
-    mikeReply.hidden = false;
-    mikeQuestion.value = '';
 });
 
 // ============================================================
@@ -589,6 +806,7 @@ let termoBuscaFila = '';
 let chamadoSelecionadoId = null;
 let filaAbertos = [];
 let filaEmAtendimento = [];
+const historicosMikePorChamadoId = new Map();
 // Distingue "a fila está vazia mesmo" de "não conseguimos carregar a fila" — sem isso,
 // as duas situações mostravam o mesmo texto de lista vazia, escondendo o erro real.
 let houveErroAoCarregarFila = false;
@@ -686,13 +904,60 @@ function renderizarDetalheDoChamado() {
     detalheCategoria.textContent = nomeDaCategoria[chamado.categoria];
     detalheResponsavel.textContent = chamado.tecnicoResponsavel || 'Aguardando assunção';
     detalheDescricao.textContent = chamado.descricao;
-    detalhePrioridadeElemento.textContent = nomeDaPrioridade[chamado.prioridade];
-    detalhePrioridadeElemento.className = `priority-label priority-${chamado.prioridade.toLowerCase()}`;
+    detalhePrioridadeElemento.textContent = chamado.prioridade ? nomeDaPrioridade[chamado.prioridade] : 'Sem prioridade';
+    detalhePrioridadeElemento.className = chamado.prioridade
+        ? `priority-label priority-${chamado.prioridade.toLowerCase()}`
+        : 'priority-label priority-sem-prioridade';
     acoesChamadoAberto.hidden = chamado.status !== 'ABERTO';
     acoesTransferencia.hidden = !podeSerConduzido;
     acoesChamadoAtendimento.hidden = chamado.status !== 'EM_ATENDIMENTO';
 
     popularSelectDeTecnicos();
+    renderizarHistoricoMikeNoDetalhe(chamado.id);
+}
+
+function renderizarHistoricoMikeNoDetalhe(chamadoId) {
+    const secao = document.querySelector('#historico-mike-tecnico');
+    const historico = historicosMikePorChamadoId.get(chamadoId);
+
+    if (historico === undefined) {
+        void carregarHistoricoMikeDoChamado(chamadoId);
+        secao.hidden = true;
+        return;
+    }
+
+    if (!historico) {
+        secao.hidden = true;
+        return;
+    }
+
+    document.querySelector('#detalhe-mike-status').textContent = nomeDoResultadoMike(historico.resultado);
+    document.querySelector('#detalhe-mike-relato').textContent = historico.descricaoProblema;
+    document.querySelector('#detalhe-mike-sugestoes').textContent = historico.sugestoes;
+    secao.hidden = false;
+}
+
+async function carregarHistoricoMikeDoChamado(chamadoId) {
+    try {
+        const historico = await apiFetch(`/mike-ia/chamado/${chamadoId}`);
+        historicosMikePorChamadoId.set(chamadoId, historico);
+    } catch (erro) {
+        // A ausência de histórico do Mike não impede o técnico de atender o chamado.
+        historicosMikePorChamadoId.set(chamadoId, null);
+    }
+
+    if (chamadoSelecionadoId === chamadoId) {
+        renderizarHistoricoMikeNoDetalhe(chamadoId);
+    }
+}
+
+function nomeDoResultadoMike(resultado) {
+    const nomePorResultado = {
+        RESOLVIDO: 'Resolvido com orientações do Mike IA.',
+        ENCAMINHADO_PARA_CHAMADO: 'Encaminhado à equipe técnica após as orientações.',
+        ABANDONADO: 'Diagnóstico abandonado pelo usuário.'
+    };
+    return nomePorResultado[resultado] || 'Diagnóstico em andamento.';
 }
 
 // Monta o card de um chamado da fila usando textContent (nunca innerHTML) para que
@@ -712,8 +977,10 @@ function criarElementoDoChamado(chamado) {
     codigo.className = 'queue-ticket-code';
     codigo.textContent = `#${chamado.id}`;
     const prioridade = document.createElement('span');
-    prioridade.className = `priority-label priority-${chamado.prioridade.toLowerCase()}`;
-    prioridade.textContent = nomeDaPrioridade[chamado.prioridade];
+    prioridade.className = chamado.prioridade
+        ? `priority-label priority-${chamado.prioridade.toLowerCase()}`
+        : 'priority-label priority-sem-prioridade';
+    prioridade.textContent = chamado.prioridade ? nomeDaPrioridade[chamado.prioridade] : 'Sem prioridade';
     topo.append(codigo, prioridade);
 
     const titulo = document.createElement('strong');
@@ -1054,3 +1321,5 @@ async function carregarListaTecnicos() {
 }
 
 document.querySelector('#atualizar-lista-tecnicos')?.addEventListener('click', carregarListaTecnicos);
+
+restaurarSessaoAoCarregarPagina();

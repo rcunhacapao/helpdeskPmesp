@@ -34,7 +34,8 @@ public class SecurityConfig {
             "/usuarios/**", "/tecnicos/**",
             "/chamados/fila", "/chamados/em-atendimento", "/chamados/resumo",
             "/chamados/atualizar-dados/**", "/chamados/iniciar-atendimento/**",
-            "/chamados/transferir-responsavel/**", "/chamados/finalizar/**"
+            "/chamados/transferir-responsavel/**", "/chamados/finalizar/**",
+            "/mike-ia/chamado/**", "/mike-ia/metricas"
     };
 
     @Bean

@@ -29,6 +29,7 @@ import java.util.List;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
@@ -70,6 +71,7 @@ class ChamadoServiceTest {
 
     @Test
     void deveExigirProblemaAoAbrirChamado() {
+        autenticarComoTecnico();
         ChamadoDTO chamadoDTO = criarChamadoValido();
         chamadoDTO.setDescricao("   ");
 
@@ -83,6 +85,7 @@ class ChamadoServiceTest {
 
     @Test
     void deveInformarQuandoUsuarioDoChamadoNaoForEncontrado() {
+        autenticarComoTecnico();
         ChamadoDTO chamadoDTO = criarChamadoValido();
         when(usuarioRepository.findByRe("250861")).thenReturn(Optional.empty());
 
@@ -135,23 +138,37 @@ class ChamadoServiceTest {
 
 
     @Test
-    void deveNegarAberturaDeChamadoEmNomeDeOutroQuandoNaoForTecnico() {
+    void deveImpedirAberturaDiretaDeUsuarioComumParaManterDiagnosticoIntegrado() {
         ChamadoDTO chamadoDTO = criarChamadoValido();
-
-        UsuarioModel solicitante = new UsuarioModel();
-        solicitante.setId(1L);
-        solicitante.setAtivo(true);
-        when(usuarioRepository.findByRe("250861")).thenReturn(Optional.of(solicitante));
-
-        UsuarioModel usuarioAutenticado = new UsuarioModel();
-        usuarioAutenticado.setId(2L);
-        when(usuarioRepository.findByRe("111111")).thenReturn(Optional.of(usuarioAutenticado));
         autenticarComoUsuarioComum("111111");
 
         AcessoNegadoException excecao = assertThrows(AcessoNegadoException.class,
                 () -> chamadoService.criar(chamadoDTO));
 
-        assertEquals("ABERTURA_EM_NOME_DE_OUTRO_NAO_PERMITIDA", excecao.getCodigo());
+        assertEquals("ABERTURA_DIRETA_RESTRITA_A_TECNICO", excecao.getCodigo());
+    }
+
+
+    @Test
+    void devePermitirTecnicoAbrirChamadoParaOutroReSemPassarPeloMike() {
+        ChamadoDTO chamadoDTO = criarChamadoValido();
+        UsuarioModel solicitante = new UsuarioModel();
+        solicitante.setId(1L);
+        solicitante.setAtivo(true);
+        UsuarioModel tecnicoAutenticado = new UsuarioModel();
+        tecnicoAutenticado.setId(2L);
+        ChamadoModel novoChamado = new ChamadoModel();
+
+        autenticarComoTecnico();
+        when(usuarioRepository.findByRe("250861")).thenReturn(Optional.of(solicitante));
+        when(usuarioRepository.findByRe("999999")).thenReturn(Optional.of(tecnicoAutenticado));
+        when(chamadoMapper.map(chamadoDTO)).thenReturn(novoChamado);
+        when(chamadoRepository.save(novoChamado)).thenReturn(novoChamado);
+        when(chamadoMapper.map(novoChamado)).thenReturn(new pmesp.helpdesk37bpmm.Chamado.dto.ChamadoRespostaDTO());
+
+        assertDoesNotThrow(() -> chamadoService.criar(chamadoDTO));
+        assertEquals(tecnicoAutenticado, novoChamado.getAbertoPor());
+        assertEquals(ChamadoStatus.ABERTO, novoChamado.getStatus());
     }
 
 

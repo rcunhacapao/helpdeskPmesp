@@ -20,6 +20,7 @@ class LoginVisualEstaticoTest {
         // real de POST /auth/login. Só mostra o app se a API confirmar a sessão.
         assertFalse(comportamento.contains("loginForm.checkValidity()"));
         assertTrue(comportamento.contains("apiFetch('/auth/login'"));
+        assertTrue(comportamento.contains("apiFetch('/auth/sessao'"));
         assertTrue(comportamento.contains("sessaoAtual = await apiFetch"));
         assertTrue(comportamento.contains("appPage.hidden = false;"));
         assertTrue(comportamento.contains("loginMessage.textContent = 'RE ou senha inválidos.';"));

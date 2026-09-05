@@ -7,11 +7,19 @@ import pmesp.helpdesk37bpmm.Tecnico.model.TecnicoModel;
 import pmesp.helpdesk37bpmm.Usuario.model.UsuarioModel;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 
 public interface ChamadoRepository extends JpaRepository<ChamadoModel, Long> {
 
     // Buscar chamados abertos de um usuário
     List<ChamadoModel> findBySolicitanteAndStatus(UsuarioModel solicitante, ChamadoStatus status);
+
+    // Recupera o diagnóstico mais recente após recarregar a página de abertura de chamado.
+    Optional<ChamadoModel> findFirstBySolicitanteAndStatusOrderByDataUltimaInteracaoDesc(
+            UsuarioModel solicitante, ChamadoStatus status);
+
+    // Diagnósticos sem interação por muito tempo são encerrados como abandono para métricas.
+    List<ChamadoModel> findByStatusAndDataUltimaInteracaoBefore(ChamadoStatus status, LocalDateTime limite);
 
     // Buscar todos os chamados de um usuário, do mais recente para o mais antigo
     List<ChamadoModel> findBySolicitanteOrderByDataAberturaDesc(UsuarioModel solicitante);

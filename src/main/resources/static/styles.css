@@ -492,13 +492,16 @@ h3 { font-size: clamp(.9rem, 1.2vw, 1rem); margin: 0; }
    PAINEL DO USUÁRIO
    ============================================ */
 .current-ticket-card { border-color: rgba(45, 95, 139, .28); box-shadow: 0 8px 22px rgba(45, 95, 139, .08); justify-content: space-between; }
-.current-ticket-card .eyebrow { color: var(--info); }
+.current-ticket-card .eyebrow { color: var(--primary); }
+#visao-geral .page-heading .eyebrow { color: var(--primary); }
 .current-ticket-card .card-heading p:not(.eyebrow) { color: var(--muted-blue); }
 .current-ticket-card .status-label { background: rgba(45, 95, 139, .11); color: var(--info); }
 .user-queue-overview, .user-queue-summary { align-items: center; background: linear-gradient(135deg, rgba(45, 95, 139, .08), rgba(45, 95, 139, .025)); border: 1px solid rgba(45, 95, 139, .18); border-radius: 7px; display: grid; gap: 16px; grid-template-columns: minmax(112px, .38fr) minmax(0, 1fr); margin-top: 16px; padding: 12px 14px; }
+.user-queue-overview:has(.is-in-service), .user-queue-summary:has(.is-in-service) { grid-template-columns: minmax(165px, .38fr) minmax(0, 1fr); }
 .queue-position-value { border-right: 1px solid rgba(45, 95, 139, .18); display: grid; gap: 2px; padding-right: 14px; }
 .queue-position-value > span { color: var(--muted-blue); font-size: .67rem; font-weight: 800; letter-spacing: .04em; text-transform: uppercase; }
-.queue-position-value > strong { color: var(--info); font-size: clamp(1.55rem, 3.5vh, 2.15rem); line-height: 1; }
+.queue-position-value > strong { color: var(--danger); font-size: clamp(1.55rem, 3.5vh, 2.15rem); line-height: 1; }
+.queue-position-value > strong.is-in-service { color: var(--success-bright); font-size: clamp(1.1rem, 2.2vh, 1.35rem); }
 .queue-overview-details { display: grid; gap: 5px; }
 .queue-overview-details > strong { color: var(--text); font-size: .84rem; }
 .queue-overview-details > span { color: var(--muted-blue); font-size: .75rem; line-height: 1.4; }
@@ -542,7 +545,7 @@ h3 { font-size: clamp(.9rem, 1.2vw, 1rem); margin: 0; }
 .progress-step p { font-size: .72rem; line-height: 1.3; margin: 8px auto 0; max-width: 130px; }
 .progress-step.is-complete span { background: var(--nav); border-color: var(--nav); color: var(--surface); }
 .progress-step.is-current { color: var(--info); font-weight: 750; }
-.progress-step.is-current span { background: var(--info); border-color: var(--info); color: var(--surface); box-shadow: 0 0 0 5px rgba(45, 95, 139, .1); }
+.progress-step.is-current span { background: var(--primary); border-color: var(--primary); color: var(--surface); box-shadow: 0 0 0 5px var(--focus); }
 .card-actions { align-items: center; display: flex; flex-wrap: wrap; gap: 14px; justify-content: space-between; }
 
 .notices-card { background: linear-gradient(145deg, #FFFFFF, rgba(45, 95, 139, .045)); }
@@ -562,13 +565,15 @@ h3 { font-size: clamp(.9rem, 1.2vw, 1rem); margin: 0; }
 .meu-chamado-item p { color: var(--muted); font-size: .82rem; margin: 4px 0 0; }
 .meu-chamado-solucao { background: rgba(46, 125, 50, .06); border-left: 3px solid var(--success); border-radius: 4px; margin-top: 10px; padding: 8px 10px; }
 .lista-tecnicos-vazia, .lista-chamados-vazia { color: var(--muted); font-size: .82rem; padding: 8px 0; }
-#meus-chamados .page-heading .eyebrow { color: var(--info); }
+#meus-chamados .page-heading .eyebrow { color: var(--primary); }
 .ticket-list-card { border-color: rgba(45, 95, 139, .24); }
-.ticket-list-card .eyebrow { color: var(--info); }
+.ticket-list-card .eyebrow { color: var(--primary); }
 .ticket-list-card .status-label { background: rgba(45, 95, 139, .11); color: var(--info); }
+.ticket-list-card .status-label.status-em_diagnostico { background: rgba(45, 95, 139, .11); color: var(--info); }
 .ticket-list-card .status-label.status-em_atendimento { background: rgba(199, 154, 50, .16); color: #88681F; }
 .ticket-list-card .status-label.status-fechado { background: rgba(46, 125, 50, .12); color: var(--success); }
 .ticket-list-card .status-label.status-cancelado { background: rgba(26, 29, 32, .08); color: var(--muted); }
+.ticket-list-card .status-label.status-abandonado { background: rgba(26, 29, 32, .08); color: var(--muted); }
 .ticket-opened-date { color: var(--muted-blue); font-size: .78rem; font-weight: 700; margin: 18px 0 14px; }
 .ticket-details { display: grid; gap: 12px; grid-template-columns: repeat(4, minmax(0, 1fr)); margin: 24px 0 16px; }
 .ticket-details div { background: rgba(26, 29, 32, .035); border-radius: 6px; padding: 10px; }
@@ -653,6 +658,7 @@ h3 { font-size: clamp(.9rem, 1.2vw, 1rem); margin: 0; }
 .priority-label.priority-alta { background: rgba(106, 62, 142, .13); color: var(--priority-high); }
 .priority-label.priority-media { background: rgba(199, 154, 50, .14); color: #88681F; }
 .priority-label.priority-baixa { background: rgba(45, 95, 139, .12); color: var(--info); }
+.priority-label.priority-sem-prioridade { background: rgba(26, 29, 32, .08); color: var(--muted); }
 .queue-ticket-status { color: var(--info); font-size: .66rem; font-weight: 800; }
 .queue-empty-list { color: var(--muted); font-size: .78rem; line-height: 1.45; padding: 20px 8px; text-align: center; }
 .queue-empty-list.is-error { color: var(--danger); font-weight: 700; }
@@ -821,8 +827,7 @@ h3 { font-size: clamp(.9rem, 1.2vw, 1rem); margin: 0; }
 
 .ticket-form input,
 .ticket-form select,
-.ticket-form textarea,
-.chat-form input {
+.ticket-form textarea {
     background: var(--surface);
     border: 1px solid var(--border);
     border-radius: 6px;
@@ -851,18 +856,15 @@ h3 { font-size: clamp(.9rem, 1.2vw, 1rem); margin: 0; }
 .ticket-form option { color: var(--text); }
 
 .ticket-form input::placeholder,
-.ticket-form textarea::placeholder,
-.chat-form input::placeholder { color: var(--muted); opacity: 1; }
+.ticket-form textarea::placeholder { color: var(--muted); opacity: 1; }
 
 .ticket-form input:hover,
 .ticket-form select:hover,
-.ticket-form textarea:hover,
-.chat-form input:hover { border-color: rgba(139, 0, 0, .38); }
+.ticket-form textarea:hover { border-color: rgba(139, 0, 0, .38); }
 
 .ticket-form input:focus,
 .ticket-form select:focus,
-.ticket-form textarea:focus,
-.chat-form input:focus {
+.ticket-form textarea:focus {
     border-color: var(--primary);
     box-shadow: 0 0 0 3px var(--focus);
     outline: none;
@@ -908,72 +910,62 @@ button + .form-message, .form-actions + .form-message { margin-top: 12px; }
 .tip-card ul { display: grid; gap: 10px; list-style: none; margin: 0; padding: 0; }
 .tip-card li { align-items: start; display: flex; font-size: .8125rem; line-height: 1.4; }
 .tip-card li::before { color: var(--info); content: "●"; font-size: .65rem; margin: 4px 8px 0 0; }
+.historico-mike-tecnico { border-left: 3px solid var(--info); }
+.historico-mike-tecnico .eyebrow { color: var(--info); }
+.historico-mike-tecnico h4 { font-size: .78rem; margin: 14px 0 4px; }
+.historico-mike-tecnico p { white-space: pre-line; }
+.historico-mike-status { color: var(--info); font-size: .82rem; font-weight: 750; }
 
 /* ============================================
-   CHAT (Mike IA)
+   ABERTURA INTEGRADA COM MIKE IA
+   ============================================ */
+.ticket-layout-com-mike,
+.abertura-usuario { margin: 0 auto; max-width: 1280px; }
+.ticket-layout-com-mike,
+.abertura-usuario-layout { align-items: center; display: grid; gap: clamp(24px, 4vw, 56px); grid-template-columns: minmax(240px, .42fr) minmax(0, 1fr); }
+/* O formulário técnico pode ser maior que a altura disponível. A rolagem fica
+   dentro da tela de abertura para nunca cortar sua borda ou os botões finais. */
+#abrir-chamado { overflow-x: hidden; overflow-y: auto; padding-right: 6px; }
+#abrir-chamado .ticket-layout-com-mike,
+#abrir-chamado .abertura-usuario { flex: 1; min-height: 0; }
+#abrir-chamado .ticket-layout-com-mike,
+#abrir-chamado .abertura-usuario-layout { height: 100%; min-height: 0; }
+.ticket-layout-conteudo-tecnico { width: 100%; }
+.abertura-usuario-conteudo { display: grid; gap: 18px; min-width: 0; }
+.mike-abertura-persona { align-items: center; display: flex; justify-content: flex-end; min-height: 0; min-width: 0; }
+.mike-abertura-avatar { display: block; height: clamp(420px, 62vh, 720px); max-width: 100%; object-fit: contain; object-position: center; }
+.mike-abertura-persona-tecnico { align-self: stretch; }
+.abertura-inicial-form, .diagnostico-mike, .complemento-encaminhamento { margin: 0; }
+.abertura-inicial-form { padding: 16px 20px; }
+.abertura-inicial-form h2 { margin-bottom: 12px; padding-bottom: 8px; }
+.abertura-inicial-form .field-group { margin-bottom: 12px; padding: 6px 8px; }
+.abertura-inicial-form textarea { height: clamp(80px, 12vh, 104px); min-height: 80px; }
+.abertura-inicial-form .attachment-area { margin: 0 8px 4px; padding: 8px 10px; }
+.abertura-inicial-form .attachment-area + .form-message { margin-top: 4px; }
+.abertura-inicial-form .form-actions { margin-top: 8px; padding-top: 10px; }
+.diagnostico-mike { border-color: rgba(45, 95, 139, .24); }
+.diagnostico-mike:focus { outline: none; }
+.diagnostico-mike-cabecalho { align-items: center; border-bottom: 1px solid var(--border); display: flex; gap: 14px; margin-bottom: 18px; padding-bottom: 14px; }
+.diagnostico-mike-cabecalho img { border: 2px solid rgba(139, 0, 0, .28); border-radius: 50%; height: 54px; object-fit: cover; width: 54px; }
+.diagnostico-mike-cabecalho .eyebrow { color: var(--primary); margin-bottom: 3px; }
+.diagnostico-mike-cabecalho h2 { font-size: 1.2rem; }
+.passos-mike { display: grid; gap: 10px; list-style: none; margin: 18px 0 20px; padding: 0; }
+.passos-mike li { align-items: flex-start; color: var(--text); display: flex; font-size: .9rem; line-height: 1.5; }
+.passos-mike li::before { align-items: center; background: rgba(45, 95, 139, .12); border-radius: 50%; color: var(--info); content: "✓"; display: inline-flex; flex: 0 0 22px; font-size: .75rem; font-weight: 800; height: 22px; justify-content: center; margin: 1px 9px 0 0; }
+.complemento-encaminhamento { border-color: rgba(139, 0, 0, .22); margin-top: 18px; }
+.complemento-encaminhamento > .eyebrow { color: var(--primary); }
+.nav-badge { background: rgba(255, 255, 255, .1); border: 1px solid rgba(255, 255, 255, .2); border-radius: 99px; color: rgba(255, 255, 255, .78); font-size: .58rem; font-weight: 800; letter-spacing: .02em; margin-left: auto; padding: 3px 6px; text-transform: uppercase; }
+
+/* ============================================
+   ÁREA FUTURA DO MIKE IA
    ============================================ */
 .mike-conversation-layout { align-items: stretch; display: grid; flex: 1; gap: clamp(16px, 2vw, 28px); grid-template-columns: minmax(190px, .32fr) minmax(0, 1fr); min-height: 0; }
 #mike-ia .page-heading .eyebrow { color: var(--accent); }
 .mike-persona { align-items: center; display: flex; justify-content: flex-end; min-height: 0; min-width: 0; padding: 0 6px 0 0; }
 .mike-fullbody-avatar { display: block; height: clamp(380px, 58vh, 640px); max-width: 100%; object-fit: contain; object-position: bottom center; }
-.chat-card {
-    display: flex;
-    flex-direction: column;
-    margin: 0;
-    max-width: none;
-    width: 100%;
-    flex: 1;
-    min-height: 0;
-}
-.mike-chat-intro { align-items: center; border-bottom: 1px solid var(--border); display: flex; gap: 12px; justify-content: space-between; margin-bottom: 16px; padding-bottom: 14px; }
-.mike-chat-intro .eyebrow { color: var(--info); margin-bottom: 4px; }
-.mike-availability { align-items: center; background: rgba(45, 95, 139, .09); border-radius: 99px; color: var(--info); display: inline-flex; font-size: .7rem; font-weight: 800; gap: 6px; padding: 6px 8px; white-space: nowrap; }
-.mike-availability > span { background: var(--info); border-radius: 50%; height: 6px; width: 6px; }
-.chat-messages {
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-    flex: 1;
-    overflow-y: auto;
-    padding-bottom: 16px;
-}
-.chat-message { border-radius: 8px; line-height: 1.4; max-width: 85%; padding: clamp(10px, 2vh, 14px); flex-shrink: 0;}
-.chat-message strong { font-size: .75rem; }
-.chat-message p { font-size: clamp(.8125rem, 1vw, .875rem); margin: 2px 0 0; }
-.chat-message-mike {
-    align-items: flex-start;
-    align-self: flex-start;
-    background: transparent;
-    display: flex;
-    gap: 10px;
-    padding: 0;
-}
-.mike-message-avatar {
-    background: var(--surface);
-    border: 2px solid rgba(139, 0, 0, .32);
-    border-radius: 50%;
-    box-shadow: 0 3px 10px rgba(26, 29, 32, .14);
-    flex: 0 0 42px;
-    height: 42px;
-    overflow: hidden;
-    width: 42px;
-}
-.mike-message-avatar img {
-    display: block;
-    height: 100%;
-    object-fit: cover;
-    width: 100%;
-}
-.chat-message-mike .chat-bubble {
-    background: rgba(26, 29, 32, .06);
-    border: 1px solid rgba(26, 29, 32, .08);
-    border-radius: 8px;
-    box-shadow: 0 2px 8px rgba(26, 29, 32, .04);
-    padding: clamp(10px, 2vh, 14px);
-}
-.chat-message-user { background: rgba(139, 0, 0, .08); align-self: flex-end; }
-.chat-form { display: flex; gap: 8px; margin-top: auto; padding-top: 16px; border-top: 1px solid var(--border); flex-shrink: 0;}
-.chat-form input { flex: 1; }
+.mike-em-criacao { align-self: center; border-color: rgba(45, 95, 139, .22); margin: 0; max-width: 680px; }
+.mike-em-criacao .eyebrow { color: var(--info); }
+.mike-em-criacao p:not(.eyebrow) { line-height: 1.6; max-width: 62ch; }
 .sr-only { clip: rect(0,0,0,0); height: 1px; overflow: hidden; position: absolute; width: 1px; }
 
 /* Fica invisível até receber foco pelo teclado, permitindo pular a navegação lateral. */
@@ -1002,4 +994,48 @@ button + .form-message, .form-actions + .form-message { margin-top: 12px; }
         scroll-behavior: auto !important;
         transition-duration: .01ms !important;
     }
+}
+
+/* Mantém a abertura completa dentro de monitores de notebook. O formulário técnico
+   usa o espaço horizontal disponível para evitar cortar campos ou criar rolagem. */
+@media (max-height: 820px) {
+    #abertura-tecnico {
+        align-items: end;
+        gap: clamp(16px, 2vw, 28px);
+        grid-template-columns: minmax(170px, .28fr) minmax(0, 1fr);
+    }
+
+    #abertura-tecnico .mike-abertura-avatar { height: min(52vh, 380px); }
+    #abertura-tecnico .ticket-layout-conteudo-tecnico { grid-template-columns: minmax(0, 1fr); }
+    #abertura-tecnico .tip-card { display: none; }
+
+    #formulario-chamado {
+        display: grid;
+        gap: 6px 12px;
+        grid-template-columns: minmax(180px, .8fr) minmax(260px, 1.2fr);
+        padding: 14px 16px;
+    }
+
+    #formulario-chamado h2,
+    #formulario-chamado .form-columns,
+    #formulario-chamado .campo-descricao-chamado,
+    #formulario-chamado .attachment-area,
+    #formulario-chamado .form-message,
+    #formulario-chamado .form-actions { grid-column: 1 / -1; }
+    #formulario-chamado h2 { margin-bottom: 2px; padding-bottom: 9px; }
+    #formulario-chamado .field-group { margin: 0; padding: 4px; }
+    #formulario-chamado .form-columns { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    #formulario-chamado input,
+    #formulario-chamado select { min-height: 40px; }
+    #formulario-chamado textarea { height: 88px; min-height: 88px; padding: 8px 12px; }
+    #formulario-chamado .attachment-area { margin: 0; padding: 8px 10px; }
+    #formulario-chamado .attachment-area + .form-message { margin: 0; min-height: 18px; }
+    #formulario-chamado .form-actions { margin-top: 0; padding-top: 8px; }
+}
+
+/* Em alturas realmente pequenas, a rolagem fica restrita ao formulário. Assim,
+   nenhum campo obrigatório se torna inacessível. */
+@media (max-height: 620px) {
+    #abrir-chamado .ticket-layout-conteudo-tecnico,
+    #abrir-chamado .abertura-usuario-conteudo { max-height: 100%; overflow-y: auto; padding-right: 6px; }
 }
