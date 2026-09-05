@@ -60,10 +60,10 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
     display: flex;
     justify-content: center;
     height: 100vh;
+    height: 100dvh;
     padding: clamp(16px, 4vh, 32px);
     position: relative;
-    overflow-y: auto;
-    overflow-x: hidden;
+    overflow: hidden;
 }
 
 /* Background animated blobs (Glow effects) */

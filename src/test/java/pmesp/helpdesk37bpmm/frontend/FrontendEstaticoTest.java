@@ -34,7 +34,7 @@ class FrontendEstaticoTest {
 
                 // Telas principais continuam presentes
                 () -> assertTrue(pagina.contains("id=\"pagina-login\"")),
-                () -> assertTrue(pagina.contains("styles.css?v=0.0.1-beta.55")),
+                () -> assertTrue(pagina.contains("styles.css?v=0.0.1-beta.56")),
                 () -> assertTrue(pagina.contains("mike-triagem.js?v=0.0.1-beta.38")),
                 () -> assertTrue(pagina.contains("app.js?v=0.0.1-beta.42")),
                 () -> assertTrue(pagina.contains("id=\"visao-geral\"")),
