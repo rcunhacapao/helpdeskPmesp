@@ -416,9 +416,10 @@ h3 { font-size: clamp(.9rem, 1.2vw, 1rem); margin: 0; }
 .mike-highlight { background: rgba(139, 0, 0, .05); justify-content: space-between; }
 .mike-highlight .eyebrow { margin-bottom: 4px; }
 .mike-overview-avatar {
+    align-self: center;
     display: block;
-    height: clamp(120px, 18vh, 168px);
-    margin: 4px auto 12px;
+    height: clamp(184px, 28vh, 236px);
+    margin: 0 auto 8px;
     max-width: 100%;
     object-fit: contain;
 }
