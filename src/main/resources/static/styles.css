@@ -199,8 +199,12 @@ label { display: block; font-size: .9375rem; font-weight: 700; margin-bottom: 6p
 .button-primary:active { box-shadow: none; transform: translateY(0); }
 .button-block { width: 100%; margin-top: 12px; }
 
-.form-message { color: #ff4d4d; font-size: .875rem; margin: -4px 0 12px; min-height: 1.25rem; }
-.form-message.is-error { color: #ff4d4d; }
+.form-message { color: var(--muted); font-size: .875rem; margin: -4px 0 12px; min-height: 1.25rem; }
+.form-message.is-error { color: var(--danger); }
+
+/* A tela de login está fora do escopo desta auditoria: preserva a cor original das mensagens do card. */
+.login-card .form-message,
+.login-card .form-message.is-error { color: #ff4d4d; }
 
 /* ============================================
    APP SHELL

@@ -234,6 +234,49 @@ function renderizarDetalheDoChamado() {
     document.querySelector('#acoes-chamado-atendimento').hidden = chamado.status !== 'EM_ATENDIMENTO';
 }
 
+// Monta o card de um chamado da fila usando textContent (nunca innerHTML) para que
+// campos digitados por qualquer usuário (assunto, categoria, local) nunca sejam
+// interpretados como HTML.
+function criarElementoDoChamado(chamado) {
+    const botao = document.createElement('button');
+    botao.type = 'button';
+    botao.className = `queue-ticket${chamado.id === chamadoSelecionadoId ? ' is-selected' : ''}`;
+    botao.setAttribute('role', 'listitem');
+    botao.dataset.selectTicket = chamado.id;
+    botao.setAttribute('aria-pressed', String(chamado.id === chamadoSelecionadoId));
+
+    const topo = document.createElement('span');
+    topo.className = 'queue-ticket-top';
+    const codigo = document.createElement('span');
+    codigo.className = 'queue-ticket-code';
+    codigo.textContent = `#${chamado.codigo}`;
+    const prioridade = document.createElement('span');
+    prioridade.className = `priority-label priority-${chamado.prioridade.toLocaleLowerCase('pt-BR')}`;
+    prioridade.textContent = nomeDaPrioridade[chamado.prioridade];
+    topo.append(codigo, prioridade);
+
+    const titulo = document.createElement('strong');
+    titulo.className = 'queue-ticket-title';
+    titulo.textContent = chamado.assunto;
+
+    const meta = document.createElement('span');
+    meta.className = 'queue-ticket-meta';
+    meta.textContent = `${chamado.categoria} · ${chamado.local} · ${chamado.dataAbertura.toLocaleLowerCase('pt-BR')}`;
+
+    const rodape = document.createElement('span');
+    rodape.className = 'queue-ticket-footer';
+    const status = document.createElement('span');
+    status.className = 'queue-ticket-status';
+    status.textContent = nomeDoStatus[chamado.status];
+    const seta = document.createElement('span');
+    seta.setAttribute('aria-hidden', 'true');
+    seta.textContent = '›';
+    rodape.append(status, seta);
+
+    botao.append(topo, titulo, meta, rodape);
+    return botao;
+}
+
 function renderizarFilaAtendimento() {
     if (!queueList) return;
 
@@ -255,17 +298,17 @@ function renderizarFilaAtendimento() {
         chamadoSelecionadoId = null;
     }
 
-    queueList.innerHTML = chamadosVisiveis.length
-        ? chamadosVisiveis.map((chamado) => `
-            <button class="queue-ticket${chamado.id === chamadoSelecionadoId ? ' is-selected' : ''}" type="button" role="listitem" data-select-ticket="${chamado.id}" aria-pressed="${chamado.id === chamadoSelecionadoId}">
-                <span class="queue-ticket-top"><span class="queue-ticket-code">#${chamado.codigo}</span><span class="priority-label priority-${chamado.prioridade.toLocaleLowerCase('pt-BR')}">${nomeDaPrioridade[chamado.prioridade]}</span></span>
-                <strong class="queue-ticket-title">${chamado.assunto}</strong>
-                <span class="queue-ticket-meta">${chamado.categoria} · ${chamado.local} · ${chamado.dataAbertura.toLocaleLowerCase('pt-BR')}</span>
-                <span class="queue-ticket-footer"><span class="queue-ticket-status">${nomeDoStatus[chamado.status]}</span><span aria-hidden="true">›</span></span>
-            </button>`).join('')
-        : `<p class="queue-empty-list">${filtroFilaAtual === 'ABERTO'
+    queueList.innerHTML = '';
+    if (chamadosVisiveis.length) {
+        chamadosVisiveis.forEach((chamado) => queueList.appendChild(criarElementoDoChamado(chamado)));
+    } else {
+        const listaVazia = document.createElement('p');
+        listaVazia.className = 'queue-empty-list';
+        listaVazia.textContent = filtroFilaAtual === 'ABERTO'
             ? 'Não há chamados pendentes no momento.'
-            : 'Não há chamados em atendimento no momento.'}</p>`;
+            : 'Não há chamados em atendimento no momento.';
+        queueList.appendChild(listaVazia);
+    }
 
     renderizarDetalheDoChamado();
     atualizarAcompanhamentoDoUsuario();
