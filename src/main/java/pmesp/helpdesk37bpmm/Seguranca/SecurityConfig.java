@@ -6,7 +6,6 @@ import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
-import org.springframework.security.config.annotation.web.configurers.HeadersConfigurer;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
@@ -78,14 +77,11 @@ public class SecurityConfig {
                 .formLogin(AbstractHttpConfigurer::disable)
                 .httpBasic(AbstractHttpConfigurer::disable)
                 .securityContext(security -> security.securityContextRepository(securityContextRepository))
-                // O console do H2 usa <iframe> e só existe quando o profile "dev" está ativo
-                .headers(headers -> headers.frameOptions(HeadersConfigurer.FrameOptionsConfig::sameOrigin))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/auth/login").permitAll()
                         .requestMatchers("/auth/sessao", "/auth/trocar-senha", "/logout").authenticated()
                         .requestMatchers(ARQUIVOS_PUBLICOS_DO_FRONTEND).permitAll()
                         .requestMatchers(ROTAS_DE_DOCUMENTACAO_DA_API).permitAll()
-                        .requestMatchers("/h2-console/**").permitAll()
                         .requestMatchers(ROTAS_EXCLUSIVAS_DE_TECNICO).hasRole("TECNICO")
                         // Uma sessão com troca pendente não recebe ROLE_USUARIO e, portanto,
                         // não consegue contornar a tela acessando outra API diretamente.
