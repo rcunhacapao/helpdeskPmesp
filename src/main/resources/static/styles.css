@@ -185,14 +185,14 @@ label { display: block; font-size: .9375rem; font-weight: 700; margin-bottom: 6p
 }
 
 .button-primary {
-    background: var(--success);
+    background: var(--primary);
     color: #FFFFFF;
-    box-shadow: 0 4px 15px rgba(46, 125, 50, .28);
+    box-shadow: 0 4px 15px rgba(139, 0, 0, .28);
 }
 
 .button-primary:hover {
-    background: #256529;
-    box-shadow: 0 6px 20px rgba(46, 125, 50, .38);
+    background: #6E0000;
+    box-shadow: 0 6px 20px rgba(139, 0, 0, .38);
     transform: translateY(-2px);
 }
 
