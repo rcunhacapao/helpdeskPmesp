@@ -1,24 +1,22 @@
 # Helpdesk Telemática - PMESP
 
-Sistema web de helpdesk criado para centralizar solicitações de suporte, organizar a fila de atendimento e manter um histórico confiável do trabalho realizado pela equipe de Telemática.
+## Tecnologias e ferramentas
 
-O projeto reúne frontend e backend na mesma aplicação Spring Boot. A interface é servida pelo próprio backend, consome a API real e utiliza PostgreSQL como banco principal. Esta é uma versão de estudo e portfólio, ainda identificada como beta, construída a partir de situações comuns da rotina de suporte técnico.
+- **Backend:** Java 26, Spring Boot 4.1.1, Spring Web MVC, Spring Data JPA, Hibernate e Spring Security.
+- **Frontend:** HTML, CSS e JavaScript sem framework.
+- **Banco e migrations:** PostgreSQL 16 e Flyway.
+- **Build e infraestrutura local:** Maven e Docker Compose para o PostgreSQL.
+- **Testes e documentação da API:** JUnit, Mockito, MockMvc, H2, Node.js e Swagger/OpenAPI.
 
-## Interface
+Sistema web de Help Desk desenvolvido para centralizar solicitações de suporte técnico em ambientes que não dispõem de uma plataforma própria para gerenciamento de chamados.
 
-| Atendimento guiado ao usuário | Abertura direta pelo técnico |
-| --- | --- |
-| ![Atendimento guiado pelo Mike para abertura de chamado](docs/screenshots/abertura-chamado-mike.png) | ![Formulário técnico para registrar um chamado](docs/screenshots/abertura-chamado-tecnico.png) |
+O projeto reúne frontend e backend na mesma aplicação Spring Boot. A interface é servida pelo próprio backend, consome a API real e utiliza PostgreSQL como banco principal. A versão atual representa a primeira versão funcional e consolidada do sistema, mas permanece identificada como beta enquanto os fluxos e a infraestrutura são avaliados. Isso não significa que o sistema esteja homologado, oficialmente adotado ou concluído como versão definitiva de produção.
 
-| Central técnica | Fila de atendimento |
-| --- | --- |
-| ![Painel da central técnica com indicadores](docs/screenshots/central-tecnica.png) | ![Fila de atendimento dos técnicos](docs/screenshots/fila-atendimento.png) |
+## Problema e motivação
 
-### Acompanhamento do usuário
+Em algumas unidades da Polícia Militar do Estado de São Paulo que não dispõem de uma solução própria de Help Desk, as solicitações de TI podem chegar diretamente ao profissional responsável, por conversa presencial, telefone, mensagem ou pedido verbal. Sem uma plataforma centralizada, torna-se mais difícil registrar o que foi solicitado, acompanhar prioridades, distribuir atendimentos e preservar o histórico das soluções aplicadas.
 
-![Tela Meus chamados com histórico e detalhes do atendimento](docs/screenshots/meus-chamados.png)
-
-## Problema que o sistema resolve
+A proposta surgiu a partir desse tipo de necessidade operacional: estruturar em um único sistema o registro, a triagem, a priorização, a atribuição de técnicos, o acompanhamento, o encerramento e os indicadores dos atendimentos.
 
 | Situação | Como o Helpdesk ajuda |
 | --- | --- |
@@ -28,6 +26,27 @@ O projeto reúne frontend e backend na mesma aplicação Spring Boot. A interfac
 | Histórico perdido após a solução | Chamados finalizados e cancelados permanecem disponíveis para consulta. |
 | Poucos dados para organizar o setor | A Central Técnica apresenta indicadores de chamados e do atendimento guiado. |
 | Erros encontrados durante o período beta | Qualquer pessoa autenticada pode enviar um relato estruturado para a equipe técnica. |
+
+## Proposta da solução
+
+A aplicação representa um fluxo completo de suporte interno, e não apenas o cadastro isolado de usuários e chamados. Ela conecta a solicitação inicial ao trabalho da equipe técnica e mantém o resultado disponível para acompanhamento e consulta posterior.
+
+```text
+Usuário -> triagem -> chamado -> fila técnica -> técnico -> atendimento
+        -> acompanhamento -> finalização -> histórico
+```
+
+Existem dois caminhos de entrada. O usuário comum inicia uma abertura orientada pelo Mike, que pode resolver determinados casos sem gerar chamado ou encaminhá-los à fila técnica quando necessário. O técnico pode registrar o chamado diretamente por um formulário completo, inclusive em nome de outro RE, quando a solicitação chega por um canal externo ao sistema.
+
+## Interface
+
+| Atendimento guiado ao usuário |
+
+![Atendimento guiado pelo Mike para abertura de chamado](docs/screenshots/abertura-chamado-mike.png)
+
+### Acompanhamento do usuário
+
+![Tela Meus chamados com histórico e detalhes do atendimento](docs/screenshots/meus-chamados.png)
 
 ## Funcionalidades implementadas
 
@@ -86,62 +105,73 @@ Triagem sem interação por 24 horas -> ABANDONADO
 
 O Mike desta versão é um atendimento guiado por categorias, problemas e respostas predefinidas. Ele ainda não utiliza um modelo de linguagem. A integração futura com Gemini Flash será uma evolução separada, mantendo autorização e regras de negócio no backend.
 
-## Tecnologias
-
-- Java 26
-- Spring Boot 4.1.1
-- Spring Web MVC
-- Spring Data JPA e Hibernate
-- Spring Security com autenticação por sessão
-- PostgreSQL 16
-- Flyway
-- H2 apenas nos testes automatizados
-- Maven
-- HTML, CSS e JavaScript sem framework no frontend
-- JUnit, Mockito e MockMvc
-- Springdoc OpenAPI / Swagger UI
-- Docker Compose para o PostgreSQL local
-
 ## Arquitetura
 
-```text
-Navegador
-   |
-   | HTML, CSS, JavaScript + requisições HTTP
-   v
-Controllers REST
-   |
-   v
-Services (regras de negócio e autorização)
-   |
-   v
-Repositories JPA
-   |
-   v
-PostgreSQL
+```mermaid
+flowchart TD
+    Browser["Navegador<br/>HTML, CSS e JavaScript"]
+    Controller[Controllers REST]
+    Service[Services]
+    Repository[Repositories JPA]
+    Database[(PostgreSQL)]
+    Security[Spring Security]
+    Flyway[Flyway]
+    Errors[Tratamento de exceções]
 
-Flyway -> controla a evolução do banco
-Spring Security -> controla sessão e perfis
-TratadorDeExcecoes -> padroniza os erros da API
+    Browser -->|HTTP| Controller
+    Controller --> Service
+    Service --> Repository
+    Repository --> Database
+    Security -. protege .-> Controller
+    Flyway -. versiona .-> Database
+    Controller -. encaminha erros .-> Errors
 ```
 
 Estrutura principal:
 
 ```text
-src/main/java/pmesp/helpdesk37bpmm
-├── Autenticacao
-├── Chamado
-├── Exception
-├── MikeIA
-├── RelatoErro
-├── Seguranca
-├── Tecnico
-└── Usuario
+src/main/java
+├── db/migration                    # migrations Java V7 e V8
+└── pmesp/helpdesk37bpmm
+    ├── Autenticacao
+    ├── Chamado
+    ├── Exception
+    ├── MikeIA
+    ├── RelatoErro
+    ├── Seguranca
+    ├── Tecnico
+    └── Usuario
 
 src/main/resources
-├── db/migration       # migrations V1 a V8
-└── static             # frontend servido pelo Spring Boot
+├── db/migration                    # migrations SQL V1 a V6
+└── static                          # frontend servido pelo Spring Boot
 ```
+
+## Decisões de engenharia
+
+### Arquitetura integrada
+
+Frontend e backend permanecem na mesma aplicação Spring Boot nesta primeira versão. Os arquivos HTML, CSS e JavaScript são servidos pelo próprio backend e chamam a API na mesma origem. Essa organização reduz o número de componentes que precisam ser instalados e mantidos, simplifica a geração de um único `.jar` e se adequa ao cenário inicial de execução em rede interna. Também favorece uma implantação com poucas dependências externas e a possibilidade de operação em infraestrutura própria, reduzindo a necessidade de serviços recorrentes nesta etapa. A separação em aplicações independentes continua sendo uma possibilidade futura, caso os requisitos de implantação ou evolução do frontend mudem.
+
+### PostgreSQL
+
+O PostgreSQL foi escolhido como banco principal porque o domínio possui dados relacionais que precisam permanecer consistentes: usuários podem se tornar técnicos, chamados relacionam solicitante e responsável, e cada atendimento possui estado, prioridade, datas e histórico. Um banco relacional ajuda a preservar esses vínculos e oferece persistência confiável para consultas operacionais e indicadores futuros.
+
+### Flyway
+
+As mudanças estruturais que exigiram controle explícito são mantidas nas migrations V1 a V8. O Flyway registra e aplica essas alterações em ordem conhecida, permitindo reproduzi-las em ambientes diferentes e consultar o histórico de evolução. No estado atual, esse versionamento complementa o `spring.jpa.hibernate.ddl-auto=update`, que também sincroniza o mapeamento das entidades com o schema. A combinação atende à primeira versão, mas a preparação de uma implantação definitiva ainda inclui consolidar toda a estrutura inicial em migrations.
+
+### Docker Compose
+
+O Docker Compose é usado atualmente para executar o PostgreSQL local; a aplicação Spring Boot ainda não está containerizada. Essa decisão padroniza a versão e a configuração inicial do banco, reduz a instalação manual, isola o serviço e preserva os dados em um volume nomeado. O arquivo também deixa uma base simples para uma evolução futura da infraestrutura, sem afirmar que a implantação completa já ocorre em contêineres.
+
+### Spring Security
+
+A interface adapta menus e ações ao perfil da sessão, mas a proteção efetiva permanece no backend. O Spring Security valida autenticação e autorização em cada requisição, impedindo que um usuário obtenha acesso técnico apenas manipulando o navegador ou chamando uma rota diretamente.
+
+### Separação Controller → Service → Repository
+
+Os controllers recebem as requisições e expõem os contratos HTTP; os services concentram regras como transições de estado, ordem da fila e limites de acesso; os repositories cuidam da persistência com JPA. Essa divisão evita misturar transporte, regra de negócio e banco de dados, facilita os testes e mantém as decisões operacionais fora dos controllers.
 
 ## Como executar no Windows
 
@@ -150,6 +180,7 @@ src/main/resources
 - Git
 - JDK 26
 - Docker Desktop com Docker Compose
+- Node.js com npm, caso também queira executar os testes JavaScript
 
 ### 1. Baixe o projeto
 
@@ -230,7 +261,7 @@ O `.jar` contém o backend, o frontend e as dependências de produção. O Postg
 
 ## Testes
 
-A validação mais recente executou **55 testes, sem falhas, erros ou testes ignorados**. A suíte cobre regras de chamados, autenticação, troca e reset de senha, segurança, concorrência da fila, migrations, Mike, relatos de erro e estrutura do frontend.
+A validação mais recente executou **55 testes Java, sem falhas, erros ou testes ignorados**. A suíte cobre regras de chamados, autenticação, troca e reset de senha, segurança, concorrência da fila, migrations, Mike, relatos de erro e estrutura do frontend.
 
 Como o H2 existe somente no escopo de testes, a suíte pode ser executada sem usar os dados do PostgreSQL:
 
@@ -241,7 +272,7 @@ $env:DATABASE_PASSWORD = ""
 .\mvnw.cmd test
 ```
 
-Também existe um teste JavaScript puro para o fluxo de triagem:
+O fluxo guiado também possui **28 testes JavaScript** executados diretamente pelo Node.js, sem dependências adicionais:
 
 ```powershell
 npm test
@@ -249,7 +280,7 @@ npm test
 
 ## Rotas principais
 
-Rotas públicas não exigem login. As demais dependem de sessão; as identificadas como técnico exigem esse perfil.
+Rotas públicas não exigem login. As demais dependem de sessão; as identificadas como técnico exigem esse perfil. A tabela mantém as operações mais relevantes para compreender a API; o contrato interativo pode ser consultado integralmente pelo Swagger UI durante a execução da aplicação.
 
 | Método | Rota | Finalidade | Acesso |
 | --- | --- | --- | --- |
@@ -313,19 +344,3 @@ Rotas públicas não exigem login. As demais dependem de sessão; as identificad
 3. Implementar relatórios de volume, tempo médio e problemas recorrentes.
 4. Conectar o envio de anexos aos chamados.
 5. Preparar a instalação e a operação da versão destinada à intranet.
-
-## Identidade visual
-
-| Elemento | Cor |
-| --- | --- |
-| Menu lateral e navegação | `#1A1D20` |
-| Fundo principal | `#F8F9FA` |
-| Cards | `#FFFFFF` |
-| Ações principais | `#8B0000` |
-| Alertas e urgências | `#DC3545` |
-| Informação e andamento | `#2D5F8B` |
-| Destaques do Mike | `#C79A32` |
-
----
-
-Projeto pessoal de estudo e portfólio, desenvolvido de forma incremental para representar uma solução real de suporte técnico.
