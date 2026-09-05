@@ -116,6 +116,9 @@ function aplicarSessaoNaInterface() {
         item.hidden = !pertenceAoPerfil(item);
     });
 
+    // Só o técnico pode abrir um chamado em nome de outra pessoa
+    document.querySelector('#grupo-re-solicitante').hidden = !sessaoAtual.tecnico;
+
     document.querySelector('#identificacao-sidebar').textContent = sessaoAtual.identificacaoCompleta;
     document.querySelector('#perfil-sessao').textContent = `Perfil: ${sessaoAtual.tecnico ? 'Técnico' : 'Usuário'}`;
 
@@ -440,8 +443,9 @@ ticketForm?.addEventListener('submit', async (event) => {
 
     const assunto = document.querySelector('#assunto').value.trim();
     const descricaoDetalhada = document.querySelector('#descricao').value.trim();
+    const reSolicitante = document.querySelector('#re-solicitante')?.value.trim();
     const corpo = {
-        re: sessaoAtual.re,
+        re: (sessaoAtual.tecnico && reSolicitante) ? reSolicitante : sessaoAtual.re,
         descricao: `${assunto}\n\n${descricaoDetalhada}`,
         categoria: document.querySelector('#categoria').value,
         localAtendimento: document.querySelector('#local').value.trim(),
@@ -452,9 +456,19 @@ ticketForm?.addEventListener('submit', async (event) => {
         try {
             await apiFetch('/chamados/cadastrar', { method: 'POST', body: corpo });
             ticketMessage.classList.remove('is-error');
-            ticketMessage.textContent = 'Chamado registrado com sucesso.';
+            ticketMessage.textContent = '';
             ticketForm.reset();
             document.querySelector('#prioridade').value = 'MEDIA';
+
+            const botaoAcompanhar = document.querySelector('#botao-sucesso-acompanhar');
+            if (sessaoAtual.tecnico) {
+                botaoAcompanhar.textContent = 'Ver central técnica';
+                botaoAcompanhar.dataset.route = 'central-tecnica';
+            } else {
+                botaoAcompanhar.textContent = 'Ver meus chamados';
+                botaoAcompanhar.dataset.route = 'meus-chamados';
+            }
+            await showRoute('chamado-sucesso');
         } catch (erro) {
             ticketMessage.classList.add('is-error');
             ticketMessage.textContent = erro.message;
@@ -760,7 +774,7 @@ document.querySelector('#buscar-chamado')?.addEventListener('click', aplicarBusc
 queueSearch?.addEventListener('input', aplicarBuscaNaFila);
 
 document.querySelectorAll('[data-queue-action]').forEach((button) => {
-    button.addEventListener('click', () => executarAcaoDaFila(button.dataset.queueAction));
+    button.addEventListener('click', () => executarComEstadoDeEnvio(button, 'Aguarde...', () => executarAcaoDaFila(button.dataset.queueAction)));
 });
 
 // ============================================================

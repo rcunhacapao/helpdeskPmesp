@@ -1,5 +1,6 @@
 package pmesp.helpdesk37bpmm.Usuario.enums;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonValue;
 
 public enum UsuarioPostoGraduacao {
@@ -27,6 +28,13 @@ public enum UsuarioPostoGraduacao {
     @JsonValue
     public String getDescricao() {
         return descricao;
+    }
+
+    // O frontend envia a chave (ex.: "SD"), não o texto de exibição. O @JsonValue acima
+    // só controla a saída (GET); sem isso, o Jackson recusaria a chave na entrada (POST/PUT).
+    @JsonCreator
+    public static UsuarioPostoGraduacao fromChave(String chave) {
+        return UsuarioPostoGraduacao.valueOf(chave);
     }
 
     @Override

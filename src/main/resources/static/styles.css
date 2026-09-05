@@ -430,10 +430,48 @@ h3 { font-size: clamp(.9rem, 1.2vw, 1rem); margin: 0; }
 .empty-state h3 { color: var(--text); }
 .empty-state p { font-size: .8125rem; margin: 6px 0 clamp(12px, 2vh, 16px); }
 
+/* ============================================
+   TELA DE SUCESSO AO ABRIR CHAMADO
+   ============================================ */
+.success-screen {
+    align-items: center;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    height: 100%;
+    text-align: center;
+    padding: 24px;
+}
+.success-screen h1 { font-size: clamp(1.4rem, 3vh, 1.9rem); margin: 20px 0 8px; }
+.success-screen p { color: var(--muted); max-width: 420px; }
+.success-screen-actions { display: flex; gap: 12px; margin-top: 24px; }
+
+.success-check { width: 96px; height: 96px; }
+.success-check-circle {
+    stroke: var(--success);
+    stroke-width: 3;
+    stroke-dasharray: 151;
+    stroke-dashoffset: 151;
+    animation: successCircle .5s ease-out forwards;
+}
+.success-check-mark {
+    stroke: var(--success);
+    stroke-width: 4;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    stroke-dasharray: 40;
+    stroke-dashoffset: 40;
+    animation: successMark .35s ease-out .45s forwards;
+}
+@keyframes successCircle { to { stroke-dashoffset: 0; } }
+@keyframes successMark { to { stroke-dashoffset: 0; } }
+
 .text-button {
     background: transparent; border: 0; color: var(--primary); font-size: .8125rem;
     font-weight: 800; padding: 4px; text-decoration: underline; text-underline-offset: 3px;
 }
+
+.login-card .text-button { color: #e57373; display: block; margin: 20px auto 0; text-align: center; }
 
 .mike-highlight { background: linear-gradient(145deg, #FFFFFF, rgba(199, 154, 50, .11)); border-color: rgba(199, 154, 50, .32); justify-content: space-between; }
 .mike-highlight .eyebrow { color: var(--accent); margin-bottom: 4px; }
@@ -838,6 +876,7 @@ h3 { font-size: clamp(.9rem, 1.2vw, 1rem); margin: 0; }
 .attachment-area > span:first-child { color: var(--primary); font-size: 1.2rem; }
 .attachment-area strong { display: block; font-size: .875rem;}
 .attachment-area small { display: block; color: var(--muted); font-size: .7rem; margin-top: 2px; }
+.attachment-area + .form-message { margin-top: 14px; }
 
 .form-actions {
     border-top: 1px solid var(--border);

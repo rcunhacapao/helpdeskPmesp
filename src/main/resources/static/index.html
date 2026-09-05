@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="Protótipo navegável do Sistema de Suporte.">
+    <meta name="description" content="Sistema de Suporte da Telemática - PMESP.">
     <title>Sistema de Suporte</title>
     <link rel="icon" type="image/png" href="favicon.png?v=0.0.1-beta.18">
     <link rel="apple-touch-icon" href="apple-touch-icon.png?v=0.0.1-beta.18">
@@ -15,7 +15,7 @@
         <section class="login-card" aria-labelledby="titulo-login">
             <img class="login-logo" src="logo-pmesp.png" alt="Polícia Militar do Estado de São Paulo">
             <h1 id="titulo-login">Sistema de Suporte</h1>
-            <p class="login-intro">Acesse o ambiente de demonstração.</p>
+            <p class="login-intro">Informe seu RE e senha para acessar.</p>
 
             <form id="formulario-login" class="login-form" novalidate>
                 <div class="field-group">
@@ -192,10 +192,10 @@
                     </div>
                     <button class="button button-primary" type="button" data-route="fila-atendimento">Ver fila de atendimento</button>
                 </div>
-                <div class="overview-grid technical-summary-grid" aria-label="Resumo de chamados demonstrativo">
-                    <article class="summary-card metric-today"><p>Chamados hoje</p><strong>6</strong><span>Registrados desde o início do dia</span></article>
-                    <article class="summary-card metric-week"><p>Nesta semana</p><strong>28</strong><span>Chamados registrados nos últimos dias</span></article>
-                    <article class="summary-card metric-month"><p>Neste mês</p><strong>116</strong><span>Total de chamados registrados no mês</span></article>
+                <div class="overview-grid technical-summary-grid" aria-label="Resumo de chamados (relatórios ainda não disponíveis)">
+                    <article class="summary-card metric-today"><p>Chamados hoje</p><strong>—</strong><span>Relatório ainda não disponível</span></article>
+                    <article class="summary-card metric-week"><p>Nesta semana</p><strong>—</strong><span>Relatório ainda não disponível</span></article>
+                    <article class="summary-card metric-month"><p>Neste mês</p><strong>—</strong><span>Relatório ainda não disponível</span></article>
                 </div>
                 <div class="technical-dashboard-grid">
                     <section class="surface-card action-hub-card">
@@ -207,7 +207,7 @@
                             <button class="action-hub-item" type="button" data-route="abrir-chamado"><span aria-hidden="true">+</span><strong>Registrar chamado</strong><small>Crie uma solicitação em nome da unidade quando necessário.</small></button>
                         </div>
                     </section>
-                    <aside class="surface-card coordinator-status-card"><p class="eyebrow">Seu estado</p><h2>Disponibilidade</h2><p>Defina como a central deve considerar sua participação na distribuição dos atendimentos.</p><button class="availability-toggle is-available" type="button" id="alternar-disponibilidade" aria-pressed="true"><span aria-hidden="true"></span><strong>Disponível para atendimento</strong></button><small id="mensagem-disponibilidade">Ação visual preparada para atualizar a disponibilidade do técnico.</small></aside>
+                    <aside class="surface-card coordinator-status-card"><p class="eyebrow">Seu estado</p><h2>Disponibilidade</h2><p>Defina como a central deve considerar sua participação na distribuição dos atendimentos.</p><button class="availability-toggle is-available" type="button" id="alternar-disponibilidade" aria-pressed="true"><span aria-hidden="true"></span><strong>Disponível para atendimento</strong></button><small id="mensagem-disponibilidade">Clique para alternar sua disponibilidade para novos atendimentos.</small></aside>
                 </div>
             </section>
 
@@ -284,6 +284,11 @@
                 <div class="ticket-layout">
                     <form class="surface-card ticket-form" id="formulario-chamado">
                         <h2>Informações do chamado</h2>
+                        <div class="field-group" id="grupo-re-solicitante" hidden>
+                            <label for="re-solicitante">Abrir em nome do RE (opcional)</label>
+                            <input id="re-solicitante" name="re-solicitante" type="text" placeholder="Deixe em branco para abrir em seu próprio nome">
+                            <p class="field-help">Use este campo somente quando o solicitante for outra pessoa.</p>
+                        </div>
                         <div class="field-group">
                             <label for="assunto">Assunto <span aria-hidden="true">*</span></label>
                             <input id="assunto" name="assunto" type="text" placeholder="Ex.: Impressora do setor administrativo não imprime" required>
@@ -343,6 +348,21 @@
                             <li>Quando o problema começou</li>
                         </ul>
                     </aside>
+                </div>
+            </section>
+
+            <section class="page-view" id="chamado-sucesso" data-view data-profile="todos" aria-labelledby="titulo-chamado-sucesso" hidden>
+                <div class="success-screen">
+                    <svg class="success-check" viewBox="0 0 52 52" aria-hidden="true">
+                        <circle class="success-check-circle" cx="26" cy="26" r="24" fill="none" />
+                        <path class="success-check-mark" fill="none" d="M14 27l7 7 16-16" />
+                    </svg>
+                    <h1 id="titulo-chamado-sucesso">Chamado registrado com sucesso!</h1>
+                    <p>A equipe técnica foi notificada. Você pode acompanhar o andamento a qualquer momento.</p>
+                    <div class="success-screen-actions">
+                        <button class="button button-secondary" type="button" data-route="abrir-chamado">Abrir outro chamado</button>
+                        <button class="button button-primary" type="button" id="botao-sucesso-acompanhar" data-route="meus-chamados">Ver meus chamados</button>
+                    </div>
                 </div>
             </section>
 

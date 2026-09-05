@@ -138,7 +138,9 @@ class FrontendEstaticoTest {
                 () -> assertTrue(comportamento.contains("sessaoAtual?.tecnico")),
                 () -> assertTrue(comportamento.contains("renderizarFilaAtendimento")),
                 () -> assertTrue(comportamento.contains("executarAcaoDaFila")),
-                () -> assertTrue(comportamento.contains("Chamado registrado com sucesso"))
+                () -> assertTrue(comportamento.contains("showRoute('chamado-sucesso')")),
+                () -> assertTrue(pagina.contains("id=\"chamado-sucesso\"")),
+                () -> assertTrue(pagina.contains("class=\"success-check\""))
         );
     }
 }

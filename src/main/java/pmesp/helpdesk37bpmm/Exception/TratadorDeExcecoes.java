@@ -1,8 +1,11 @@
 package pmesp.helpdesk37bpmm.Exception;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
+import org.springframework.security.core.AuthenticationException;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.MissingServletRequestParameterException;
@@ -16,6 +19,8 @@ import java.util.stream.Collectors;
 // Transformar exceções do sistema em respostas claras para a API
 @RestControllerAdvice
 public class TratadorDeExcecoes {
+
+    private static final Logger log = LoggerFactory.getLogger(TratadorDeExcecoes.class);
 
     // Responder com 404 quando o dado procurado não existir
     @ExceptionHandler(RecursoNaoEncontradoException.class)
@@ -39,6 +44,12 @@ public class TratadorDeExcecoes {
     @ExceptionHandler(AcessoNegadoException.class)
     public ResponseEntity<RespostaErroDTO> tratarAcessoNegado(AcessoNegadoException excecao) {
         return criarResposta(HttpStatus.FORBIDDEN, excecao.getCodigo(), excecao.getMessage());
+    }
+
+    // Responder com 401 quando o RE ou a senha do login estiverem incorretos
+    @ExceptionHandler(AuthenticationException.class)
+    public ResponseEntity<RespostaErroDTO> tratarFalhaDeAutenticacao() {
+        return criarResposta(HttpStatus.UNAUTHORIZED, "CREDENCIAIS_INVALIDAS", "RE ou senha inválidos.");
     }
 
     // Responder com 400 quando o JSON estiver mal preenchido
@@ -73,9 +84,12 @@ public class TratadorDeExcecoes {
                 "O valor informado não é válido para este campo.");
     }
 
-    // Evitar expor detalhes internos do Java ou do banco de dados
+    // Evitar expor detalhes internos do Java ou do banco de dados na resposta da API,
+    // mas registrar o erro completo no log — sem isso, fica impossível descobrir depois
+    // o que realmente quebrou (só aparecia "erro interno" para todo mundo).
     @ExceptionHandler(Exception.class)
-    public ResponseEntity<RespostaErroDTO> tratarErroInesperado() {
+    public ResponseEntity<RespostaErroDTO> tratarErroInesperado(Exception excecao) {
+        log.error("Erro inesperado não tratado por um handler específico", excecao);
         return criarResposta(HttpStatus.INTERNAL_SERVER_ERROR, "ERRO_INTERNO",
                 "Ocorreu um erro interno. Tente novamente mais tarde.");
     }
