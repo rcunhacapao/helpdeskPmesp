@@ -17,7 +17,7 @@ public class V8__atualizar_fluxo_de_senhas extends BaseJavaMigration {
     @Override
     public void migrate(Context context) throws Exception {
         Connection conexao = context.getConnection();
-        if (!tabelaExiste(conexao, "TB_USUARIO")) {
+        if (!tabelaExiste(conexao, "tb_usuario")) {
             return;
         }
 
@@ -42,9 +42,16 @@ public class V8__atualizar_fluxo_de_senhas extends BaseJavaMigration {
         }
     }
 
+    // information_schema é padrão SQL e funciona tanto em H2 quanto em PostgreSQL.
+    // A comparação é case-insensitive porque H2 guarda identificadores não citados
+    // em maiúsculas e o PostgreSQL guarda em minúsculas.
     private boolean tabelaExiste(Connection conexao, String nomeDaTabela) throws SQLException {
-        try (ResultSet tabelas = conexao.getMetaData().getTables(null, null, nomeDaTabela, null)) {
-            return tabelas.next();
+        try (PreparedStatement consulta = conexao.prepareStatement(
+                "SELECT 1 FROM information_schema.tables WHERE lower(table_name) = lower(?)")) {
+            consulta.setString(1, nomeDaTabela);
+            try (ResultSet resultado = consulta.executeQuery()) {
+                return resultado.next();
+            }
         }
     }
 }

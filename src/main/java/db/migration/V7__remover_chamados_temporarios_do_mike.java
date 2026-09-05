@@ -4,6 +4,7 @@ import org.flywaydb.core.api.migration.BaseJavaMigration;
 import org.flywaydb.core.api.migration.Context;
 
 import java.sql.Connection;
+import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
@@ -15,8 +16,8 @@ public class V7__remover_chamados_temporarios_do_mike extends BaseJavaMigration 
     @Override
     public void migrate(Context context) throws Exception {
         Connection conexao = context.getConnection();
-        if (!tabelaExiste(conexao, "TB_CHAMADOS")
-                || !tabelaExiste(conexao, "TB_ATENDIMENTO_MIKE_IA")) {
+        if (!tabelaExiste(conexao, "tb_chamados")
+                || !tabelaExiste(conexao, "tb_atendimento_mike_ia")) {
             return;
         }
 
@@ -75,21 +76,24 @@ public class V7__remover_chamados_temporarios_do_mike extends BaseJavaMigration 
                      WHERE status IN ('EM_DIAGNOSTICO', 'ABANDONADO')
                     """);
 
-            comando.execute("""
-                    ALTER TABLE tb_chamados
-                    ALTER COLUMN status ENUM(
-                        'ABERTO',
-                        'FECHADO',
-                        'EM_ATENDIMENTO',
-                        'CANCELADO'
-                    ) NOT NULL
-                    """);
+            // Sintaxe "ALTER COLUMN x ENUM(...)" é específica do H2 e não existe no
+            // PostgreSQL; a coluna já é tratada como VARCHAR pelo Hibernate
+            // (@Enumerated(STRING)), então só precisamos manter o tipo e o NOT NULL.
+            comando.execute("ALTER TABLE tb_chamados ALTER COLUMN status SET DATA TYPE VARCHAR(255)");
+            comando.execute("ALTER TABLE tb_chamados ALTER COLUMN status SET NOT NULL");
         }
     }
 
+    // information_schema é padrão SQL e funciona tanto em H2 quanto em PostgreSQL.
+    // A comparação é case-insensitive porque H2 guarda identificadores não citados
+    // em maiúsculas e o PostgreSQL guarda em minúsculas.
     private boolean tabelaExiste(Connection conexao, String nomeDaTabela) throws SQLException {
-        try (ResultSet tabelas = conexao.getMetaData().getTables(null, null, nomeDaTabela, null)) {
-            return tabelas.next();
+        try (PreparedStatement consulta = conexao.prepareStatement(
+                "SELECT 1 FROM information_schema.tables WHERE lower(table_name) = lower(?)")) {
+            consulta.setString(1, nomeDaTabela);
+            try (ResultSet resultado = consulta.executeQuery()) {
+                return resultado.next();
+            }
         }
     }
 }
