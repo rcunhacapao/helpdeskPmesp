@@ -5,10 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="description" content="Protótipo navegável do Sistema de Suporte.">
     <title>Sistema de Suporte</title>
-    <link rel="icon" type="image/png" href="favicon.png?v=0.0.1-beta.13">
-    <link rel="apple-touch-icon" href="apple-touch-icon.png?v=0.0.1-beta.13">
+    <link rel="icon" type="image/png" href="favicon.png?v=0.0.1-beta.16">
+    <link rel="apple-touch-icon" href="apple-touch-icon.png?v=0.0.1-beta.16">
     <meta name="theme-color" content="#1A1D20">
-    <link rel="stylesheet" href="styles.css?v=0.0.1-beta.13">
+    <link rel="stylesheet" href="styles.css?v=0.0.1-beta.16">
 </head>
 <body>
     <main class="login-page" id="pagina-login">
@@ -37,7 +37,7 @@
     <main class="app-shell" id="pagina-app" hidden>
         <aside class="sidebar" aria-label="Navegação principal">
             <div class="brand">
-                <img class="brand-logo" src="logo-pmesp.png" alt="Polícia Militar do Estado de São Paulo">
+                <img class="brand-logo" src="logo-pmesp.png" alt="Polícia Militar do Estado de São Paulo" width="500" height="405">
                 <p>Sistema de Suporte</p>
             </div>
 
@@ -68,25 +68,12 @@
             <div class="sidebar-footer">
                 <p class="user-name" id="identificacao-sidebar">3º SGT PM Usuário</p>
                 <p class="profile-label" id="perfil-sessao">Perfil: Usuário</p>
+                <button class="button button-secondary button-block" id="sair" type="button">Sair</button>
                 <p>Versão 0.0.1 (beta)</p>
             </div>
         </aside>
 
         <section class="app-content">
-            <header class="mobile-header">
-                <img src="logo-pmesp.png" alt="Polícia Militar do Estado de São Paulo">
-                <button class="button button-secondary" id="sair" type="button">Sair</button>
-                <nav class="mobile-navigation" aria-label="Seções do sistema">
-                    <button class="mobile-nav-link is-active" type="button" data-route="visao-geral" data-profile="usuario" aria-current="page">Visão geral</button>
-                    <button class="mobile-nav-link" type="button" data-route="meus-chamados" data-profile="usuario">Meus chamados</button>
-                    <button class="mobile-nav-link" type="button" data-route="abrir-chamado" data-profile="todos">Abrir chamado</button>
-                    <button class="mobile-nav-link" type="button" data-route="central-tecnica" data-profile="tecnico">Central técnica</button>
-                    <button class="mobile-nav-link" type="button" data-route="fila-atendimento" data-profile="tecnico">Fila</button>
-                    <button class="mobile-nav-link" type="button" data-route="gestao-usuarios" data-profile="tecnico">Usuários</button>
-                    <button class="mobile-nav-link" type="button" data-route="mike-ia" data-profile="todos">Mike IA</button>
-                </nav>
-            </header>
-
             <section class="page-view is-visible" id="visao-geral" data-view data-profile="usuario" aria-labelledby="titulo-visao-geral">
                 <p class="breadcrumb">Início / Visão geral</p>
                 <div class="page-heading">
@@ -136,7 +123,7 @@
                         </ul>
                     </article>
                     <article class="surface-card mike-highlight">
-                        <img class="mike-overview-avatar" src="mike-ia-visao-geral.png" alt="Mike IA, assistente virtual">
+                        <img class="mike-overview-avatar" src="mike-ia-visao-geral.png" alt="Mike IA, assistente virtual" width="500" height="500">
                         <div><p class="eyebrow">Assistente virtual</p><h2>Mike IA</h2><p>Suporte inteligente para orientar seu atendimento.</p></div>
                         <button class="button button-secondary" type="button" data-route="mike-ia">Conversar com Mike IA</button>
                     </article>
@@ -324,18 +311,18 @@
                 </div>
                 <div class="mike-conversation-layout">
                     <aside class="mike-persona" aria-label="Mike IA, assistente virtual da Polícia Militar">
-                        <img class="mike-fullbody-avatar" src="mike-ia-livre.png" alt="Mike IA, assistente virtual da Polícia Militar">
+                        <img class="mike-fullbody-avatar" src="mike-ia-livre.png" alt="Mike IA, assistente virtual da Polícia Militar" width="480" height="960" loading="lazy">
                     </aside>
                     <section class="surface-card chat-card" aria-label="Conversa demonstrativa com Mike IA">
                         <div class="mike-chat-intro"><div><p class="eyebrow">Conversa segura</p><h2>Como posso ajudar?</h2></div><span class="mike-availability"><span aria-hidden="true"></span>Pronto para orientar</span></div>
                         <div class="chat-messages">
                             <div class="chat-message chat-message-mike">
-                                <span class="mike-message-avatar" aria-hidden="true"><img src="mike-ia-avatar.png" alt=""></span>
+                                <span class="mike-message-avatar" aria-hidden="true"><img src="mike-ia-avatar.png" alt="" width="240" height="240" loading="lazy"></span>
                                 <div class="chat-bubble"><strong>Mike IA</strong><p>Olá. Posso ajudar você a organizar as informações antes de abrir um chamado.</p></div>
                             </div>
                             <div class="chat-message chat-message-user" id="resposta-mike" hidden><strong>Você</strong><p></p></div>
                             <div class="chat-message chat-message-mike" id="retorno-mike" hidden>
-                                <span class="mike-message-avatar" aria-hidden="true"><img src="mike-ia-avatar.png" alt=""></span>
+                                <span class="mike-message-avatar" aria-hidden="true"><img src="mike-ia-avatar.png" alt="" width="240" height="240" loading="lazy"></span>
                                 <div class="chat-bubble"><strong>Mike IA</strong><p>Obrigado. Nesta fase, ainda não analiso solicitações reais, mas esta conversa já demonstra onde o assistente ficará.</p></div>
                             </div>
                         </div>
@@ -350,6 +337,6 @@
         </section>
     </main>
 
-    <script src="app.js?v=0.0.1-beta.13"></script>
+    <script src="app.js?v=0.0.1-beta.16"></script>
 </body>
 </html>

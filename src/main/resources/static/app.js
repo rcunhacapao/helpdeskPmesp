@@ -4,7 +4,7 @@ const loginPage = document.querySelector('#pagina-login');
 const appPage = document.querySelector('#pagina-app');
 const routes = document.querySelectorAll('[data-route]');
 const views = document.querySelectorAll('[data-view]');
-const navigationLinks = document.querySelectorAll('.nav-link, .mobile-nav-link');
+const navigationLinks = document.querySelectorAll('.nav-link');
 const ticketForm = document.querySelector('#formulario-chamado');
 const ticketMessage = document.querySelector('#mensagem-chamado');
 const mikeForm = document.querySelector('#formulario-mike');
@@ -41,7 +41,7 @@ function pertenceAoPerfil(elemento) {
 }
 
 function aplicarPerfilDemonstracao() {
-    document.querySelectorAll('.nav-link[data-profile], .mobile-nav-link[data-profile]').forEach((item) => {
+    document.querySelectorAll('.nav-link[data-profile]').forEach((item) => {
         item.hidden = !pertenceAoPerfil(item);
     });
 
@@ -362,6 +362,20 @@ routes.forEach((route) => {
     route.addEventListener('click', () => showRoute(route.dataset.route));
 });
 
+// Desabilita o botão e mostra um texto de carregamento por um instante, no mesmo padrão
+// que será reaproveitado quando os formulários chamarem a API real (fetch) na próxima etapa.
+function executarComEstadoDeEnvio(botao, textoEnviando, aoConcluir) {
+    if (!botao) { aoConcluir(); return; }
+    const textoOriginal = botao.textContent;
+    botao.disabled = true;
+    botao.textContent = textoEnviando;
+    window.setTimeout(() => {
+        botao.disabled = false;
+        botao.textContent = textoOriginal;
+        aoConcluir();
+    }, 500);
+}
+
 ticketForm?.addEventListener('submit', (event) => {
     event.preventDefault();
 
@@ -372,9 +386,11 @@ ticketForm?.addEventListener('submit', (event) => {
         return;
     }
 
-    ticketMessage.classList.remove('is-error');
-    ticketMessage.textContent = 'Chamado simulado com sucesso. O envio real será conectado em uma próxima etapa.';
-    ticketForm.reset();
+    executarComEstadoDeEnvio(ticketForm.querySelector('button[type="submit"]'), 'Enviando...', () => {
+        ticketMessage.classList.remove('is-error');
+        ticketMessage.textContent = 'Chamado simulado com sucesso. O envio real será conectado em uma próxima etapa.';
+        ticketForm.reset();
+    });
 });
 
 mikeForm?.addEventListener('submit', (event) => {
@@ -449,9 +465,11 @@ cancelTicketForm?.addEventListener('submit', (event) => {
         return;
     }
 
-    cancelTicketMessage.classList.remove('is-error');
-    cancelTicketMessage.textContent = 'Cancelamento simulado. A confirmação real será conectada à API de chamados.';
-    cancelTicketForm.reset();
+    executarComEstadoDeEnvio(cancelTicketForm.querySelector('button[type="submit"]'), 'Enviando...', () => {
+        cancelTicketMessage.classList.remove('is-error');
+        cancelTicketMessage.textContent = 'Cancelamento simulado. A confirmação real será conectada à API de chamados.';
+        cancelTicketForm.reset();
+    });
 });
 
 document.querySelectorAll('[data-demo-action]').forEach((button) => {
@@ -470,9 +488,11 @@ document.querySelector('#formulario-cadastro-usuario')?.addEventListener('submit
         return;
     }
 
-    message.classList.remove('is-error');
-    message.textContent = 'Cadastro visual validado. O envio ao serviço de usuários será ligado na etapa de lógica.';
-    form.reset();
+    executarComEstadoDeEnvio(form.querySelector('button[type="submit"]'), 'Enviando...', () => {
+        message.classList.remove('is-error');
+        message.textContent = 'Cadastro visual validado. O envio ao serviço de usuários será ligado na etapa de lógica.';
+        form.reset();
+    });
 });
 
 document.querySelector('#alternar-disponibilidade')?.addEventListener('click', (buttonEvent) => {
