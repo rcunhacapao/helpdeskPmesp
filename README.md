@@ -40,7 +40,7 @@ validadas por testes automatizados e revisão de código.
 - Consulta de chamados em atendimento, separada da fila de chamados abertos.
 - Login inicial com RE/RE, troca obrigatória de senha, reset manual pelo técnico e perfis de
   usuário comum/técnico (veja [Autenticação](#autenticação)).
-- Banco H2 local para desenvolvimento e testes.
+- Banco PostgreSQL local via Docker para desenvolvimento (veja [Banco de dados](#banco-de-dados-postgresql-via-docker)); H2 permanece só para os testes automatizados.
 
 ### Fluxo do chamado
 
@@ -159,15 +159,42 @@ Cadastro de chamado:
 - Spring Boot
 - Spring Data JPA
 - Spring Security
-- H2 Database
+- PostgreSQL (Docker) para desenvolvimento; H2 só nos testes automatizados
+- Flyway
 - Lombok
 - Maven
 - Postman para testes manuais
 - Git e GitHub
 
+## Banco de dados (PostgreSQL via Docker)
+
+Pré-requisito: Docker instalado.
+
+Subir o PostgreSQL:
+
+```bash
+docker compose up -d
+```
+
+Ver containers:
+
+```bash
+docker compose ps
+```
+
+Parar:
+
+```bash
+docker compose down
+```
+
+Os dados ficam em um volume Docker nomeado, então persistem entre `docker compose down`/`up`
+(sem `-v`, o volume não é apagado). Depois de o banco estar no ar, siga a seção abaixo para
+rodar o backend normalmente.
+
 ## Como executar localmente
 
-1. Configure os dados locais do banco no arquivo `.env`.
+1. Suba o PostgreSQL (`docker compose up -d`) e configure os dados de conexão no arquivo `.env`.
 2. Abra o projeto em uma IDE Java, como o IntelliJ IDEA.
 3. Execute a classe principal da aplicação.
 4. Use o Postman para testar as rotas em `http://localhost:8080`.
@@ -175,14 +202,19 @@ Cadastro de chamado:
 Exemplo de estrutura do `.env`:
 
 ```env
-DATABASE_URL=jdbc:h2:./Data/helpdesk
+POSTGRES_DB=helpdesk
+POSTGRES_USER=seu_usuario_local
+POSTGRES_PASSWORD=sua_senha_local
+POSTGRES_PORT=5432
+
+DATABASE_URL=jdbc:postgresql://localhost:5432/helpdesk
 DATABASE_USERNAME=seu_usuario_local
 DATABASE_PASSWORD=sua_senha_local
 ```
 
-> O arquivo `.env`, dados reais e o arquivo do banco não devem ser enviados ao GitHub.
+Os testes automatizados (`mvn test`) continuam usando H2 em memória, sem precisar do Docker.
 
-Para acessar o console do H2 (`/h2-console`) em desenvolvimento, ative o profile `dev` ao rodar a aplicação (ex.: `--spring.profiles.active=dev` ou a variável de ambiente `SPRING_PROFILES_ACTIVE=dev`). Por padrão o console fica desligado.
+> O arquivo `.env`, dados reais e o arquivo do banco não devem ser enviados ao GitHub.
 
 ### Primeiro técnico (bootstrap)
 
@@ -217,7 +249,7 @@ origem — acesse `http://localhost:8080/` no navegador. Ele já está conectado
 5. ~~Registrar solução ou observação ao finalizar um chamado.~~ ✅ concluído.
 6. ~~Conectar o frontend (hoje um protótipo visual) à API real.~~ ✅ concluído.
 7. ~~Criar login inicial RE/RE com troca obrigatória e reset manual pelo técnico.~~ ✅ concluído.
-8. Migrar o banco de H2 para PostgreSQL e preparar a aplicação para Docker.
+8. ~~Migrar o banco de H2 para PostgreSQL e preparar a aplicação para Docker.~~ ✅ concluído.
 9. Criar relatórios de volume, tempo médio de atendimento, categorias mais frequentes e chamados por usuário/local. Os dados de diagnóstico, resolução pelo Mike e abandono já ficam registrados para essa etapa.
 10. Permitir alterar a prioridade de um chamado diretamente na tela de fila do técnico (o endpoint já existe: `PUT /chamados/atualizar-dados/{id}`).
 11. Avaliar separadamente uma camada adicional de confirmação de identidade, sem dependência preparada no fluxo atual.
