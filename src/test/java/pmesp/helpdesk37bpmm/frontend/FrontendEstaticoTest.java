@@ -26,6 +26,7 @@ class FrontendEstaticoTest {
                 () -> assertTrue(pagina.contains("id=\"visao-geral\"")),
                 () -> assertTrue(pagina.contains("id=\"abrir-chamado\"")),
                 () -> assertTrue(pagina.contains("id=\"mike-ia\"")),
+                () -> assertTrue(pagina.contains("class=\"mobile-navigation\"")),
                 () -> assertTrue(pagina.contains("Versão 0.0.1 (beta)")),
                 () -> assertFalse(pagina.contains("Equipamentos")),
                 () -> assertFalse(pagina.contains("Base de conhecimento")),
@@ -35,7 +36,14 @@ class FrontendEstaticoTest {
                 () -> assertTrue(estilos.contains("--primary: #8B0000;")),
                 () -> assertTrue(estilos.contains("--danger: #DC3545;")),
                 () -> assertTrue(estilos.contains("@media (prefers-reduced-motion: reduce)")),
+                () -> assertTrue(estilos.contains(".ticket-form input,")),
+                () -> assertTrue(estilos.contains(".ticket-form textarea")),
+                () -> assertTrue(estilos.contains(".ticket-form {\n    display: flex;\n    flex-direction: column;\n    height: auto;\n    overflow: visible;")),
+                () -> assertTrue(estilos.contains(".ticket-form .field-group:focus-within")),
+                () -> assertTrue(estilos.contains(".ticket-form select {")),
+                () -> assertTrue(estilos.contains(".mobile-navigation")),
                 () -> assertTrue(comportamento.contains("showRoute('visao-geral')")),
+                () -> assertTrue(comportamento.contains(".mobile-nav-link")),
                 () -> assertTrue(comportamento.contains("Chamado simulado com sucesso"))
         );
     }
