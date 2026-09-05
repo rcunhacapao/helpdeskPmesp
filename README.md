@@ -191,7 +191,7 @@ origem — acesse `http://localhost:8080/` no navegador. Ele já está conectado
 2. ~~Criar testes automatizados para as regras principais.~~ ✅ concluído.
 3. Criar filtros de chamados por status, prioridade, categoria e período.
 4. Implementar a posição do solicitante na fila.
-5. Registrar solução ou observação ao finalizar um chamado.
+5. ~~Registrar solução ou observação ao finalizar um chamado.~~ ✅ concluído.
 6. ~~Conectar o frontend (hoje um protótipo visual) à API real.~~ ✅ concluído.
 7. ~~Criar login com primeiro acesso por RE e senha própria do Helpdesk.~~ ✅ concluído.
 8. Migrar o banco de H2 para PostgreSQL e preparar a aplicação para Docker.

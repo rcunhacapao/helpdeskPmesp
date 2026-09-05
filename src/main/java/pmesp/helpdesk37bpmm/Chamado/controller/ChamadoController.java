@@ -74,10 +74,11 @@ public class ChamadoController {
         return chamadoService.transferirResponsavel(chamadoId, reTecnico);
     }
 
-    // Finalizar atendimento do chamado
+    // Finalizar atendimento do chamado; a solução é opcional
     @PatchMapping("/finalizar/{chamadoId}")
-    public ChamadoRespostaDTO finalizarAtendimento(@PathVariable Long chamadoId) {
-        return chamadoService.finalizarAtendimento(chamadoId);
+    public ChamadoRespostaDTO finalizarAtendimento(@PathVariable Long chamadoId,
+                                                    @RequestParam(required = false) String solucao) {
+        return chamadoService.finalizarAtendimento(chamadoId, solucao);
     }
 
 

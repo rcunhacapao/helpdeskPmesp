@@ -24,6 +24,7 @@ public class ChamadoRespostaDTO {
     private ChamadoCategoria categoria;
     private String localAtendimento;
     private String motivoCancelamento;
+    private String solucao;
     private ChamadoPrioridade prioridade;
     private ChamadoStatus status;
 

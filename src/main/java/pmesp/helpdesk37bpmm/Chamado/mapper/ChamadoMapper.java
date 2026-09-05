@@ -34,6 +34,7 @@ public class ChamadoMapper {
         chamadoRespostaDTO.setCategoria(chamadoModel.getCategoria());
         chamadoRespostaDTO.setLocalAtendimento(chamadoModel.getLocalAtendimento());
         chamadoRespostaDTO.setMotivoCancelamento(chamadoModel.getMotivoCancelamento());
+        chamadoRespostaDTO.setSolucao(chamadoModel.getSolucao());
         chamadoRespostaDTO.setPrioridade(chamadoModel.getPrioridade());
         chamadoRespostaDTO.setStatus(chamadoModel.getStatus());
         chamadoRespostaDTO.setDataAbertura(chamadoModel.getDataAbertura());

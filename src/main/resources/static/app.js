@@ -57,7 +57,14 @@ async function apiFetch(caminho, opcoes = {}) {
         configuracao.body = JSON.stringify(opcoes.body);
     }
 
-    const resposta = await fetch(caminho, configuracao);
+    let resposta;
+    try {
+        resposta = await fetch(caminho, configuracao);
+    } catch (erroDeRede) {
+        // fetch() rejeita (em vez de responder com um status HTTP) quando a rede cai ou o
+        // servidor está inacessível; sem isso, o usuário veria "Failed to fetch" em inglês.
+        throw new Error('Não foi possível conectar ao servidor. Verifique sua conexão e tente novamente.');
+    }
 
     if (resposta.status === 401) {
         sessaoAtual = null;
@@ -370,11 +377,18 @@ function criarItemDeMeuChamado(chamado) {
     titulo.append(h3, dataAbertura);
 
     const status = document.createElement('span');
-    status.className = 'status-label';
+    status.className = `status-label status-${chamado.status.toLowerCase()}`;
     status.textContent = nomeDoStatus[chamado.status];
 
     cabecalho.append(titulo, status);
     item.appendChild(cabecalho);
+
+    if (chamado.status === 'FECHADO' && chamado.solucao) {
+        const solucao = document.createElement('p');
+        solucao.className = 'meu-chamado-solucao';
+        solucao.textContent = `Solução: ${chamado.solucao}`;
+        item.appendChild(solucao);
+    }
 
     if (chamado.status === 'ABERTO') {
         const acoes = document.createElement('div');
@@ -385,7 +399,10 @@ function criarItemDeMeuChamado(chamado) {
         botaoCancelar.textContent = 'Cancelar chamado';
         botaoCancelar.addEventListener('click', () => {
             chamadoParaCancelarId = chamado.id;
+            document.querySelector('#cancelamento-chamado-info').textContent =
+                `Você está cancelando o chamado #${chamado.id} · ${tituloDoChamado(chamado)}`;
             cancelTicketForm.hidden = false;
+            cancelTicketForm.scrollIntoView({ behavior: 'smooth', block: 'center' });
             document.querySelector('#motivo-cancelamento').focus();
         });
         acoes.appendChild(botaoCancelar);
@@ -538,6 +555,9 @@ let termoBuscaFila = '';
 let chamadoSelecionadoId = null;
 let filaAbertos = [];
 let filaEmAtendimento = [];
+// Distingue "a fila está vazia mesmo" de "não conseguimos carregar a fila" — sem isso,
+// as duas situações mostravam o mesmo texto de lista vazia, escondendo o erro real.
+let houveErroAoCarregarFila = false;
 
 async function carregarFilaAtendimento() {
     try {
@@ -545,10 +565,13 @@ async function carregarFilaAtendimento() {
             apiFetch('/chamados/fila'),
             apiFetch('/chamados/em-atendimento')
         ]);
+        houveErroAoCarregarFila = false;
         queueMessage.classList.remove('is-error');
+        queueMessage.textContent = '';
     } catch (erro) {
         filaAbertos = [];
         filaEmAtendimento = [];
+        houveErroAoCarregarFila = true;
         mostrarMensagemDaFila(erro.message, true);
     }
     renderizarFilaAtendimento();
@@ -602,15 +625,19 @@ function renderizarDetalheDoChamado() {
         const exibindoPendentes = filtroFilaAtual === 'ABERTO';
         const quantidade = exibindoPendentes ? filaAbertos.length : filaEmAtendimento.length;
 
-        resumoFilaQuantidade.textContent = quantidade;
+        resumoFilaQuantidade.textContent = houveErroAoCarregarFila ? '-' : quantidade;
         tituloDetalheChamado.textContent = exibindoPendentes ? 'Chamados pendentes' : 'Chamados em atendimento';
-        resumoFilaDescricao.textContent = exibindoPendentes
-            ? quantidade === 0
-                ? 'Não há chamados pendentes no momento.'
-                : `${quantidade} ${quantidade === 1 ? 'chamado aguarda' : 'chamados aguardam'} atendimento. Selecione um item na lista para continuar.`
-            : quantidade === 0
-                ? 'Não há chamados em atendimento no momento.'
-                : `${quantidade} ${quantidade === 1 ? 'atendimento está em andamento' : 'atendimentos estão em andamento'}. Selecione um item para acompanhar.`;
+        if (houveErroAoCarregarFila) {
+            resumoFilaDescricao.textContent = 'Não foi possível carregar a fila. ' + queueMessage.textContent;
+        } else {
+            resumoFilaDescricao.textContent = exibindoPendentes
+                ? quantidade === 0
+                    ? 'Não há chamados pendentes no momento.'
+                    : `${quantidade} ${quantidade === 1 ? 'chamado aguarda' : 'chamados aguardam'} atendimento. Selecione um item na lista para continuar.`
+                : quantidade === 0
+                    ? 'Não há chamados em atendimento no momento.'
+                    : `${quantidade} ${quantidade === 1 ? 'atendimento está em andamento' : 'atendimentos estão em andamento'}. Selecione um item para acompanhar.`;
+        }
         return;
     }
 
@@ -702,9 +729,14 @@ function renderizarFilaAtendimento() {
     } else {
         const listaVazia = document.createElement('p');
         listaVazia.className = 'queue-empty-list';
-        listaVazia.textContent = filtroFilaAtual === 'ABERTO'
-            ? 'Não há chamados pendentes no momento.'
-            : 'Não há chamados em atendimento no momento.';
+        if (houveErroAoCarregarFila) {
+            listaVazia.classList.add('is-error');
+            listaVazia.textContent = 'Não foi possível carregar a fila. ' + queueMessage.textContent;
+        } else {
+            listaVazia.textContent = filtroFilaAtual === 'ABERTO'
+                ? 'Não há chamados pendentes no momento.'
+                : 'Não há chamados em atendimento no momento.';
+        }
         queueList.appendChild(listaVazia);
     }
 
@@ -737,7 +769,9 @@ async function executarAcaoDaFila(acao) {
         }
 
         if (acao === 'finalizar') {
-            await apiFetch(`/chamados/finalizar/${chamado.id}`, { method: 'PATCH' });
+            const solucao = document.querySelector('#solucao-atendimento').value.trim();
+            const caminho = `/chamados/finalizar/${chamado.id}` + (solucao ? `?solucao=${encodeURIComponent(solucao)}` : '');
+            await apiFetch(caminho, { method: 'PATCH' });
             mostrarMensagemDaFila(`Atendimento do chamado #${chamado.id} finalizado. O registro permanece no histórico.`);
             chamadoSelecionadoId = null;
         }

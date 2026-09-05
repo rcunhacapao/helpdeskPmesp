@@ -197,9 +197,39 @@ class ChamadoServiceTest {
         when(chamadoRepository.findById(1L)).thenReturn(Optional.of(chamado));
 
         RegraDeNegocioException excecao = assertThrows(RegraDeNegocioException.class,
-                () -> chamadoService.finalizarAtendimento(1L));
+                () -> chamadoService.finalizarAtendimento(1L, null));
 
         assertEquals("CHAMADO_NAO_ESTA_EM_ATENDIMENTO", excecao.getCodigo());
+    }
+
+
+    @Test
+    void deveFinalizarChamadoRegistrandoASolucaoQuandoInformada() {
+        ChamadoModel chamado = new ChamadoModel();
+        chamado.setStatus(ChamadoStatus.EM_ATENDIMENTO);
+        when(chamadoRepository.findById(1L)).thenReturn(Optional.of(chamado));
+        when(chamadoRepository.save(chamado)).thenReturn(chamado);
+        when(chamadoMapper.map(chamado)).thenReturn(new pmesp.helpdesk37bpmm.Chamado.dto.ChamadoRespostaDTO());
+
+        chamadoService.finalizarAtendimento(1L, "Trocado o cabo de vídeo do monitor.");
+
+        assertEquals("Trocado o cabo de vídeo do monitor.", chamado.getSolucao());
+        assertEquals(ChamadoStatus.FECHADO, chamado.getStatus());
+    }
+
+
+    @Test
+    void deveFinalizarChamadoSemSolucaoQuandoNaoInformada() {
+        ChamadoModel chamado = new ChamadoModel();
+        chamado.setStatus(ChamadoStatus.EM_ATENDIMENTO);
+        when(chamadoRepository.findById(1L)).thenReturn(Optional.of(chamado));
+        when(chamadoRepository.save(chamado)).thenReturn(chamado);
+        when(chamadoMapper.map(chamado)).thenReturn(new pmesp.helpdesk37bpmm.Chamado.dto.ChamadoRespostaDTO());
+
+        chamadoService.finalizarAtendimento(1L, null);
+
+        assertEquals(null, chamado.getSolucao());
+        assertEquals(ChamadoStatus.FECHADO, chamado.getStatus());
     }
 
 

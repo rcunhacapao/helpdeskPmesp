@@ -57,6 +57,11 @@ public class ChamadoModel {
     @Column(name = "motivo_cancelamento", columnDefinition = "TEXT")
     private String motivoCancelamento;
 
+    // Preenchida pelo técnico ao finalizar o atendimento. Fica em branco quando ele não
+    // registrar nada — não é obrigatória.
+    @Column(name = "solucao", columnDefinition = "TEXT")
+    private String solucao;
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private ChamadoPrioridade prioridade;

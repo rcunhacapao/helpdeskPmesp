@@ -216,8 +216,9 @@ public class ChamadoService {
     }
 
 
-    // Finalizar atendimento do chamado
-    public ChamadoRespostaDTO finalizarAtendimento(Long chamadoId) {
+    // Finalizar atendimento do chamado. A solução é opcional: o técnico pode registrar
+    // o que foi feito, mas isso não impede a finalização quando não for informada.
+    public ChamadoRespostaDTO finalizarAtendimento(Long chamadoId, String solucao) {
         ChamadoModel chamado = buscarChamadoPorId(chamadoId);
 
         // Só finalizar chamado que já começou a ser atendido
@@ -229,6 +230,9 @@ public class ChamadoService {
         // Registrar a data final e marcar o chamado como fechado
         chamado.finalizarAtendimento();
         chamado.setStatus(ChamadoStatus.FECHADO);
+        if (solucao != null && !solucao.isBlank()) {
+            chamado.setSolucao(solucao);
+        }
         return chamadoMapper.map(chamadoRepository.save(chamado));
     }
 
