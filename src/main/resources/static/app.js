@@ -237,6 +237,7 @@ function carregarDadosDaRota(rota) {
     if (rota === 'central-tecnica') return carregarCentralTecnica();
     if (rota === 'fila-atendimento') return carregarFilaAtendimento();
     if (rota === 'gestao-usuarios') return carregarListaTecnicos();
+    if (rota === 'relatos-erro-tecnico') return carregarRelatosDeErro();
     return Promise.resolve();
 }
 
@@ -504,8 +505,16 @@ function exibirFeedbackDeMeusChamados(mensagem, eErro = false) {
     feedbackMeusChamados.textContent = mensagem;
 }
 
+// O usuário só precisa ver o que ele mesmo relatou ao Mike (categoria, problema e
+// respostas) — os procedimentos orientados e o resultado/encaminhamento são contexto
+// operacional para o técnico, já disponível na tela técnica separadamente.
 function descricaoDetalhadaDoChamado(chamado) {
-    return chamado.descricao.split('\n').slice(1).join('\n').trim() || 'Nenhuma descrição complementar foi informada.';
+    const detalhes = chamado.descricao.split('\n').slice(1).join('\n').trim();
+    if (!detalhes) return 'Nenhuma descrição complementar foi informada.';
+
+    const indiceProcedimentos = detalhes.indexOf('\nProcedimentos orientados:');
+    const detalhesParaOUsuario = indiceProcedimentos === -1 ? detalhes : detalhes.slice(0, indiceProcedimentos).trim();
+    return detalhesParaOUsuario || 'Nenhuma descrição complementar foi informada.';
 }
 
 // A assinatura permite atualizar somente a linha que realmente recebeu mudança do
@@ -1588,25 +1597,49 @@ function renderizarDetalheDoChamado() {
     renderizarHistoricoMikeNoDetalhe(chamado.id);
 }
 
+// Rastreia qual das duas seções (descrição simples ou contexto do Mike) está ativa no
+// momento, para o botão "Ocultar descrição" saber o que mostrar/ocultar.
+let elementoDescricaoTecnicaAtivo = null;
+
+function ativarDescricaoTecnica(tipo) {
+    const secaoDescricao = document.querySelector('#secao-descricao-tecnica');
+    const secaoHistorico = document.querySelector('#historico-mike-tecnico');
+    const botaoAlternar = document.querySelector('#alternar-descricao-tecnica');
+
+    secaoDescricao.hidden = tipo !== 'descricao';
+    secaoHistorico.hidden = tipo !== 'mike';
+    elementoDescricaoTecnicaAtivo = tipo === 'mike' ? secaoHistorico : secaoDescricao;
+    if (botaoAlternar) botaoAlternar.textContent = 'Ocultar descrição';
+}
+
+document.querySelector('#alternar-descricao-tecnica')?.addEventListener('click', () => {
+    if (!elementoDescricaoTecnicaAtivo) return;
+    elementoDescricaoTecnicaAtivo.hidden = !elementoDescricaoTecnicaAtivo.hidden;
+    document.querySelector('#alternar-descricao-tecnica').textContent =
+        elementoDescricaoTecnicaAtivo.hidden ? 'Mostrar descrição' : 'Ocultar descrição';
+});
+
 function renderizarHistoricoMikeNoDetalhe(chamadoId) {
-    const secao = document.querySelector('#historico-mike-tecnico');
     const historico = historicosMikePorChamadoId.get(chamadoId);
 
     if (historico === undefined) {
         void carregarHistoricoMikeDoChamado(chamadoId);
-        secao.hidden = true;
+        ativarDescricaoTecnica('descricao');
         return;
     }
 
     if (!historico) {
-        secao.hidden = true;
+        ativarDescricaoTecnica('descricao');
         return;
     }
 
     document.querySelector('#detalhe-mike-status').textContent = nomeDoResultadoMike(historico.resultado);
     document.querySelector('#detalhe-mike-relato').textContent = historico.descricaoProblema;
     document.querySelector('#detalhe-mike-sugestoes').textContent = historico.sugestoes;
-    secao.hidden = false;
+    // A descrição simples do chamado repete o mesmo conteúdo do contexto do Mike abaixo —
+    // mostrar as duas seria redundante, então o contexto substitui a descrição quando
+    // existe (o técnico ainda pode reexibi-la pelo botão "Mostrar descrição").
+    ativarDescricaoTecnica('mike');
 }
 
 async function carregarHistoricoMikeDoChamado(chamadoId) {
@@ -1745,8 +1778,11 @@ async function executarAcaoDaFila(acao) {
             const solucao = document.querySelector('#solucao-atendimento').value.trim();
             const caminho = `/chamados/finalizar/${chamado.id}` + (solucao ? `?solucao=${encodeURIComponent(solucao)}` : '');
             await apiFetch(caminho, { method: 'PATCH' });
-            mostrarMensagemDaFila(`Atendimento do chamado #${chamado.id} finalizado. O registro permanece no histórico.`);
             chamadoSelecionadoId = null;
+            document.querySelector('#titulo-atendimento-finalizado').textContent = 'Atendimento finalizado com sucesso!';
+            document.querySelector('#mensagem-atendimento-finalizado').textContent =
+                `Chamado #${chamado.id} concluído. O registro permanece no histórico.`;
+            document.querySelector('#modal-atendimento-finalizado').showModal();
         }
 
         await carregarFilaAtendimento();
@@ -1782,6 +1818,11 @@ queueSearch?.addEventListener('input', aplicarBuscaNaFila);
 
 document.querySelectorAll('[data-queue-action]').forEach((button) => {
     button.addEventListener('click', () => executarComEstadoDeEnvio(button, 'Aguarde...', () => executarAcaoDaFila(button.dataset.queueAction)));
+});
+
+document.querySelector('#fechar-atendimento-finalizado')?.addEventListener('click', () => {
+    const modal = document.querySelector('#modal-atendimento-finalizado');
+    if (modal?.open) modal.close();
 });
 
 // ============================================================
@@ -2042,5 +2083,111 @@ async function carregarListaTecnicos() {
 }
 
 document.querySelector('#atualizar-lista-tecnicos')?.addEventListener('click', carregarListaTecnicos);
+
+// ============================================================
+// Relatar um erro — feedback livre sobre o próprio sistema, em fase de testes.
+// Não confundir com Chamado (pedido de suporte de TI do dia a dia).
+// ============================================================
+const ROTULOS_TIPO_ERRO = {
+    LAYOUT_QUEBRADO: 'Layout quebrado ou desalinhado',
+    BOTAO_OU_LINK_NAO_FUNCIONA: 'Um botão ou link não funciona',
+    DADO_NAO_SALVOU_OU_CARREGOU: 'Uma informação não salvou ou não carregou',
+    MENSAGEM_DE_ERRO_INESPERADA: 'Apareceu uma mensagem de erro inesperada',
+    LENTIDAO: 'O sistema ficou lento',
+    OUTRO: 'Outro'
+};
+
+const formularioRelatarErro = document.querySelector('#formulario-relatar-erro');
+const tipoErroSelect = document.querySelector('#tipo-erro');
+const observacaoErroTextarea = document.querySelector('#observacao-erro');
+const rotuloObservacaoErro = document.querySelector('#rotulo-observacao-erro');
+
+function atualizarObrigatoriedadeDaObservacaoDeErro() {
+    const exigirObservacao = tipoErroSelect?.value === 'OUTRO';
+    if (!observacaoErroTextarea || !rotuloObservacaoErro) return;
+    observacaoErroTextarea.required = exigirObservacao;
+    rotuloObservacaoErro.innerHTML = exigirObservacao
+        ? 'Observações <span aria-hidden="true">*</span>'
+        : 'Observações (opcional)';
+}
+
+tipoErroSelect?.addEventListener('change', atualizarObrigatoriedadeDaObservacaoDeErro);
+
+formularioRelatarErro?.addEventListener('submit', async (event) => {
+    event.preventDefault();
+    const mensagem = document.querySelector('#mensagem-relatar-erro');
+
+    if (!formularioRelatarErro.checkValidity()) {
+        formularioRelatarErro.reportValidity();
+        return;
+    }
+
+    const corpo = {
+        tipoErro: tipoErroSelect.value,
+        observacao: observacaoErroTextarea.value.trim() || null
+    };
+
+    await executarComEstadoDeEnvio(formularioRelatarErro.querySelector('button[type="submit"]'), 'Enviando...', async () => {
+        try {
+            await apiFetch('/relatos-erro', { method: 'POST', body: corpo });
+            mensagem.classList.remove('is-error');
+            mensagem.textContent = '';
+            formularioRelatarErro.reset();
+            atualizarObrigatoriedadeDaObservacaoDeErro();
+            await showRoute('relato-erro-sucesso');
+        } catch (erro) {
+            mensagem.classList.add('is-error');
+            mensagem.textContent = erro.message;
+        }
+    });
+});
+
+function criarLinhaDeRelatoErro(relato) {
+    const linha = document.createElement('article');
+    linha.className = 'technician-row';
+
+    const info = document.createElement('div');
+    const tipo = document.createElement('strong');
+    tipo.textContent = ROTULOS_TIPO_ERRO[relato.tipoErro] || relato.tipoErro;
+    const detalhes = document.createElement('span');
+    const dataFormatada = new Date(relato.dataRelato).toLocaleString('pt-BR');
+    detalhes.textContent = `${relato.identificacaoDeQuemRelatou} · ${dataFormatada}`;
+    info.append(tipo, detalhes);
+
+    if (relato.observacao) {
+        const observacao = document.createElement('p');
+        observacao.className = 'meu-chamado-descricao';
+        observacao.textContent = relato.observacao;
+        info.append(observacao);
+    }
+
+    linha.append(info);
+    return linha;
+}
+
+async function carregarRelatosDeErro() {
+    const lista = document.querySelector('#lista-relatos-erro');
+    if (!lista) return;
+    lista.innerHTML = '';
+
+    try {
+        const relatos = await apiFetch('/relatos-erro');
+        if (!relatos.length) {
+            const vazio = document.createElement('p');
+            vazio.className = 'lista-tecnicos-vazia';
+            vazio.textContent = 'Nenhum erro relatado até o momento.';
+            lista.appendChild(vazio);
+            return;
+        }
+        relatos.forEach((relato) => lista.appendChild(criarLinhaDeRelatoErro(relato)));
+    } catch (erro) {
+        const mensagem = document.createElement('p');
+        mensagem.className = 'lista-tecnicos-vazia';
+        mensagem.textContent = erro.message;
+        lista.appendChild(mensagem);
+    }
+}
+
+document.querySelector('#atualizar-relatos-erro')?.addEventListener('click', carregarRelatosDeErro);
 
 restaurarSessaoAoCarregarPagina();

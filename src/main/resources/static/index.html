@@ -89,12 +89,16 @@
                 <button class="nav-link nav-link-mike" type="button" data-route="mike-ia" data-profile="usuario">
                     <svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="m12 3 1.7 5.3L19 10l-5.3 1.7L12 17l-1.7-5.3L5 10l5.3-1.7z"/><path d="m19 16 .7 2.3L22 19l-2.3.7L19 22l-.7-2.3L16 19l2.3-.7z"/></svg><span class="nav-label">Mike IA</span><small class="nav-badge">Em criação</small>
                 </button>
+                <button class="nav-link" type="button" data-route="relatos-erro-tecnico" data-profile="tecnico">
+                    <svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 9v4M12 17h.01"/><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/></svg><span class="nav-label">Relatos de erro</span>
+                </button>
             </nav>
 
             <div class="sidebar-footer">
                 <p class="user-name" id="identificacao-sidebar">3º SGT PM Usuário</p>
                 <p class="profile-label" id="perfil-sessao">Perfil: Usuário</p>
                 <button class="button button-secondary button-block" id="sair" type="button">Sair</button>
+                <button class="text-button" type="button" data-route="relatar-erro">Relatar um erro</button>
                 <p>Versão 0.0.1 (beta)</p>
             </div>
         </aside>
@@ -152,6 +156,7 @@
                             <li><strong>Seu chamado fica mais completo com uma captura de tela.</strong><span>Inclua mensagens de erro sempre que possível.</span></li>
                             <li><strong>Registre o local e o equipamento envolvidos.</strong><span>Essas informações aceleram o direcionamento.</span></li>
                             <li><strong>Precisa de orientação antes de abrir o chamado?</strong><button class="text-button" type="button" data-route="mike-ia">Converse com o Mike IA</button></li>
+                            <li><strong>Este sistema está em fase de testes.</strong><span>Encontrou algo estranho? Use o botão "Relatar um erro" no rodapé do menu para nos ajudar a melhorar.</span></li>
                         </ul>
                     </article>
                     <article class="surface-card mike-highlight">
@@ -293,11 +298,25 @@
                         <div id="conteudo-detalhe-chamado" hidden>
                             <div class="queue-detail-header"><div><p class="eyebrow" id="detalhe-codigo">Chamado</p><h2 id="detalhe-assunto">-</h2><p id="detalhe-abertura">-</p></div><div class="queue-detail-badges"><span class="priority-label" id="detalhe-prioridade">-</span><span class="status-label" id="detalhe-status">-</span></div></div>
                             <dl class="queue-detail-facts"><div><dt>Solicitante</dt><dd id="detalhe-solicitante">-</dd></div><div><dt>Local / setor</dt><dd id="detalhe-local">-</dd></div><div><dt>Categoria</dt><dd id="detalhe-categoria">-</dd></div><div><dt>Responsável</dt><dd id="detalhe-responsavel">Aguardando assunção</dd></div></dl>
-                            <section class="queue-detail-description" aria-labelledby="titulo-descricao-tecnica"><h3 id="titulo-descricao-tecnica">Descrição informada</h3><p id="detalhe-descricao">-</p></section>
+                            <button class="text-button" type="button" id="alternar-descricao-tecnica">Ocultar descrição</button>
+                            <section class="queue-detail-description" id="secao-descricao-tecnica" aria-labelledby="titulo-descricao-tecnica"><h3 id="titulo-descricao-tecnica">Descrição informada</h3><p id="detalhe-descricao">-</p></section>
                             <section class="queue-detail-description historico-mike-tecnico" id="historico-mike-tecnico" aria-labelledby="titulo-historico-mike" hidden><p class="eyebrow">Contexto do atendimento</p><h3 id="titulo-historico-mike">Orientações apresentadas pelo Mike IA</h3><p class="historico-mike-status" id="detalhe-mike-status">-</p><h4>Relato original</h4><p id="detalhe-mike-relato">-</p><h4>Orientações sugeridas</h4><p id="detalhe-mike-sugestoes">-</p></section>
                             <section class="queue-action-panel" aria-labelledby="titulo-acoes-chamado"><p class="eyebrow">Próxima etapa</p><h3 id="titulo-acoes-chamado">Ações permitidas</h3><div class="queue-action-grid" id="acoes-chamado-aberto"><button class="button button-success" type="button" data-queue-action="iniciar">Assumir e iniciar atendimento</button></div><div class="queue-action-grid" id="acoes-transferencia"><label for="transferir-responsavel">Transferir responsável</label><div class="queue-control-inline"><select id="transferir-responsavel"></select><button class="button button-secondary" type="button" data-queue-action="transferir">Transferir</button></div></div><div class="queue-action-grid" id="acoes-chamado-atendimento" hidden><label for="solucao-atendimento">Solução / observação (opcional)</label><textarea id="solucao-atendimento" rows="3" placeholder="O que foi feito para resolver o problema?"></textarea><button class="button button-info" type="button" data-queue-action="finalizar">Finalizar atendimento</button></div></section>
                         </div>
                         <p class="form-message" id="mensagem-fila" role="status" aria-live="polite"></p>
+                        <dialog class="modal-cancelamento" id="modal-atendimento-finalizado" aria-labelledby="titulo-atendimento-finalizado">
+                            <div class="success-screen">
+                                <svg class="success-check" viewBox="0 0 52 52" aria-hidden="true">
+                                    <circle class="success-check-circle" cx="26" cy="26" r="24" fill="none" />
+                                    <path class="success-check-mark" fill="none" d="M14 27l7 7 16-16" />
+                                </svg>
+                                <h1 id="titulo-atendimento-finalizado">Atendimento finalizado com sucesso!</h1>
+                                <p id="mensagem-atendimento-finalizado">O registro permanece no histórico do chamado.</p>
+                                <div class="success-screen-actions">
+                                    <button class="button button-primary" type="button" id="fechar-atendimento-finalizado">Continuar</button>
+                                </div>
+                            </div>
+                        </dialog>
                     </section>
                 </div>
             </section>
@@ -343,6 +362,20 @@
                         <p class="form-message" id="mensagem-disponibilidade-tecnica" role="status" aria-live="polite"></p>
                     </section>
                 </div>
+            </section>
+
+            <section class="page-view" id="relatos-erro-tecnico" data-view data-profile="tecnico" aria-labelledby="titulo-relatos-erro-tecnico" hidden>
+                <p class="breadcrumb">Início / Central técnica / Relatos de erro</p>
+                <div class="page-heading page-heading-compact">
+                    <div>
+                        <h1 id="titulo-relatos-erro-tecnico">Relatos de erro</h1>
+                        <p>Erros do sistema relatados pela equipe durante a fase de testes.</p>
+                    </div>
+                    <button class="button button-secondary" type="button" id="atualizar-relatos-erro">Atualizar lista</button>
+                </div>
+                <section class="surface-card">
+                    <div class="technician-list" id="lista-relatos-erro" style="grid-template-columns: 1fr;"></div>
+                </section>
             </section>
 
             <section class="page-view" id="abrir-chamado" data-view data-profile="todos" aria-labelledby="titulo-abrir-chamado" hidden>
@@ -482,6 +515,65 @@
                     <div class="success-screen-actions">
                         <button class="button button-secondary" type="button" data-route="abrir-chamado">Abrir outro chamado</button>
                         <button class="button button-primary" type="button" id="botao-sucesso-acompanhar" data-route="meus-chamados">Ver meus chamados</button>
+                    </div>
+                </div>
+            </section>
+
+            <section class="page-view" id="relatar-erro" data-view data-profile="todos" aria-labelledby="titulo-relatar-erro" hidden>
+                <p class="breadcrumb">Início / Relatar um erro</p>
+                <div class="page-heading page-heading-compact">
+                    <div>
+                        <h1 id="titulo-relatar-erro">Relatar um erro</h1>
+                        <p>O sistema está em fase de testes — sua contribuição ajuda a melhorá-lo.</p>
+                    </div>
+                </div>
+                <div class="abertura-usuario">
+                    <div class="abertura-usuario-layout">
+                        <aside class="mike-abertura-persona" aria-hidden="true">
+                            <img class="mike-abertura-avatar" src="mike-ia-confuso.png" alt="" width="375" height="666">
+                        </aside>
+                        <div class="abertura-usuario-conteudo">
+                            <form class="surface-card ticket-form" id="formulario-relatar-erro" novalidate>
+                                <p class="eyebrow">Contribuição</p>
+                                <h2>O que você encontrou?</h2>
+                                <p class="field-help">Escolha a opção mais próxima do que aconteceu. Se preferir, descreva com suas palavras em "Outro".</p>
+                                <div class="field-group">
+                                    <label for="tipo-erro">Tipo de erro <span aria-hidden="true">*</span></label>
+                                    <select id="tipo-erro" name="tipo-erro" required>
+                                        <option value="">Selecione</option>
+                                        <option value="LAYOUT_QUEBRADO">Layout quebrado ou desalinhado</option>
+                                        <option value="BOTAO_OU_LINK_NAO_FUNCIONA">Um botão ou link não funciona</option>
+                                        <option value="DADO_NAO_SALVOU_OU_CARREGOU">Uma informação não salvou ou não carregou</option>
+                                        <option value="MENSAGEM_DE_ERRO_INESPERADA">Apareceu uma mensagem de erro inesperada</option>
+                                        <option value="LENTIDAO">O sistema ficou lento</option>
+                                        <option value="OUTRO">Outro</option>
+                                    </select>
+                                </div>
+                                <div class="field-group">
+                                    <label for="observacao-erro" id="rotulo-observacao-erro">Observações (opcional)</label>
+                                    <textarea id="observacao-erro" name="observacao-erro" rows="4" maxlength="1000" placeholder="O que estava fazendo quando percebeu o erro?"></textarea>
+                                </div>
+                                <p class="form-message" id="mensagem-relatar-erro" role="status" aria-live="polite"></p>
+                                <div class="form-actions">
+                                    <button class="button button-secondary" type="button" data-route="visao-geral">Cancelar</button>
+                                    <button class="button button-primary" type="submit">Enviar relato</button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section class="page-view" id="relato-erro-sucesso" data-view data-profile="todos" aria-labelledby="titulo-relato-erro-sucesso" hidden>
+                <div class="success-screen">
+                    <svg class="success-check" viewBox="0 0 52 52" aria-hidden="true">
+                        <circle class="success-check-circle" cx="26" cy="26" r="24" fill="none" />
+                        <path class="success-check-mark" fill="none" d="M14 27l7 7 16-16" />
+                    </svg>
+                    <h1 id="titulo-relato-erro-sucesso">Erro relatado com sucesso!</h1>
+                    <p>Obrigado por contribuir com a melhoria contínua do sistema.</p>
+                    <div class="success-screen-actions">
+                        <button class="button button-primary" type="button" data-route="visao-geral">Voltar ao início</button>
                     </div>
                 </div>
             </section>

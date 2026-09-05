@@ -2,6 +2,7 @@ package pmesp.helpdesk37bpmm.Seguranca;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -82,6 +83,8 @@ public class SecurityConfig {
                         .requestMatchers("/auth/sessao", "/auth/trocar-senha", "/logout").authenticated()
                         .requestMatchers(ARQUIVOS_PUBLICOS_DO_FRONTEND).permitAll()
                         .requestMatchers(ROTAS_DE_DOCUMENTACAO_DA_API).permitAll()
+                        // Relatar um erro é livre a qualquer pessoa logada; só a consulta (GET) é do técnico.
+                        .requestMatchers(HttpMethod.GET, "/relatos-erro").hasRole("TECNICO")
                         .requestMatchers(ROTAS_EXCLUSIVAS_DE_TECNICO).hasRole("TECNICO")
                         // Uma sessão com troca pendente não recebe ROLE_USUARIO e, portanto,
                         // não consegue contornar a tela acessando outra API diretamente.

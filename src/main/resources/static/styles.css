@@ -300,6 +300,18 @@ label { display: block; font-size: .9375rem; font-weight: 700; margin-bottom: 6p
 .sidebar-footer .button-secondary:hover { background: var(--surface); border-color: var(--surface); color: var(--text); transform: translateY(-1px); }
 .sidebar-footer .button-secondary:focus-visible { box-shadow: 0 0 0 3px rgba(255, 255, 255, .34); outline: 0; }
 .sidebar-footer .button-secondary:active { background: rgba(255, 255, 255, .82); transform: translateY(0); }
+.sidebar-footer .text-button {
+    color: rgba(255, 255, 255, .62);
+    display: block;
+    font-size: .8rem;
+    font-weight: 700;
+    margin: 4px 0 8px;
+    text-align: left;
+    text-decoration: none;
+}
+.sidebar-footer .text-button:hover { color: rgba(255, 255, 255, .85); text-decoration: underline; }
+
+#formulario-relatar-erro .eyebrow { color: var(--primary); }
 
 /* ============================================
    CONTENT AREA
@@ -741,6 +753,7 @@ h3 { font-size: clamp(.9rem, 1.2vw, 1rem); margin: 0; }
 .queue-detail-facts div { border-left: 2px solid rgba(45, 95, 139, .22); min-width: 0; padding-left: 9px; }
 .queue-detail-facts dt { color: var(--muted); font-size: .6875rem; font-weight: 800; letter-spacing: .04em; text-transform: uppercase; }
 .queue-detail-facts dd { font-size: .78rem; font-weight: 750; line-height: 1.35; margin: 4px 0 0; overflow-wrap: anywhere; }
+#alternar-descricao-tecnica { display: block; font-size: .74rem; margin: 4px 0; text-align: right; width: 100%; }
 .queue-detail-description { background: rgba(26, 29, 32, .03); border-left: 3px solid var(--accent); border-radius: 0 6px 6px 0; padding: 12px; }
 .queue-detail-description h3, .queue-action-panel h3 { font-size: .82rem; }
 .queue-detail-description p { color: var(--muted); font-size: .78rem; line-height: 1.5; margin: 7px 0 0; white-space: pre-line; }
@@ -991,6 +1004,34 @@ button + .form-message, .form-actions + .form-message { margin-top: 12px; }
 #abrir-chamado .abertura-usuario { flex: 1; min-height: 0; }
 #abrir-chamado .ticket-layout-com-mike,
 #abrir-chamado .abertura-usuario-layout { height: 100%; min-height: 0; }
+
+/* "Relatar um erro" é um card compacto, não uma tela cheia como a de abrir chamado:
+   a linha (Mike + card) fica centralizada no espaço disponível, mas nem o card nem o
+   grid são forçados a esticar até 100% da altura — o tamanho vem do próprio conteúdo. */
+#relatar-erro .abertura-usuario {
+    align-items: center;
+    display: flex;
+    flex: 1;
+    margin-top: 36px;
+    min-height: 0;
+}
+#relatar-erro .abertura-usuario-layout {
+    height: auto;
+    width: 100%;
+}
+#relatar-erro .mike-abertura-avatar { height: clamp(420px, 62vh, 720px); }
+#relatar-erro .abertura-usuario-conteudo {
+    height: auto;
+    justify-content: center;
+}
+#relatar-erro .ticket-form {
+    margin: 0 auto;
+    max-width: 620px;
+    width: 100%;
+}
+#relatar-erro .ticket-form h2 { margin-bottom: 10px; }
+#relatar-erro .ticket-form .field-group { margin-bottom: 12px; }
+#relatar-erro #observacao-erro { min-height: 110px; }
 .ticket-layout-conteudo-tecnico { width: 100%; }
 .abertura-usuario-conteudo { display: flex; flex-direction: column; justify-content: center; height: 100%; min-height: 0; gap: 18px; min-width: 0; }
 .mike-abertura-persona { align-items: center; display: flex; justify-content: flex-end; min-height: 0; min-width: 0; }
