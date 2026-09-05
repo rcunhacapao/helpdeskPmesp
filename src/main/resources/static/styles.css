@@ -62,7 +62,8 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
     height: 100vh;
     padding: clamp(16px, 4vh, 32px);
     position: relative;
-    overflow: hidden;
+    overflow-y: auto;
+    overflow-x: hidden;
 }
 
 /* Background animated blobs (Glow effects) */
