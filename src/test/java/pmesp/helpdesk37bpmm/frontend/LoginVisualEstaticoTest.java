@@ -18,7 +18,8 @@ class LoginVisualEstaticoTest {
 
         assertFalse(comportamento.contains("loginForm.checkValidity()"));
         assertTrue(comportamento.contains("appPage.hidden = false;"));
-        assertTrue(comportamento.contains("showRoute('visao-geral')"));
+        assertTrue(comportamento.contains("rotaInicial: 'visao-geral'"));
+        assertTrue(comportamento.contains("showRoute(sessaoDemonstracao.rotaInicial)"));
         assertTrue(estilos.contains("[hidden]"));
         assertTrue(estilos.contains("display: none !important;"));
     }
