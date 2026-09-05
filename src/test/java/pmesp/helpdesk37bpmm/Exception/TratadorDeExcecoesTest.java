@@ -68,6 +68,29 @@ class TratadorDeExcecoesTest {
 
 
     @Test
+    void deveRetornar401QuandoFalharAutenticacao() {
+        TratadorDeExcecoes tratador = new TratadorDeExcecoes();
+
+        ResponseEntity<RespostaErroDTO> resposta = tratador.tratarFalhaDeAutenticacao();
+
+        assertEquals(401, resposta.getStatusCode().value());
+        assertEquals("CREDENCIAIS_INVALIDAS", resposta.getBody().getCodigo());
+        assertEquals("RE ou senha inválidos.", resposta.getBody().getMensagem());
+    }
+
+
+    @Test
+    void deveRetornar500QuandoErroForInesperado() {
+        TratadorDeExcecoes tratador = new TratadorDeExcecoes();
+
+        ResponseEntity<RespostaErroDTO> resposta = tratador.tratarErroInesperado(new RuntimeException("Falha inesperada."));
+
+        assertEquals(500, resposta.getStatusCode().value());
+        assertEquals("ERRO_INTERNO", resposta.getBody().getCodigo());
+    }
+
+
+    @Test
     void deveRetornar400ComAMensagemDoCampoInvalidoDoDto() throws NoSuchMethodException {
         TratadorDeExcecoes tratador = new TratadorDeExcecoes();
         BindingResult bindingResult = new BeanPropertyBindingResult(new Object(), "chamadoDTO");
