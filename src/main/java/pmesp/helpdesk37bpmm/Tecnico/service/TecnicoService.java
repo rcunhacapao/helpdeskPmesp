@@ -2,6 +2,9 @@ package pmesp.helpdesk37bpmm.Tecnico.service;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import pmesp.helpdesk37bpmm.Exception.ConflitoException;
+import pmesp.helpdesk37bpmm.Exception.RecursoNaoEncontradoException;
+import pmesp.helpdesk37bpmm.Exception.RegraDeNegocioException;
 import pmesp.helpdesk37bpmm.Tecnico.dto.TecnicoDTO;
 import pmesp.helpdesk37bpmm.Tecnico.dto.TecnicoRespostaDTO;
 import pmesp.helpdesk37bpmm.Tecnico.mapper.TecnicoMapper;
@@ -26,39 +29,49 @@ public class TecnicoService {
 
     // Cadastrar um usuário ativo como técnico da equipe
     public TecnicoRespostaDTO criar(TecnicoDTO tecnicoDTO) {
-        if (tecnicoDTO == null || tecnicoDTO.getRe() == null || tecnicoDTO.getRe().isBlank()) {
-            return null;
+        // Conferir se o corpo do cadastro foi enviado
+        if (tecnicoDTO == null) {
+            throw new RegraDeNegocioException("DADOS_TECNICO_INVALIDOS",
+                    "Envie os dados necessários para cadastrar o técnico.");
         }
 
+        // Procurar o usuário que será transformado em técnico
+        validarRe(tecnicoDTO.getRe());
         Optional<UsuarioModel> usuarioAtual = usuarioRepository.findByRe(tecnicoDTO.getRe());
-        if (usuarioAtual.isPresent() && !tecnicoRepository.findByUsuario(usuarioAtual.get()).isPresent()) {
-            UsuarioModel usuario = usuarioAtual.get();
-
-            if (usuario.isAtivo()) {
-                // Criar o perfil técnico para o usuário encontrado pelo RE
-                TecnicoModel tecnicoNovo = new TecnicoModel();
-                tecnicoNovo.setUsuario(usuario);
-                tecnicoNovo.setDisponivel(false);
-
-                return tecnicoMapper.map(tecnicoRepository.save(tecnicoNovo));
-            }
+        if (usuarioAtual.isEmpty()) {
+            throw new RecursoNaoEncontradoException("USUARIO_NAO_ENCONTRADO", "Usuário não encontrado.");
         }
-        return null;
+
+        UsuarioModel usuario = usuarioAtual.get();
+        // Um usuário inativo não pode fazer parte da equipe técnica
+        if (!usuario.isAtivo()) {
+            throw new RegraDeNegocioException("USUARIO_INATIVO",
+                    "Não é possível cadastrar um usuário inativo como técnico.");
+        }
+
+        // Impedir que o mesmo usuário receba dois perfis de técnico
+        if (tecnicoRepository.findByUsuario(usuario).isPresent()) {
+            throw new ConflitoException("TECNICO_JA_CADASTRADO", "Este usuário já está cadastrado como técnico.");
+        }
+
+        // Criar o perfil técnico para o usuário encontrado pelo RE
+        TecnicoModel tecnicoNovo = new TecnicoModel();
+        tecnicoNovo.setUsuario(usuario);
+        tecnicoNovo.setDisponivel(false);
+
+        return tecnicoMapper.map(tecnicoRepository.save(tecnicoNovo));
     }
 
 
     // Buscar técnico pelo RE do usuário relacionado
     public TecnicoRespostaDTO buscarPorRe(String re) {
-        Optional<TecnicoModel> tecnico = tecnicoRepository.findByUsuarioRe(re);
-        if (tecnico.isPresent()) {
-            return tecnicoMapper.map(tecnico.get());
-        }
-        return null;
+        return tecnicoMapper.map(buscarTecnicoPorRe(re));
     }
 
 
     // Buscar técnico pelo RE para regras de chamado
     public Optional<TecnicoModel> buscarPorReComoModel(String re) {
+        validarRe(re);
         return tecnicoRepository.findByUsuarioRe(re);
     }
 
@@ -80,29 +93,25 @@ public class TecnicoService {
 
     // Permitir que o técnico receba chamados neste momento
     public TecnicoRespostaDTO ficarDisponivel(String re) {
-        Optional<TecnicoModel> tecnicoAtual = tecnicoRepository.findByUsuarioRe(re);
-        if (tecnicoAtual.isPresent()) {
-            TecnicoModel tecnico = tecnicoAtual.get();
+        TecnicoModel tecnico = buscarTecnicoPorRe(re);
 
-            if (tecnico.getUsuario().isAtivo()) {
-                tecnico.setDisponivel(true);
-                return tecnicoMapper.map(tecnicoRepository.save(tecnico));
-            }
+        // Confirmar que o usuário desse técnico ainda está ativo
+        if (!tecnico.getUsuario().isAtivo()) {
+            throw new RegraDeNegocioException("TECNICO_INATIVO",
+                    "Não é possível deixar um técnico inativo como disponível.");
         }
-        return null;
+
+        tecnico.setDisponivel(true);
+        return tecnicoMapper.map(tecnicoRepository.save(tecnico));
     }
 
 
     // Parar de receber novos chamados neste momento
     public TecnicoRespostaDTO ficarIndisponivel(String re) {
-        Optional<TecnicoModel> tecnicoAtual = tecnicoRepository.findByUsuarioRe(re);
-        if (tecnicoAtual.isPresent()) {
-            TecnicoModel tecnico = tecnicoAtual.get();
-            tecnico.setDisponivel(false);
+        TecnicoModel tecnico = buscarTecnicoPorRe(re);
+        tecnico.setDisponivel(false);
 
-            return tecnicoMapper.map(tecnicoRepository.save(tecnico));
-        }
-        return null;
+        return tecnicoMapper.map(tecnicoRepository.save(tecnico));
     }
 
 
@@ -117,10 +126,12 @@ public class TecnicoService {
             }
         }
 
+        // Atribuir automaticamente apenas quando houver uma única opção
         if (tecnicosAtivos.size() == 1) {
             return tecnicosAtivos.get(0);
         }
 
+        // Sem responsável automático quando não houver técnico ou houver mais de um
         return null;
     }
 
@@ -141,5 +152,26 @@ public class TecnicoService {
     public void tornarIndisponivel(TecnicoModel tecnico) {
         tecnico.setDisponivel(false);
         tecnicoRepository.save(tecnico);
+    }
+
+
+    // Buscar técnico pelo RE e informar quando ele não existir
+    private TecnicoModel buscarTecnicoPorRe(String re) {
+        validarRe(re);
+        Optional<TecnicoModel> tecnico = tecnicoRepository.findByUsuarioRe(re);
+
+        if (tecnico.isPresent()) {
+            return tecnico.get();
+        }
+
+        throw new RecursoNaoEncontradoException("TECNICO_NAO_ENCONTRADO", "Técnico não encontrado.");
+    }
+
+
+    // Validar o RE informado sem o dígito
+    private void validarRe(String re) {
+        if (re == null || !re.matches("[0-9]{1,6}")) {
+            throw new RegraDeNegocioException("RE_INVALIDO", "Informe o RE sem o dígito.");
+        }
     }
 }

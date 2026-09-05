@@ -9,6 +9,8 @@ import pmesp.helpdesk37bpmm.Chamado.enums.ChamadoStatus;
 import pmesp.helpdesk37bpmm.Chamado.mapper.ChamadoMapper;
 import pmesp.helpdesk37bpmm.Chamado.model.ChamadoModel;
 import pmesp.helpdesk37bpmm.Chamado.repository.ChamadoRepository;
+import pmesp.helpdesk37bpmm.Exception.RecursoNaoEncontradoException;
+import pmesp.helpdesk37bpmm.Exception.RegraDeNegocioException;
 import pmesp.helpdesk37bpmm.Tecnico.model.TecnicoModel;
 import pmesp.helpdesk37bpmm.Tecnico.service.TecnicoService;
 import pmesp.helpdesk37bpmm.Usuario.model.UsuarioModel;
@@ -33,44 +35,42 @@ public class ChamadoService {
 
     // Cadastrar novo chamado usando os dados do ChamadoDTO
     public ChamadoRespostaDTO criar(ChamadoDTO chamadoDTO) {
-        if (chamadoDTO == null || chamadoDTO.getRe() == null
-                || chamadoDTO.getCategoria() == null
-                || chamadoDTO.getDescricao() == null || chamadoDTO.getDescricao().isBlank()
-                || chamadoDTO.getLocalAtendimento() == null || chamadoDTO.getLocalAtendimento().isBlank()
-                || chamadoDTO.getPrioridade() == null) {
-            return null;
-        }
+        // Conferir se todos os dados obrigatórios foram enviados
+        validarDadosParaAbrirChamado(chamadoDTO);
 
+        // Encontrar quem está abrindo o chamado
         Optional<UsuarioModel> buscarRe = usuarioRepository.findByRe(chamadoDTO.getRe());
-        if (buscarRe.isPresent()) {
-            UsuarioModel solicitante = buscarRe.get();
-            TecnicoModel tecnicoResponsavel = tecnicoService.buscarTecnicoDisponivelParaNovoChamado();
-
-            if (solicitante.isAtivo()) {
-                ChamadoModel chamadoNovo = chamadoMapper.map(chamadoDTO);
-
-                // Definir os dados que são regras do sistema
-                chamadoNovo.setSolicitante(solicitante);
-                chamadoNovo.setTecnicoResponsavel(tecnicoResponsavel);
-                chamadoNovo.setDataAbertura(LocalDateTime.now());
-                chamadoNovo.setStatus(ChamadoStatus.ABERTO);
-                chamadoNovo.setMotivoCancelamento(null);
-
-                // Transformar o chamado salvo em resposta para a API
-                return chamadoMapper.map(chamadoRepository.save(chamadoNovo));
-            }
+        if (buscarRe.isEmpty()) {
+            throw new RecursoNaoEncontradoException("USUARIO_NAO_ENCONTRADO",
+                    "Não foi encontrado usuário para o RE informado.");
         }
-        return null;
+
+        UsuarioModel solicitante = buscarRe.get();
+        // Usuário inativo não pode abrir novos chamados
+        if (!solicitante.isAtivo()) {
+            throw new RegraDeNegocioException("USUARIO_INATIVO",
+                    "Não é possível abrir chamado para um usuário inativo.");
+        }
+
+        // Definir responsável automático somente quando houver um técnico disponível
+        TecnicoModel tecnicoResponsavel = tecnicoService.buscarTecnicoDisponivelParaNovoChamado();
+        ChamadoModel chamadoNovo = chamadoMapper.map(chamadoDTO);
+
+        // Definir os dados que são regras do sistema
+        chamadoNovo.setSolicitante(solicitante);
+        chamadoNovo.setTecnicoResponsavel(tecnicoResponsavel);
+        chamadoNovo.setDataAbertura(LocalDateTime.now());
+        chamadoNovo.setStatus(ChamadoStatus.ABERTO);
+        chamadoNovo.setMotivoCancelamento(null);
+
+        // Transformar o chamado salvo em resposta para a API
+        return chamadoMapper.map(chamadoRepository.save(chamadoNovo));
     }
 
 
     // Pesquisar chamado por ID
     public ChamadoRespostaDTO buscarPorId(Long chamadoId) {
-        Optional<ChamadoModel> chamado = chamadoRepository.findById(chamadoId);
-        if (chamado.isPresent()) {
-            return chamadoMapper.map(chamado.get());
-        }
-        return null;
+        return chamadoMapper.map(buscarChamadoPorId(chamadoId));
     }
 
 
@@ -102,7 +102,8 @@ public class ChamadoService {
 
 
     // Adicionar na fila somente os chamados de uma prioridade
-    private void adicionarChamadosDaPrioridadeNaFila(List<ChamadoModel> chamadosAbertos, ChamadoPrioridade prioridade, List<ChamadoRespostaDTO> fila) {
+    private void adicionarChamadosDaPrioridadeNaFila(List<ChamadoModel> chamadosAbertos,
+                                                     ChamadoPrioridade prioridade, List<ChamadoRespostaDTO> fila) {
         for (ChamadoModel chamado : chamadosAbertos) {
             if (chamado.getPrioridade() == prioridade) {
                 fila.add(chamadoMapper.map(chamado));
@@ -111,113 +112,117 @@ public class ChamadoService {
     }
 
 
-    // Atualizar a [prioridade] do chamado
+    // Atualizar a prioridade do chamado
     public ChamadoRespostaDTO atualizarPrioridade(Long chamadoId, ChamadoPrioridade prioridade) {
-        Optional<ChamadoModel> chamadoAtual = chamadoRepository.findById(chamadoId);
-        if (chamadoAtual.isPresent()) {
-            ChamadoModel chamado = chamadoAtual.get();
-            if (chamado.getStatus() != ChamadoStatus.CANCELADO && chamado.getDataFinalizacao() == null) {
-                chamado.setPrioridade(prioridade);
-                // Transformar o chamado atualizado em resposta para a API
-                return chamadoMapper.map(chamadoRepository.save(chamado));
-            }
+        // Não permitir atualizar sem escolher uma prioridade
+        if (prioridade == null) {
+            throw new RegraDeNegocioException("PRIORIDADE_OBRIGATORIA", "Selecione a prioridade do chamado.");
         }
-        return null;
+
+        ChamadoModel chamado = buscarChamadoPorId(chamadoId);
+        // Não permitir mudança após o chamado ser encerrado
+        if (chamado.getStatus() == ChamadoStatus.CANCELADO || chamado.getDataFinalizacao() != null) {
+            throw new RegraDeNegocioException("PRIORIDADE_NAO_PODE_SER_ALTERADA",
+                    "Não é possível alterar a prioridade de um chamado fechado ou cancelado.");
+        }
+
+        chamado.setPrioridade(prioridade);
+        return chamadoMapper.map(chamadoRepository.save(chamado));
     }
 
 
-    // Iniciar atendimento do chamado
-    public ChamadoRespostaDTO iniciarAtendimento(Long chamadoId) {
-        Optional<ChamadoModel> chamadoAtual = chamadoRepository.findById(chamadoId);
+    // Iniciar atendimento e definir o técnico responsável pelo chamado
+    public ChamadoRespostaDTO iniciarAtendimento(Long chamadoId, String reTecnico) {
+        // Encontrar o chamado e o técnico que vai iniciar o atendimento
+        ChamadoModel chamado = buscarChamadoPorId(chamadoId);
+        TecnicoModel tecnico = buscarTecnicoPorRe(reTecnico);
 
-        if (chamadoAtual.isPresent()) {
-            ChamadoModel chamado = chamadoAtual.get();
-
-            if (chamado.getStatus() == ChamadoStatus.ABERTO) {
-                chamado.setStatus(ChamadoStatus.EM_ATENDIMENTO);
-                // Transformar o chamado atualizado em resposta para a API
-                return chamadoMapper.map(chamadoRepository.save(chamado));
-            }
+        // Atendimento só pode começar quando o chamado ainda está aberto
+        if (chamado.getStatus() != ChamadoStatus.ABERTO) {
+            throw new RegraDeNegocioException("CHAMADO_NAO_ESTA_ABERTO",
+                    "Somente chamados abertos podem ter o atendimento iniciado.");
         }
 
-        return null;
+        // Técnico precisa estar disponível para receber o chamado
+        if (!tecnicoService.estaDisponivel(tecnico)) {
+            throw new RegraDeNegocioException("TECNICO_INDISPONIVEL",
+                    "O técnico precisa estar disponível para iniciar um atendimento.");
+        }
+
+        // Impedir que outro técnico inicie um chamado já atribuído
+        if (chamado.getTecnicoResponsavel() != null
+                && !chamado.getTecnicoResponsavel().getId().equals(tecnico.getId())) {
+            throw new RegraDeNegocioException("CHAMADO_ATRIBUIDO_A_OUTRO_TECNICO",
+                    "Este chamado já está atribuído a outro técnico. Use a transferência de responsável.");
+        }
+
+        // Registrar o responsável e alterar o status para em atendimento
+        chamado.setTecnicoResponsavel(tecnico);
+        chamado.setStatus(ChamadoStatus.EM_ATENDIMENTO);
+        return chamadoMapper.map(chamadoRepository.save(chamado));
     }
 
 
     // Transferir chamado para outro técnico ativo
     public ChamadoRespostaDTO transferirResponsavel(Long chamadoId, String reTecnico) {
-        Optional<ChamadoModel> chamadoAtual = chamadoRepository.findById(chamadoId);
-        Optional<TecnicoModel> tecnicoAtual = tecnicoService.buscarPorReComoModel(reTecnico);
+        // Encontrar o chamado e o novo técnico responsável
+        ChamadoModel chamado = buscarChamadoPorId(chamadoId);
+        TecnicoModel tecnico = buscarTecnicoPorRe(reTecnico);
 
-        if (chamadoAtual.isPresent() && tecnicoAtual.isPresent()) {
-            ChamadoModel chamado = chamadoAtual.get();
-            TecnicoModel tecnico = tecnicoAtual.get();
-
-            if (tecnicoService.estaDisponivel(tecnico)
-                    && (chamado.getStatus() == ChamadoStatus.ABERTO
-                    || chamado.getStatus() == ChamadoStatus.EM_ATENDIMENTO)) {
-                chamado.setTecnicoResponsavel(tecnico);
-                return chamadoMapper.map(chamadoRepository.save(chamado));
-            }
+        // Só permitir transferência enquanto o chamado ainda precisa de atendimento
+        if (chamado.getStatus() != ChamadoStatus.ABERTO
+                && chamado.getStatus() != ChamadoStatus.EM_ATENDIMENTO) {
+            throw new RegraDeNegocioException("TRANSFERENCIA_NAO_PERMITIDA",
+                    "Somente chamados abertos ou em atendimento podem ser transferidos.");
         }
 
-        return null;
-    }
-
-
-    // Assumir chamado aberto que ainda não possui responsável
-    public ChamadoRespostaDTO assumirChamado(Long chamadoId, String reTecnico) {
-        Optional<ChamadoModel> chamadoAtual = chamadoRepository.findById(chamadoId);
-        Optional<TecnicoModel> tecnicoAtual = tecnicoService.buscarPorReComoModel(reTecnico);
-
-        if (chamadoAtual.isPresent() && tecnicoAtual.isPresent()) {
-            ChamadoModel chamado = chamadoAtual.get();
-            TecnicoModel tecnico = tecnicoAtual.get();
-
-            if (chamado.getStatus() == ChamadoStatus.ABERTO
-                    && chamado.getTecnicoResponsavel() == null
-                    && tecnicoService.estaDisponivel(tecnico)) {
-                chamado.setTecnicoResponsavel(tecnico);
-                return chamadoMapper.map(chamadoRepository.save(chamado));
-            }
+        // Novo responsável precisa estar disponível
+        if (!tecnicoService.estaDisponivel(tecnico)) {
+            throw new RegraDeNegocioException("TECNICO_INDISPONIVEL",
+                    "O técnico precisa estar disponível para receber um chamado.");
         }
 
-        return null;
+        chamado.setTecnicoResponsavel(tecnico);
+        return chamadoMapper.map(chamadoRepository.save(chamado));
     }
 
 
     // Finalizar atendimento do chamado
     public ChamadoRespostaDTO finalizarAtendimento(Long chamadoId) {
-        Optional<ChamadoModel> chamadoAtual = chamadoRepository.findById(chamadoId);
+        ChamadoModel chamado = buscarChamadoPorId(chamadoId);
 
-        if (chamadoAtual.isPresent()) {
-            ChamadoModel chamado = chamadoAtual.get();
-
-            if (chamado.getStatus() == ChamadoStatus.EM_ATENDIMENTO) {
-                chamado.finalizarAtendimento();
-                chamado.setStatus(ChamadoStatus.FECHADO);
-                // Transformar o chamado finalizado em resposta para a API
-                return chamadoMapper.map(chamadoRepository.save(chamado));
-            }
+        // Só finalizar chamado que já começou a ser atendido
+        if (chamado.getStatus() != ChamadoStatus.EM_ATENDIMENTO) {
+            throw new RegraDeNegocioException("CHAMADO_NAO_ESTA_EM_ATENDIMENTO",
+                    "Somente chamados em atendimento podem ser finalizados.");
         }
-        return null;
+
+        // Registrar a data final e marcar o chamado como fechado
+        chamado.finalizarAtendimento();
+        chamado.setStatus(ChamadoStatus.FECHADO);
+        return chamadoMapper.map(chamadoRepository.save(chamado));
     }
 
 
     // Cancelar apenas chamado que ainda está aberto
     public ChamadoRespostaDTO cancelarChamado(Long chamadoId, String motivoCancelamento) {
-        Optional<ChamadoModel> chamadoAtual = chamadoRepository.findById(chamadoId);
-        if (chamadoAtual.isPresent() && motivoCancelamentoValido(motivoCancelamento)) {
-            ChamadoModel chamado = chamadoAtual.get();
+        ChamadoModel chamado = buscarChamadoPorId(chamadoId);
 
-            if (chamado.getStatus() == ChamadoStatus.ABERTO) {
-                chamado.setMotivoCancelamento(motivoCancelamento);
-                chamado.setStatus(ChamadoStatus.CANCELADO);
-                // Transformar o chamado cancelado em resposta para a API
-                return chamadoMapper.map(chamadoRepository.save(chamado));
-            }
+        // Aceitar somente os motivos de cancelamento definidos pelo sistema
+        if (!motivoCancelamentoValido(motivoCancelamento)) {
+            throw new RegraDeNegocioException("MOTIVO_CANCELAMENTO_INVALIDO",
+                    "Informe um motivo de cancelamento válido.");
         }
-        return null;
+
+        // Usuário só pode cancelar chamado que ainda não foi atendido
+        if (chamado.getStatus() != ChamadoStatus.ABERTO) {
+            throw new RegraDeNegocioException("CANCELAMENTO_NAO_PERMITIDO",
+                    "Somente chamados abertos podem ser cancelados.");
+        }
+
+        chamado.setMotivoCancelamento(motivoCancelamento);
+        chamado.setStatus(ChamadoStatus.CANCELADO);
+        return chamadoMapper.map(chamadoRepository.save(chamado));
     }
 
 
@@ -229,10 +234,12 @@ public class ChamadoService {
                 || "OUTRO".equals(motivoCancelamento);
     }
 
+
     // Cancelar chamados abertos quando o usuário for inativado
     public void cancelarChamadosAbertosDoUsuario(UsuarioModel usuario) {
         List<ChamadoModel> chamadosAbertos = chamadoRepository.findBySolicitanteAndStatus(usuario, ChamadoStatus.ABERTO);
 
+        // Cancelar um por um para registrar o motivo de forma correta
         for (ChamadoModel chamado : chamadosAbertos) {
             chamado.setMotivoCancelamento("USUARIO_INATIVADO");
             chamado.setStatus(ChamadoStatus.CANCELADO);
@@ -247,6 +254,62 @@ public class ChamadoService {
         List<ChamadoModel> chamadosEmAtendimento = chamadoRepository.findByTecnicoResponsavelAndStatus(tecnico, ChamadoStatus.EM_ATENDIMENTO);
 
         return !chamadosAbertos.isEmpty() || !chamadosEmAtendimento.isEmpty();
+    }
+
+
+    // Validar os dados obrigatórios para abrir um chamado
+    private void validarDadosParaAbrirChamado(ChamadoDTO chamadoDTO) {
+        // Conferir se o corpo do cadastro foi enviado
+        if (chamadoDTO == null) {
+            throw new RegraDeNegocioException("DADOS_CHAMADO_INVALIDOS",
+                    "Envie os dados necessários para abrir o chamado.");
+        }
+
+        // Conferir cada campo que a pessoa precisa informar
+        if (chamadoDTO.getRe() == null || !chamadoDTO.getRe().matches("[0-9]{1,6}")) {
+            throw new RegraDeNegocioException("RE_SOLICITANTE_OBRIGATORIO", "Informe o seu RE.");
+        }
+
+        if (chamadoDTO.getDescricao() == null || chamadoDTO.getDescricao().isBlank()) {
+            throw new RegraDeNegocioException("PROBLEMA_OBRIGATORIO", "Informe o problema.");
+        }
+
+        if (chamadoDTO.getCategoria() == null) {
+            throw new RegraDeNegocioException("CATEGORIA_OBRIGATORIA",
+                    "Selecione uma categoria para o chamado.");
+        }
+
+        if (chamadoDTO.getLocalAtendimento() == null || chamadoDTO.getLocalAtendimento().isBlank()) {
+            throw new RegraDeNegocioException("LOCAL_ATENDIMENTO_OBRIGATORIO", "Informe o local de atendimento.");
+        }
+
+        if (chamadoDTO.getPrioridade() == null) {
+            throw new RegraDeNegocioException("PRIORIDADE_OBRIGATORIA", "Selecione a prioridade do chamado.");
+        }
+    }
+
+
+    // Buscar chamado e informar quando ele não existir
+    private ChamadoModel buscarChamadoPorId(Long chamadoId) {
+        Optional<ChamadoModel> chamado = chamadoRepository.findById(chamadoId);
+
+        if (chamado.isPresent()) {
+            return chamado.get();
+        }
+
+        throw new RecursoNaoEncontradoException("CHAMADO_NAO_ENCONTRADO", "Chamado não encontrado.");
+    }
+
+
+    // Buscar técnico pelo RE e informar quando ele não existir
+    private TecnicoModel buscarTecnicoPorRe(String reTecnico) {
+        Optional<TecnicoModel> tecnico = tecnicoService.buscarPorReComoModel(reTecnico);
+
+        if (tecnico.isPresent()) {
+            return tecnico.get();
+        }
+
+        throw new RecursoNaoEncontradoException("TECNICO_NAO_ENCONTRADO", "Técnico não encontrado.");
     }
 
 

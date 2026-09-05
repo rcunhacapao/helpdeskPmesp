@@ -53,8 +53,8 @@ public class ChamadoController {
 
     // Iniciar atendimento do chamado
     @PatchMapping("/iniciar-atendimento/{chamadoId}")
-    public ChamadoRespostaDTO iniciarAtendimento(@PathVariable Long chamadoId) {
-        return chamadoService.iniciarAtendimento(chamadoId);
+    public ChamadoRespostaDTO iniciarAtendimento(@PathVariable Long chamadoId, @RequestParam String reTecnico) {
+        return chamadoService.iniciarAtendimento(chamadoId, reTecnico);
     }
 
 
@@ -63,14 +63,6 @@ public class ChamadoController {
     public ChamadoRespostaDTO transferirResponsavel(@PathVariable Long chamadoId, @RequestParam String reTecnico) {
         return chamadoService.transferirResponsavel(chamadoId, reTecnico);
     }
-
-
-    // Assumir chamado que estava aguardando técnico disponível
-    @PatchMapping("/assumir/{chamadoId}")
-    public ChamadoRespostaDTO assumirChamado(@PathVariable Long chamadoId, @RequestParam String reTecnico) {
-        return chamadoService.assumirChamado(chamadoId, reTecnico);
-    }
-
 
     // Finalizar atendimento do chamado
     @PatchMapping("/finalizar/{chamadoId}")
