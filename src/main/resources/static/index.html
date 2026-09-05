@@ -8,7 +8,7 @@
     <link rel="icon" type="image/png" href="favicon.png?v=0.0.1-beta.18">
     <link rel="apple-touch-icon" href="apple-touch-icon.png?v=0.0.1-beta.18">
     <meta name="theme-color" content="#1A1D20">
-    <link rel="stylesheet" href="styles.css?v=0.0.1-beta.46">
+    <link rel="stylesheet" href="styles.css?v=0.0.1-beta.55">
 </head>
 <body>
     <main class="login-page" id="pagina-login">
@@ -30,24 +30,31 @@
                 <button class="button button-primary button-block" type="submit">Entrar</button>
             </form>
 
-            <button class="text-button" type="button" id="mostrar-primeiro-acesso">Primeiro acesso</button>
+            <button class="text-button" type="button" id="mostrar-esqueci-senha">Esqueci a senha</button>
 
-            <form id="formulario-primeiro-acesso" class="login-form" novalidate hidden>
+            <section class="login-form login-guidance" id="painel-esqueci-senha" aria-labelledby="titulo-esqueci-senha" hidden>
+                <p class="eyebrow">Ajuda de acesso</p>
+                <h2 id="titulo-esqueci-senha">Esqueceu sua senha?</h2>
+                <p>Entre em contato com a equipe de Telemática e solicite o reset da sua senha.</p>
+                <p>Após o reset, entre temporariamente usando seu RE como login e senha. No próximo acesso, você criará uma nova senha.</p>
+                <button class="text-button" type="button" id="ocultar-esqueci-senha">Voltar para o login</button>
+            </section>
+
+            <form id="formulario-troca-senha" class="login-form" novalidate hidden>
+                <p class="eyebrow">Troca obrigatória</p>
+                <h2>Crie sua nova senha</h2>
+                <p class="login-guidance-text">Por segurança, defina uma senha pessoal antes de continuar.</p>
                 <div class="field-group">
-                    <label for="primeiro-acesso-re">RE</label>
-                    <input id="primeiro-acesso-re" type="text" placeholder="Digite seu RE" required>
+                    <label for="nova-senha">Nova senha</label>
+                    <input id="nova-senha" type="password" autocomplete="new-password" minlength="6" placeholder="Mínimo de 6 caracteres" required>
                 </div>
                 <div class="field-group">
-                    <label for="primeiro-acesso-email">E-mail funcional</label>
-                    <input id="primeiro-acesso-email" type="email" placeholder="nome@policiamilitar.sp.gov.br" pattern=".+@policiamilitar\.sp\.gov\.br" title="Use seu e-mail funcional, terminado em @policiamilitar.sp.gov.br" required>
+                    <label for="confirmacao-nova-senha">Confirmar nova senha</label>
+                    <input id="confirmacao-nova-senha" type="password" autocomplete="new-password" minlength="6" placeholder="Digite a senha novamente" required>
                 </div>
-                <div class="field-group">
-                    <label for="primeiro-acesso-senha">Nova senha</label>
-                    <input id="primeiro-acesso-senha" type="password" autocomplete="new-password" placeholder="Crie sua senha" required>
-                </div>
-                <p id="mensagem-primeiro-acesso" class="form-message" role="status" aria-live="polite"></p>
+                <p id="mensagem-troca-senha" class="form-message" role="status" aria-live="polite"></p>
                 <button class="button button-primary button-block" type="submit">Criar senha e continuar</button>
-                <button class="text-button" type="button" id="ocultar-primeiro-acesso">Voltar para o login</button>
+                <button class="text-button" type="button" id="sair-da-troca-senha">Voltar para o login</button>
             </form>
         </section>
     </main>
@@ -62,25 +69,25 @@
 
             <nav class="side-navigation" aria-label="Seções do sistema">
                 <button class="nav-link is-active" type="button" data-route="visao-geral" data-profile="usuario" aria-current="page">
-                    <span aria-hidden="true">⌂</span> Visão geral
+                    <svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="m3 10 9-7 9 7v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1z"/><path d="M9 21v-6h6v6"/></svg><span class="nav-label">Visão geral</span>
                 </button>
                 <button class="nav-link" type="button" data-route="meus-chamados" data-profile="usuario">
-                    <span aria-hidden="true">▣</span> Meus chamados
+                    <svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect x="5" y="3" width="14" height="18" rx="2"/><path d="M9 3.5h6v3H9zM8.5 11h7M8.5 15h7"/></svg><span class="nav-label">Meus chamados</span>
                 </button>
                 <button class="nav-link" type="button" data-route="abrir-chamado" data-profile="todos">
-                    <span aria-hidden="true">+</span> Abrir chamado
+                    <svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 5v14M5 12h14"/></svg><span class="nav-label">Abrir chamado</span>
                 </button>
                 <button class="nav-link" type="button" data-route="central-tecnica" data-profile="tecnico">
-                    <span aria-hidden="true">⌁</span> Central técnica
+                    <svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M4 7h10M4 12h16M4 17h10"/><path d="m16 5 3 2-3 2M14 15l-3 2 3 2"/></svg><span class="nav-label">Central técnica</span>
                 </button>
                 <button class="nav-link" type="button" data-route="fila-atendimento" data-profile="tecnico">
-                    <span aria-hidden="true">▤</span> Fila de atendimento
+                    <svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect x="4" y="4" width="16" height="16" rx="2"/><path d="M8 9h8M8 13h8M8 17h5"/></svg><span class="nav-label">Fila de atendimento</span>
                 </button>
                 <button class="nav-link" type="button" data-route="gestao-usuarios" data-profile="tecnico">
-                    <span aria-hidden="true">♙</span> Gestão de usuários
+                    <svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="12" cy="8" r="3"/><path d="M5 20a7 7 0 0 1 14 0M18 9h3M19.5 7.5v3"/></svg><span class="nav-label">Gestão de usuários</span>
                 </button>
-                <button class="nav-link" type="button" data-route="mike-ia" data-profile="usuario">
-                    <span aria-hidden="true">✦</span> Mike IA <small class="nav-badge">Em criação</small>
+                <button class="nav-link nav-link-mike" type="button" data-route="mike-ia" data-profile="usuario">
+                    <svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="m12 3 1.7 5.3L19 10l-5.3 1.7L12 17l-1.7-5.3L5 10l5.3-1.7z"/><path d="m19 16 .7 2.3L22 19l-2.3.7L19 22l-.7-2.3L16 19l2.3-.7z"/></svg><span class="nav-label">Mike IA</span><small class="nav-badge">Em criação</small>
                 </button>
             </nav>
 
@@ -167,10 +174,33 @@
                 </div>
                 <div class="ticket-list-layout">
                     <section class="surface-card ticket-list-card" aria-labelledby="titulo-chamado-atual">
-                        <div class="card-heading"><div><p class="eyebrow">Meus chamados</p><h2 id="titulo-chamado-atual">Chamados registrados</h2><p>Acompanhe o andamento e cancele quando não precisar mais.</p></div></div>
-                        <div id="lista-meus-chamados"></div>
-                        <form class="cancel-ticket-form" id="formulario-cancelamento" hidden>
-                            <p class="field-help" id="cancelamento-chamado-info"></p>
+                        <div class="card-heading meus-chamados-cabecalho">
+                            <div><p class="eyebrow">Meus chamados</p><h2 id="titulo-chamado-atual">Chamados registrados</h2><p>Acompanhe o andamento e consulte os atendimentos anteriores quando precisar.</p></div>
+                            <span class="indicador-sincronizacao" id="indicador-sincronizacao-chamados" role="status" aria-live="polite" hidden>Sincronizando...</span>
+                        </div>
+                        <div class="meus-chamados-filtros" role="tablist" aria-label="Filtrar chamados por situação">
+                            <button class="filtro-meus-chamados is-active" type="button" role="tab" aria-selected="true" data-ticket-filter="em-andamento">Em andamento</button>
+                            <button class="filtro-meus-chamados" type="button" role="tab" aria-selected="false" data-ticket-filter="finalizados">Finalizados</button>
+                            <button class="filtro-meus-chamados" type="button" role="tab" aria-selected="false" data-ticket-filter="cancelados">Cancelados</button>
+                            <button class="filtro-meus-chamados" type="button" role="tab" aria-selected="false" data-ticket-filter="todos">Todos</button>
+                        </div>
+                        <p class="resultado-meus-chamados" id="contador-meus-chamados" aria-live="polite"></p>
+                        <div class="meus-chamados-colunas" aria-hidden="true"><span>Protocolo</span><span>Assunto</span><span>Aberto em</span><span>Status</span><span>Ações</span></div>
+                        <div id="lista-meus-chamados" aria-live="polite"></div>
+                        <button class="button button-secondary carregar-mais-chamados" id="carregar-mais-chamados" type="button" hidden>Carregar mais chamados</button>
+                        <p class="form-message meus-chamados-feedback" id="mensagem-meus-chamados" role="status" aria-live="polite"></p>
+                    </section>
+                </div>
+                <dialog class="modal-cancelamento" id="modal-cancelamento" aria-labelledby="titulo-modal-cancelamento">
+                    <form class="cancel-ticket-form" id="formulario-cancelamento">
+                        <div class="modal-cancelamento-cabecalho">
+                            <div>
+                                <p class="eyebrow">Cancelar chamado</p>
+                                <h2 id="titulo-modal-cancelamento">Cancelar chamado</h2>
+                            </div>
+                            <button class="modal-fechar" type="button" data-close-cancel aria-label="Fechar cancelamento">×</button>
+                        </div>
+                        <p class="field-help" id="cancelamento-chamado-info"></p>
                             <label for="motivo-cancelamento">Motivo do cancelamento</label>
                             <select id="motivo-cancelamento" required>
                                 <option value="">Selecione</option>
@@ -181,9 +211,8 @@
                             </select>
                             <div class="form-actions"><button class="button button-secondary" type="button" data-close-cancel>Voltar</button><button class="button button-danger" type="submit">Confirmar cancelamento</button></div>
                             <p class="form-message" id="mensagem-cancelamento" role="status" aria-live="polite"></p>
-                        </form>
-                    </section>
-                </div>
+                    </form>
+                </dialog>
             </section>
 
             <section class="page-view" id="central-tecnica" data-view data-profile="tecnico" aria-labelledby="titulo-central-tecnica" hidden>
@@ -277,7 +306,7 @@
                 <p class="breadcrumb">Início / Central técnica / Gestão de usuários</p>
                 <div class="page-heading page-heading-compact"><div><p class="eyebrow">Administração do sistema</p><h1 id="titulo-gestao-usuarios">Gestão de usuários</h1><p>Centralize cadastros, perfis de acesso e a disponibilidade da equipe em uma única área.</p></div></div>
                 <div class="management-grid">
-                    <form class="surface-card compact-form registration-card" id="formulario-cadastro-usuario"><p class="eyebrow">Novo acesso</p><h2>Cadastrar usuário</h2><p class="field-help">Registre o militar para habilitar o acesso ao Sistema de Suporte.</p><div class="field-group"><label for="cadastro-re">RE</label><input id="cadastro-re" type="text" placeholder="Digite o RE" required></div><div class="field-group"><label for="cadastro-posto">Posto / graduação</label><select id="cadastro-posto" required><option value="">Selecione</option><option value="SD">SD PM</option><option value="CB">CB PM</option><option value="SGT_3">3º SGT PM</option><option value="SGT_2">2º SGT PM</option><option value="SGT_1">1º SGT PM</option><option value="SUBTEN">SUBTEN PM</option><option value="ASP_OF">ASP OF PM</option><option value="TEN_2">2º TEN PM</option><option value="TEN_1">1º TEN PM</option><option value="CAP">CAP PM</option><option value="MAJ">MAJ PM</option><option value="TEN_CEL">TEN CEL PM</option><option value="CEL">CEL PM</option></select></div><div class="field-group"><label for="cadastro-nome">Nome</label><input id="cadastro-nome" type="text" placeholder="Nome completo" required></div><div class="field-group"><label for="cadastro-email">E-mail funcional</label><input id="cadastro-email" type="email" placeholder="nome@policiamilitar.sp.gov.br" pattern=".+@policiamilitar\.sp\.gov\.br" title="Use o e-mail funcional do militar, terminado em @policiamilitar.sp.gov.br" required></div><button class="button button-primary button-block" type="submit">Cadastrar usuário</button><p class="form-message" id="mensagem-cadastro-usuario" role="status" aria-live="polite"></p></form>
+                    <form class="surface-card compact-form registration-card" id="formulario-cadastro-usuario"><p class="eyebrow">Novo acesso</p><h2>Cadastrar usuário</h2><p class="field-help">Registre o militar. O primeiro login será feito usando o RE como login e senha.</p><div class="field-group"><label for="cadastro-re">RE</label><input id="cadastro-re" type="text" placeholder="Digite o RE" required></div><div class="field-group"><label for="cadastro-posto">Posto / graduação</label><select id="cadastro-posto" required><option value="">Selecione</option><option value="SD">SD PM</option><option value="CB">CB PM</option><option value="SGT_3">3º SGT PM</option><option value="SGT_2">2º SGT PM</option><option value="SGT_1">1º SGT PM</option><option value="SUBTEN">SUBTEN PM</option><option value="ASP_OF">ASP OF PM</option><option value="TEN_2">2º TEN PM</option><option value="TEN_1">1º TEN PM</option><option value="CAP">CAP PM</option><option value="MAJ">MAJ PM</option><option value="TEN_CEL">TEN CEL PM</option><option value="CEL">CEL PM</option></select></div><div class="field-group"><label for="cadastro-nome">Nome</label><input id="cadastro-nome" type="text" placeholder="Nome completo" required></div><div class="field-group"><label for="cadastro-email">E-mail funcional <span class="optional-label">(opcional)</span></label><input id="cadastro-email" type="email" placeholder="nome@policiamilitar.sp.gov.br" pattern=".+@policiamilitar\.sp\.gov\.br" title="Quando informado, use o e-mail funcional terminado em @policiamilitar.sp.gov.br"></div><button class="button button-primary button-block" type="submit">Cadastrar usuário</button><p class="form-message" id="mensagem-cadastro-usuario" role="status" aria-live="polite"></p></form>
                     <section class="surface-card user-lookup-card" aria-labelledby="titulo-controle-acesso">
                         <div class="management-card-heading"><div><p class="eyebrow">Consulta e manutenção</p><h2 id="titulo-controle-acesso">Controle de acesso</h2><p>Localize um cadastro pelo RE e escolha a ação necessária.</p></div></div>
                         <div class="lookup-row"><label class="sr-only" for="consulta-re">Consultar usuário por RE</label><input id="consulta-re" type="search" placeholder="Informe o RE"><button class="button button-secondary" type="button" id="consultar-usuario">Consultar</button></div>
@@ -288,6 +317,7 @@
                         <div class="management-actions" id="acoes-usuario-consultado" hidden>
                             <button class="button button-secondary" type="button" id="alternar-edicao-usuario">Atualizar dados</button>
                             <button class="button button-success" type="button" id="conceder-acesso-tecnico">Conceder acesso técnico</button>
+                            <button class="button button-secondary" type="button" id="abrir-reset-senha">Resetar senha</button>
                             <button class="text-button danger-text" type="button" id="inativar-usuario">Inativar usuário</button>
                         </div>
                         <form class="compact-form" id="formulario-atualizar-usuario" hidden>
@@ -297,6 +327,15 @@
                         </form>
                         <p class="field-help management-note">A inativação será bloqueada quando houver atendimento técnico pendente vinculado ao usuário.</p>
                         <p class="form-message" id="mensagem-controle-acesso" role="status" aria-live="polite"></p>
+                        <dialog class="modal-cancelamento" id="modal-reset-senha" aria-labelledby="titulo-modal-reset-senha">
+                            <div class="modal-cancelamento-conteudo">
+                                <div class="modal-cancelamento-cabecalho"><div><p class="eyebrow">Confirmação</p><h2 id="titulo-modal-reset-senha">Resetar senha</h2></div><button class="modal-fechar" type="button" data-close-reset aria-label="Fechar">×</button></div>
+                                <p id="reset-senha-identificacao"></p>
+                                <p class="field-help">Após o reset, a senha temporária será o próprio RE. No próximo login, o usuário será obrigado a criar uma nova senha.</p>
+                                <p class="form-message" id="mensagem-reset-senha" role="status" aria-live="polite"></p>
+                                <div class="form-actions"><button class="button button-secondary" type="button" data-close-reset>Cancelar</button><button class="button button-primary" type="button" id="confirmar-reset-senha">Confirmar reset</button></div>
+                            </div>
+                        </dialog>
                     </section>
                     <section class="surface-card technician-management-card" aria-labelledby="titulo-equipe-tecnica">
                         <div class="management-card-heading"><div><p class="eyebrow">Equipe técnica</p><h2 id="titulo-equipe-tecnica">Disponibilidade dos técnicos</h2><p>Consulte rapidamente quem pode receber um novo atendimento.</p></div><button class="button button-secondary" type="button" id="atualizar-lista-tecnicos">Atualizar lista</button></div>
@@ -472,6 +511,6 @@
     </main>
 
     <script src="mike-triagem.js?v=0.0.1-beta.38"></script>
-    <script src="app.js?v=0.0.1-beta.40"></script>
+    <script src="app.js?v=0.0.1-beta.42"></script>
 </body>
 </html>

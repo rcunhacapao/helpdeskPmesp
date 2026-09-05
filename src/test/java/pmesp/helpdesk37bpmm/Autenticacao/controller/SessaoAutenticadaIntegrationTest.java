@@ -60,6 +60,7 @@ class SessaoAutenticadaIntegrationTest {
         mockMvc.perform(get("/auth/sessao").session(sessao))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.re").value("100001"))
-                .andExpect(jsonPath("$.tecnico").value(true));
+                .andExpect(jsonPath("$.tecnico").value(true))
+                .andExpect(jsonPath("$.trocaSenhaObrigatoria").value(false));
     }
 }

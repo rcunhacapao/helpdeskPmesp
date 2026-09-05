@@ -17,4 +17,5 @@ public class UsuarioRespostaDTO {
     private String re;
     private String email;
     private boolean ativo;
+    private boolean trocaSenhaObrigatoria;
 }

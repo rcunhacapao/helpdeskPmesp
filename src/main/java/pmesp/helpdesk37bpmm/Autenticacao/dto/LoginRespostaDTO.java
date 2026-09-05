@@ -13,4 +13,5 @@ public class LoginRespostaDTO {
     private String identificacaoCompleta;
     private String re;
     private boolean tecnico;
+    private boolean trocaSenhaObrigatoria;
 }

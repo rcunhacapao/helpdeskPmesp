@@ -44,7 +44,7 @@ class AutenticacaoControllerTest {
 
     @Test
     void deveRecuperarOsDadosDaSessaoAutenticada() {
-        LoginRespostaDTO respostaEsperada = new LoginRespostaDTO("SD PM Teste", "123456", false);
+        LoginRespostaDTO respostaEsperada = new LoginRespostaDTO("SD PM Teste", "123456", false, false);
         when(autenticacao.getName()).thenReturn("123456");
         when(autenticacaoService.montarRespostaDeLogin("123456")).thenReturn(respostaEsperada);
 

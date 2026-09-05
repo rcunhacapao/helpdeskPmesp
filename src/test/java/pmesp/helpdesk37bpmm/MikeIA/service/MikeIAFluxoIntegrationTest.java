@@ -111,6 +111,7 @@ class MikeIAFluxoIntegrationTest {
         usuario.setPostoGraduacao(UsuarioPostoGraduacao.SD);
         usuario.setEmail("usuario.integracao@policiamilitar.sp.gov.br");
         usuario.setAtivo(true);
+        usuario.setSenhaHash(usuario.getRe());
         return usuarioRepository.save(usuario);
     }
 

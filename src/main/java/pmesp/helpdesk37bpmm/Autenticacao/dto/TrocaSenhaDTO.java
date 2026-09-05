@@ -5,18 +5,15 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-// Dados enviados para confirmar identidade e criar a senha no primeiro acesso
+// Senha digitada duas vezes durante a troca obrigatória
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class PrimeiroAcessoDTO {
-
-    @NotBlank(message = "Informe o RE.")
-    private String re;
-
-    @NotBlank(message = "Informe o e-mail funcional.")
-    private String email;
+public class TrocaSenhaDTO {
 
     @NotBlank(message = "Informe a nova senha.")
     private String novaSenha;
+
+    @NotBlank(message = "Confirme a nova senha.")
+    private String confirmacaoNovaSenha;
 }

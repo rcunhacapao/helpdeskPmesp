@@ -21,6 +21,10 @@ class LoginVisualEstaticoTest {
         assertFalse(comportamento.contains("loginForm.checkValidity()"));
         assertTrue(comportamento.contains("apiFetch('/auth/login'"));
         assertTrue(comportamento.contains("apiFetch('/auth/sessao'"));
+        assertTrue(comportamento.contains("sessaoAtual.trocaSenhaObrigatoria"));
+        assertTrue(comportamento.contains("apiFetch('/auth/trocar-senha'"));
+        assertTrue(comportamento.contains("mostrarTrocaObrigatoriaDeSenha"));
+        assertFalse(comportamento.contains("/auth/primeiro-acesso"));
         assertTrue(comportamento.contains("sessaoAtual = await apiFetch"));
         assertTrue(comportamento.contains("appPage.hidden = false;"));
         assertTrue(comportamento.contains("loginMessage.textContent = 'RE ou senha inválidos.';"));

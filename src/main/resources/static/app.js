@@ -18,11 +18,20 @@ const statusAnexoAberturaUsuario = document.querySelector('#abertura-anexo-statu
 const formularioEncaminhamentoMike = document.querySelector('#formulario-encaminhamento-mike');
 const cancelTicketForm = document.querySelector('#formulario-cancelamento');
 const cancelTicketMessage = document.querySelector('#mensagem-cancelamento');
+const modalCancelamento = document.querySelector('#modal-cancelamento');
+const listaMeusChamados = document.querySelector('#lista-meus-chamados');
+const contadorMeusChamados = document.querySelector('#contador-meus-chamados');
+const indicadorSincronizacaoChamados = document.querySelector('#indicador-sincronizacao-chamados');
+const feedbackMeusChamados = document.querySelector('#mensagem-meus-chamados');
+const botaoCarregarMaisChamados = document.querySelector('#carregar-mais-chamados');
 const queueMessage = document.querySelector('#mensagem-fila');
 const queueList = document.querySelector('#lista-fila');
 const queueSearch = document.querySelector('#busca-chamado');
 const queueDetailContent = document.querySelector('#conteudo-detalhe-chamado');
 const queueDetailEmpty = document.querySelector('#detalhe-chamado-vazio');
+const forgotPasswordPanel = document.querySelector('#painel-esqueci-senha');
+const passwordChangeForm = document.querySelector('#formulario-troca-senha');
+const resetPasswordModal = document.querySelector('#modal-reset-senha');
 
 // Elementos consultados repetidamente pelas funções de renderização da fila;
 // cacheados uma única vez em vez de buscados no DOM a cada nova renderização.
@@ -115,7 +124,7 @@ async function executarComEstadoDeEnvio(botao, textoEnviando, acaoAssincrona) {
 // ============================================================
 // Sessão autenticada
 // ============================================================
-let sessaoAtual = null; // { identificacaoCompleta, re, tecnico } — preenchido após /auth/login
+let sessaoAtual = null; // { identificacaoCompleta, re, tecnico, trocaSenhaObrigatoria }
 let intervaloDeAtualizacaoDoUsuario = null;
 const INTERVALO_DE_ATUALIZACAO_DO_USUARIO_EM_MS = 5000;
 
@@ -154,10 +163,11 @@ function aplicarSessaoNaInterface() {
 async function restaurarSessaoAoCarregarPagina() {
     try {
         sessaoAtual = await apiFetch('/auth/sessao');
-        loginPage.hidden = true;
-        appPage.hidden = false;
-        aplicarSessaoNaInterface();
-        await showRoute(sessaoAtual.tecnico ? 'central-tecnica' : 'visao-geral');
+        if (sessaoAtual.trocaSenhaObrigatoria) {
+            mostrarTrocaObrigatoriaDeSenha();
+            return;
+        }
+        await abrirAplicacaoComSessaoAtual();
     } catch (erro) {
         // Ausência de sessão é o estado normal de quem ainda precisa entrar.
         sessaoAtual = null;
@@ -235,8 +245,35 @@ routes.forEach((route) => {
 });
 
 // ============================================================
-// Login, primeiro acesso e logout
+// Login, troca obrigatória, orientação de senha esquecida e logout
 // ============================================================
+function mostrarFormularioDeLogin() {
+    loginPage.hidden = false;
+    appPage.hidden = true;
+    loginForm.hidden = false;
+    forgotPasswordPanel.hidden = true;
+    passwordChangeForm.hidden = true;
+    document.querySelector('#mostrar-esqueci-senha').hidden = false;
+    loginMessage.textContent = '';
+}
+
+function mostrarTrocaObrigatoriaDeSenha() {
+    loginPage.hidden = false;
+    appPage.hidden = true;
+    loginForm.hidden = true;
+    forgotPasswordPanel.hidden = true;
+    passwordChangeForm.hidden = false;
+    document.querySelector('#mostrar-esqueci-senha').hidden = true;
+    document.querySelector('#nova-senha')?.focus({ preventScroll: true });
+}
+
+async function abrirAplicacaoComSessaoAtual() {
+    loginPage.hidden = true;
+    appPage.hidden = false;
+    aplicarSessaoNaInterface();
+    await showRoute(sessaoAtual.tecnico ? 'central-tecnica' : 'visao-geral');
+}
+
 loginForm?.addEventListener('submit', async (event) => {
     event.preventDefault();
     const re = document.querySelector('#login').value.trim();
@@ -248,10 +285,11 @@ loginForm?.addEventListener('submit', async (event) => {
             loginMessage.classList.remove('is-error');
             loginMessage.textContent = '';
             loginForm.reset();
-            loginPage.hidden = true;
-            appPage.hidden = false;
-            aplicarSessaoNaInterface();
-            await showRoute(sessaoAtual.tecnico ? 'central-tecnica' : 'visao-geral');
+            if (sessaoAtual.trocaSenhaObrigatoria) {
+                mostrarTrocaObrigatoriaDeSenha();
+                return;
+            }
+            await abrirAplicacaoComSessaoAtual();
         } catch (erro) {
             loginMessage.classList.add('is-error');
             loginMessage.textContent = 'RE ou senha inválidos.';
@@ -259,43 +297,42 @@ loginForm?.addEventListener('submit', async (event) => {
     });
 });
 
-document.querySelector('#mostrar-primeiro-acesso')?.addEventListener('click', () => {
+document.querySelector('#mostrar-esqueci-senha')?.addEventListener('click', () => {
     loginForm.hidden = true;
-    document.querySelector('#formulario-primeiro-acesso').hidden = false;
-    document.querySelector('#mostrar-primeiro-acesso').hidden = true;
+    forgotPasswordPanel.hidden = false;
+    document.querySelector('#mostrar-esqueci-senha').hidden = true;
 });
 
-document.querySelector('#ocultar-primeiro-acesso')?.addEventListener('click', () => {
-    document.querySelector('#formulario-primeiro-acesso').hidden = true;
-    loginForm.hidden = false;
-    document.querySelector('#mostrar-primeiro-acesso').hidden = false;
-});
+document.querySelector('#ocultar-esqueci-senha')?.addEventListener('click', mostrarFormularioDeLogin);
 
-document.querySelector('#formulario-primeiro-acesso')?.addEventListener('submit', async (event) => {
+passwordChangeForm?.addEventListener('submit', async (event) => {
     event.preventDefault();
-    const form = event.currentTarget;
-    const mensagem = document.querySelector('#mensagem-primeiro-acesso');
+    const mensagem = document.querySelector('#mensagem-troca-senha');
+    const novaSenha = document.querySelector('#nova-senha').value;
+    const confirmacaoNovaSenha = document.querySelector('#confirmacao-nova-senha').value;
 
-    if (!form.checkValidity()) {
+    if (!passwordChangeForm.checkValidity()) {
         mensagem.classList.add('is-error');
-        mensagem.textContent = 'Preencha RE, e-mail funcional e a nova senha.';
-        form.reportValidity();
+        mensagem.textContent = 'Preencha os dois campos com uma senha de pelo menos 6 caracteres.';
+        passwordChangeForm.reportValidity();
         return;
     }
 
-    const corpo = {
-        re: document.querySelector('#primeiro-acesso-re').value.trim(),
-        email: document.querySelector('#primeiro-acesso-email').value.trim(),
-        novaSenha: document.querySelector('#primeiro-acesso-senha').value
-    };
+    if (novaSenha !== confirmacaoNovaSenha) {
+        mensagem.classList.add('is-error');
+        mensagem.textContent = 'As senhas informadas não são iguais.';
+        return;
+    }
 
-    await executarComEstadoDeEnvio(form.querySelector('button[type="submit"]'), 'Enviando...', async () => {
+    await executarComEstadoDeEnvio(passwordChangeForm.querySelector('button[type="submit"]'), 'Salvando...', async () => {
         try {
-            await apiFetch('/auth/primeiro-acesso', { method: 'POST', body: corpo });
+            sessaoAtual = await apiFetch('/auth/trocar-senha', {
+                method: 'POST', body: { novaSenha, confirmacaoNovaSenha }
+            });
             mensagem.classList.remove('is-error');
-            mensagem.textContent = 'Senha criada com sucesso. Faça login para continuar.';
-            form.reset();
-            window.setTimeout(() => document.querySelector('#ocultar-primeiro-acesso').click(), 1500);
+            mensagem.textContent = '';
+            passwordChangeForm.reset();
+            await abrirAplicacaoComSessaoAtual();
         } catch (erro) {
             mensagem.classList.add('is-error');
             mensagem.textContent = erro.message;
@@ -303,7 +340,7 @@ document.querySelector('#formulario-primeiro-acesso')?.addEventListener('submit'
     });
 });
 
-document.querySelector('#sair')?.addEventListener('click', async () => {
+async function encerrarSessao() {
     try {
         await apiFetch('/logout', { method: 'POST' });
     } catch (erro) {
@@ -311,11 +348,13 @@ document.querySelector('#sair')?.addEventListener('click', async () => {
     }
     pararAtualizacaoAutomaticaDoUsuario();
     sessaoAtual = null;
-    appPage.hidden = true;
-    loginPage.hidden = false;
     loginForm.reset();
-    loginMessage.textContent = '';
-});
+    passwordChangeForm?.reset();
+    mostrarFormularioDeLogin();
+}
+
+document.querySelector('#sair')?.addEventListener('click', encerrarSessao);
+document.querySelector('#sair-da-troca-senha')?.addEventListener('click', encerrarSessao);
 
 // ============================================================
 // Vocabulário para exibir os enums do backend em português
@@ -419,87 +458,289 @@ function exibirResumoDoChamado(chamado, totalAtivos = 0) {
 }
 
 // ============================================================
-// Meus chamados — lista completa + cancelamento
+// Meus chamados — lista por situação + cancelamento contextual
 // ============================================================
 let chamadoParaCancelarId = null;
+let botaoQueAbriuOCancelamento = null;
+let chamadosDoUsuario = [];
+let assinaturaDosChamadosDoUsuario = '';
+let meusChamadosForamCarregados = false;
+let carregandoMeusChamados = false;
+let filtroAtualDeMeusChamados = 'em-andamento';
+let quantidadeVisivelDeMeusChamados = 10;
+const QUANTIDADE_INICIAL_DE_CHAMADOS = 10;
+const detalhesAbertosDeMeusChamados = new Set();
 
-async function carregarMeusChamados() {
-    const lista = document.querySelector('#lista-meus-chamados');
-    if (!lista) return;
-    lista.innerHTML = '';
+function chamadosDoFiltroAtual() {
+    const statusPorFiltro = {
+        'em-andamento': ['ABERTO', 'EM_ATENDIMENTO'],
+        finalizados: ['FECHADO'],
+        cancelados: ['CANCELADO'],
+        todos: ['ABERTO', 'EM_ATENDIMENTO', 'FECHADO', 'CANCELADO']
+    };
+    return chamadosDoUsuario.filter((chamado) => statusPorFiltro[filtroAtualDeMeusChamados].includes(chamado.status));
+}
 
-    try {
-        const chamados = await apiFetch('/chamados/meus');
-        if (!chamados.length) {
-            const vazio = document.createElement('p');
-            vazio.className = 'lista-chamados-vazia';
-            vazio.textContent = 'Você ainda não abriu nenhum chamado.';
-            lista.appendChild(vazio);
-            return;
-        }
-        chamados.forEach((chamado) => lista.appendChild(criarItemDeMeuChamado(chamado)));
-    } catch (erro) {
-        const mensagem = document.createElement('p');
-        mensagem.className = 'lista-chamados-vazia';
-        mensagem.textContent = erro.message;
-        lista.appendChild(mensagem);
+function criarEstadoDeCarregamentoDosChamados() {
+    const carregamento = document.createElement('div');
+    carregamento.className = 'skeleton-meus-chamados';
+    carregamento.setAttribute('aria-label', 'Carregando chamados');
+    carregamento.setAttribute('aria-busy', 'true');
+    for (let indice = 0; indice < 3; indice += 1) {
+        const linha = document.createElement('span');
+        carregamento.appendChild(linha);
     }
+    return carregamento;
+}
+
+function exibirIndicadorDeSincronizacao(estaSincronizando) {
+    if (!indicadorSincronizacaoChamados) return;
+    indicadorSincronizacaoChamados.hidden = !estaSincronizando;
+}
+
+function exibirFeedbackDeMeusChamados(mensagem, eErro = false) {
+    if (!feedbackMeusChamados) return;
+    feedbackMeusChamados.classList.toggle('is-error', eErro);
+    feedbackMeusChamados.textContent = mensagem;
+}
+
+function descricaoDetalhadaDoChamado(chamado) {
+    return chamado.descricao.split('\n').slice(1).join('\n').trim() || 'Nenhuma descrição complementar foi informada.';
+}
+
+// A assinatura permite atualizar somente a linha que realmente recebeu mudança do
+// backend. Assim, um refresh em segundo plano não desmonta os demais chamados.
+function assinaturaDoChamado(chamado) {
+    return JSON.stringify(chamado);
+}
+
+function criarFatoDoChamado(rotulo, valor) {
+    const fato = document.createElement('div');
+    const titulo = document.createElement('dt');
+    const conteudo = document.createElement('dd');
+    titulo.textContent = rotulo;
+    conteudo.textContent = valor || 'Não informado';
+    fato.append(titulo, conteudo);
+    return fato;
+}
+
+function criarDetalhesDoMeuChamado(chamado) {
+    const detalhes = document.createElement('div');
+    detalhes.className = 'meu-chamado-detalhes';
+    detalhes.hidden = !detalhesAbertosDeMeusChamados.has(chamado.id);
+
+    const descricao = document.createElement('p');
+    descricao.className = 'meu-chamado-descricao';
+    descricao.textContent = descricaoDetalhadaDoChamado(chamado);
+
+    const fatos = document.createElement('dl');
+    fatos.className = 'meu-chamado-fatos';
+    fatos.append(
+        criarFatoDoChamado('Categoria', nomeDaCategoria[chamado.categoria] || chamado.categoria),
+        criarFatoDoChamado('Local / setor', chamado.localAtendimento),
+        criarFatoDoChamado('Prioridade', chamado.prioridade ? nomeDaPrioridade[chamado.prioridade] : 'Sem prioridade'),
+        criarFatoDoChamado('Técnico responsável', chamado.tecnicoResponsavel),
+        criarFatoDoChamado('Atualizado em', chamado.dataUltimaInteracao),
+        criarFatoDoChamado('Finalizado em', chamado.dataFinalizacao)
+    );
+    detalhes.append(descricao, fatos);
+
+    if (chamado.solucao) {
+        const solucao = document.createElement('p');
+        solucao.className = 'meu-chamado-solucao';
+        solucao.textContent = `Solução: ${chamado.solucao}`;
+        detalhes.appendChild(solucao);
+    }
+
+    if (chamado.motivoCancelamento) {
+        const motivo = document.createElement('p');
+        motivo.className = 'meu-chamado-motivo-cancelamento';
+        motivo.textContent = `Motivo do cancelamento: ${chamado.motivoCancelamento.replaceAll('_', ' ').toLowerCase()}.`;
+        detalhes.appendChild(motivo);
+    }
+    return detalhes;
+}
+
+function abrirModalDeCancelamento(chamado, botaoDeOrigem) {
+    chamadoParaCancelarId = chamado.id;
+    botaoQueAbriuOCancelamento = botaoDeOrigem;
+    document.querySelector('#titulo-modal-cancelamento').textContent = `Cancelar chamado #${chamado.id}`;
+    document.querySelector('#cancelamento-chamado-info').textContent = tituloDoChamado(chamado);
+    cancelTicketMessage.textContent = '';
+    cancelTicketMessage.classList.remove('is-error');
+    modalCancelamento.showModal();
+    document.querySelector('#motivo-cancelamento').focus({ preventScroll: true });
+}
+
+function fecharModalDeCancelamento() {
+    if (modalCancelamento?.open) modalCancelamento.close();
 }
 
 function criarItemDeMeuChamado(chamado) {
     const item = document.createElement('article');
     item.className = 'meu-chamado-item';
+    item.dataset.chamadoId = chamado.id;
+    item.dataset.assinatura = assinaturaDoChamado(chamado);
 
-    const cabecalho = document.createElement('div');
-    cabecalho.className = 'card-heading';
+    const linha = document.createElement('div');
+    linha.className = 'meu-chamado-linha';
 
-    const titulo = document.createElement('div');
-    const h3 = document.createElement('h3');
-    h3.textContent = `#${chamado.id} · ${tituloDoChamado(chamado)}`;
-    const dataAbertura = document.createElement('p');
-    dataAbertura.textContent = `Aberto em ${chamado.dataAbertura}`;
-    titulo.append(h3, dataAbertura);
+    const protocolo = document.createElement('span');
+    protocolo.className = 'meu-chamado-protocolo';
+    protocolo.dataset.label = 'Protocolo';
+    protocolo.textContent = `#${chamado.id}`;
+
+    const assunto = document.createElement('div');
+    assunto.className = 'meu-chamado-assunto';
+    assunto.dataset.label = 'Assunto';
+    const titulo = document.createElement('h3');
+    titulo.textContent = tituloDoChamado(chamado);
+    assunto.appendChild(titulo);
+
+    const dataAbertura = document.createElement('span');
+    dataAbertura.className = 'meu-chamado-data';
+    dataAbertura.dataset.label = 'Aberto em';
+    dataAbertura.textContent = chamado.dataAbertura;
 
     const status = document.createElement('span');
     status.className = `status-label status-${chamado.status.toLowerCase()}`;
+    status.dataset.label = 'Status';
     status.textContent = nomeDoStatus[chamado.status];
 
-    cabecalho.append(titulo, status);
-    item.appendChild(cabecalho);
+    const acoes = document.createElement('div');
+    acoes.className = 'meu-chamado-acoes';
+    acoes.dataset.label = 'Ações';
+    const botaoDetalhes = document.createElement('button');
+    botaoDetalhes.type = 'button';
+    botaoDetalhes.className = 'text-button';
+    botaoDetalhes.textContent = detalhesAbertosDeMeusChamados.has(chamado.id) ? 'Ocultar detalhes' : 'Detalhes';
+    botaoDetalhes.setAttribute('aria-expanded', String(detalhesAbertosDeMeusChamados.has(chamado.id)));
 
-    if (chamado.status === 'FECHADO' && chamado.solucao) {
-        const solucao = document.createElement('p');
-        solucao.className = 'meu-chamado-solucao';
-        solucao.textContent = `Solução: ${chamado.solucao}`;
-        item.appendChild(solucao);
-    }
+    const detalhes = criarDetalhesDoMeuChamado(chamado);
+    botaoDetalhes.addEventListener('click', () => {
+        const detalhesEstaoAbertos = detalhes.hidden;
+        detalhes.hidden = !detalhesEstaoAbertos;
+        botaoDetalhes.textContent = detalhesEstaoAbertos ? 'Ocultar detalhes' : 'Detalhes';
+        botaoDetalhes.setAttribute('aria-expanded', String(detalhesEstaoAbertos));
+        if (detalhesEstaoAbertos) detalhesAbertosDeMeusChamados.add(chamado.id);
+        else detalhesAbertosDeMeusChamados.delete(chamado.id);
+    });
+    acoes.appendChild(botaoDetalhes);
 
     if (chamado.status === 'ABERTO') {
-        const acoes = document.createElement('div');
-        acoes.className = 'card-actions';
         const botaoCancelar = document.createElement('button');
         botaoCancelar.type = 'button';
-        botaoCancelar.className = 'button button-secondary';
-        botaoCancelar.textContent = 'Cancelar chamado';
-        botaoCancelar.addEventListener('click', () => {
-            chamadoParaCancelarId = chamado.id;
-            document.querySelector('#cancelamento-chamado-info').textContent =
-                `Você está cancelando o chamado #${chamado.id} · ${tituloDoChamado(chamado)}`;
-            cancelTicketForm.hidden = false;
-            cancelTicketForm.scrollIntoView({ behavior: 'smooth', block: 'center' });
-            document.querySelector('#motivo-cancelamento').focus();
-        });
+        botaoCancelar.className = 'text-button text-button-danger';
+        botaoCancelar.textContent = 'Cancelar';
+        botaoCancelar.addEventListener('click', () => abrirModalDeCancelamento(chamado, botaoCancelar));
         acoes.appendChild(botaoCancelar);
-        item.appendChild(acoes);
     }
 
+    linha.append(protocolo, assunto, dataAbertura, status, acoes);
+    item.append(linha, detalhes);
     return item;
 }
 
-document.querySelector('[data-close-cancel]')?.addEventListener('click', () => {
-    cancelTicketForm.hidden = true;
+function renderizarMeusChamados() {
+    if (!listaMeusChamados) return;
+    const chamadosFiltrados = chamadosDoFiltroAtual();
+    const chamadosVisiveis = chamadosFiltrados.slice(0, quantidadeVisivelDeMeusChamados);
+    const itensExistentes = new Map([...listaMeusChamados.querySelectorAll('[data-chamado-id]')]
+        .map((item) => [item.dataset.chamadoId, item]));
+    const idsVisiveis = new Set(chamadosVisiveis.map((chamado) => String(chamado.id)));
+
+    listaMeusChamados.querySelectorAll('.lista-chamados-vazia, .skeleton-meus-chamados').forEach((elemento) => elemento.remove());
+    itensExistentes.forEach((item, id) => {
+        if (!idsVisiveis.has(id)) item.remove();
+    });
+
+    chamadosVisiveis.forEach((chamado, indice) => {
+        const itemAtual = itensExistentes.get(String(chamado.id));
+        const precisaAtualizarLinha = !itemAtual || itemAtual.dataset.assinatura !== assinaturaDoChamado(chamado);
+        const novoItem = precisaAtualizarLinha ? criarItemDeMeuChamado(chamado) : itemAtual;
+        if (itemAtual && precisaAtualizarLinha) itemAtual.replaceWith(novoItem);
+        const referencia = listaMeusChamados.children[indice];
+        if (referencia !== novoItem) listaMeusChamados.insertBefore(novoItem, referencia || null);
+    });
+
+    if (!chamadosFiltrados.length) {
+        const vazio = document.createElement('p');
+        vazio.className = 'lista-chamados-vazia';
+        vazio.textContent = chamadosDoUsuario.length
+            ? 'Nenhum chamado corresponde a este filtro.'
+            : 'Você ainda não abriu nenhum chamado.';
+        listaMeusChamados.appendChild(vazio);
+    }
+
+    contadorMeusChamados.textContent = chamadosFiltrados.length === 1
+        ? '1 chamado encontrado'
+        : `${chamadosFiltrados.length} chamados encontrados`;
+    botaoCarregarMaisChamados.hidden = chamadosVisiveis.length >= chamadosFiltrados.length;
+}
+
+async function carregarMeusChamados() {
+    if (!listaMeusChamados || carregandoMeusChamados) return;
+    const primeiroCarregamento = !meusChamadosForamCarregados;
+    carregandoMeusChamados = true;
+    if (primeiroCarregamento) {
+        listaMeusChamados.replaceChildren(criarEstadoDeCarregamentoDosChamados());
+    } else {
+        exibirIndicadorDeSincronizacao(true);
+    }
+
+    try {
+        const chamados = await apiFetch('/chamados/meus');
+        const novaAssinatura = JSON.stringify(chamados);
+        const houveAlteracao = novaAssinatura !== assinaturaDosChamadosDoUsuario;
+        chamadosDoUsuario = chamados;
+        assinaturaDosChamadosDoUsuario = novaAssinatura;
+        meusChamadosForamCarregados = true;
+        if (primeiroCarregamento || houveAlteracao) renderizarMeusChamados();
+    } catch (erro) {
+        if (primeiroCarregamento) {
+            listaMeusChamados.replaceChildren();
+            const mensagem = document.createElement('p');
+            mensagem.className = 'lista-chamados-vazia';
+            mensagem.textContent = erro.message;
+            listaMeusChamados.appendChild(mensagem);
+        } else {
+            exibirFeedbackDeMeusChamados('Não foi possível atualizar os chamados agora. Os dados exibidos foram mantidos.', true);
+        }
+    } finally {
+        carregandoMeusChamados = false;
+        exibirIndicadorDeSincronizacao(false);
+    }
+}
+
+document.querySelectorAll('[data-ticket-filter]').forEach((botao) => {
+    botao.addEventListener('click', () => {
+        filtroAtualDeMeusChamados = botao.dataset.ticketFilter;
+        quantidadeVisivelDeMeusChamados = QUANTIDADE_INICIAL_DE_CHAMADOS;
+        document.querySelectorAll('[data-ticket-filter]').forEach((filtro) => {
+            const estaAtivo = filtro === botao;
+            filtro.classList.toggle('is-active', estaAtivo);
+            filtro.setAttribute('aria-selected', String(estaAtivo));
+        });
+        renderizarMeusChamados();
+    });
+});
+
+botaoCarregarMaisChamados?.addEventListener('click', () => {
+    quantidadeVisivelDeMeusChamados += QUANTIDADE_INICIAL_DE_CHAMADOS;
+    renderizarMeusChamados();
+});
+
+document.querySelectorAll('[data-close-cancel]').forEach((botao) => {
+    botao.addEventListener('click', fecharModalDeCancelamento);
+});
+
+modalCancelamento?.addEventListener('close', () => {
     cancelTicketForm.reset();
     cancelTicketMessage.textContent = '';
+    cancelTicketMessage.classList.remove('is-error');
+    chamadoParaCancelarId = null;
+    botaoQueAbriuOCancelamento?.focus({ preventScroll: true });
+    botaoQueAbriuOCancelamento = null;
 });
 
 cancelTicketForm?.addEventListener('submit', async (event) => {
@@ -516,12 +757,12 @@ cancelTicketForm?.addEventListener('submit', async (event) => {
 
     await executarComEstadoDeEnvio(cancelTicketForm.querySelector('button[type="submit"]'), 'Enviando...', async () => {
         try {
-            await apiFetch(`/chamados/cancelar/${chamadoParaCancelarId}?motivoCancelamento=${motivoCancelamento}`, { method: 'PATCH' });
-            cancelTicketMessage.classList.remove('is-error');
-            cancelTicketMessage.textContent = 'Chamado cancelado com sucesso.';
-            cancelTicketForm.reset();
-            cancelTicketForm.hidden = true;
-            await carregarMeusChamados();
+            const chamadoCancelado = await apiFetch(`/chamados/cancelar/${chamadoParaCancelarId}?motivoCancelamento=${motivoCancelamento}`, { method: 'PATCH' });
+            chamadosDoUsuario = chamadosDoUsuario.map((chamado) => chamado.id === chamadoCancelado.id ? chamadoCancelado : chamado);
+            assinaturaDosChamadosDoUsuario = JSON.stringify(chamadosDoUsuario);
+            renderizarMeusChamados();
+            fecharModalDeCancelamento();
+            exibirFeedbackDeMeusChamados(`Chamado #${chamadoCancelado.id} cancelado com sucesso.`);
         } catch (erro) {
             cancelTicketMessage.classList.add('is-error');
             cancelTicketMessage.textContent = erro.message;
@@ -742,11 +983,12 @@ function criarIndicadorDeDigitacaoMike() {
 
 function atualizarInstrucaoDasOpcoesMike(etapa) {
     if (mikeEstaDigitando) {
-        acoesChatMike.hidden = true;
+        acoesChatMike.classList.add('is-waiting');
         return;
     }
 
     acoesChatMike.hidden = false;
+    acoesChatMike.classList.remove('is-waiting');
     opcoesChatMike.setAttribute('aria-labelledby', 'mike-chat-instrucao');
     opcoesChatMike.removeAttribute('aria-label');
     if (etapa.tipo === 'pergunta') instrucaoChatMike.textContent = 'Escolha uma opção:';
@@ -766,16 +1008,26 @@ function renderizarChatMike({ forcarRolagem = false, focarPrimeiroControle = fal
 
     const acompanharConversa = forcarRolagem || usuarioEstaPertoDoFimDaConversaMike();
     const posicaoAnterior = mensagensChatMike.scrollTop;
-    mensagensChatMike.innerHTML = '';
     const conversaVisivel = conversaVisivelDuranteRespostaMike || estadoTriagemMike.conversa;
-    conversaVisivel.forEach((mensagem) => mensagensChatMike.appendChild(criarBolhaDaConversaMike(mensagem)));
+    // Mantém o histórico no DOM para não repetir animações nem perder a âncora do scroll.
+    mensagensChatMike.querySelector('.mike-chat-digitando')?.remove();
+    let mensagensMantidas = 0;
+    while (mensagensMantidas < conversaVisivel.length) {
+        const bolha = mensagensChatMike.children[mensagensMantidas];
+        const mensagem = conversaVisivel[mensagensMantidas];
+        if (!bolha || bolha.textContent !== mensagem.texto
+            || !bolha.classList.contains(`mike-chat-bolha-${mensagem.autor}`)) break;
+        mensagensMantidas += 1;
+    }
+    while (mensagensChatMike.children.length > mensagensMantidas) mensagensChatMike.lastElementChild.remove();
+    conversaVisivel.slice(mensagensMantidas).forEach((mensagem) => mensagensChatMike.appendChild(criarBolhaDaConversaMike(mensagem)));
     if (mikeEstaDigitando) mensagensChatMike.appendChild(criarIndicadorDeDigitacaoMike());
     mensagensChatMike.setAttribute('aria-busy', String(mikeEstaDigitando));
 
-    opcoesChatMike.innerHTML = '';
     const etapa = FluxoTriagemMike.obterEtapa(estadoTriagemMike);
     atualizarInstrucaoDasOpcoesMike(etapa);
     if (!mikeEstaDigitando) {
+        opcoesChatMike.innerHTML = '';
         if (etapa.tipo === 'pergunta') renderizarPerguntaMike(etapa);
         if (etapa.tipo === 'entrada') renderizarEntradaMike(etapa);
         if (etapa.tipo === 'encaminhamento') renderizarEncaminhamentoMike(etapa);
@@ -791,7 +1043,7 @@ function renderizarChatMike({ forcarRolagem = false, focarPrimeiroControle = fal
         } else {
             mensagensChatMike.scrollTop = posicaoAnterior;
         }
-        if (focarPrimeiroControle) opcoesChatMike.querySelector('button, input')?.focus();
+        if (focarPrimeiroControle) opcoesChatMike.querySelector('button, input')?.focus({ preventScroll: true });
     });
 }
 
@@ -1542,7 +1794,7 @@ document.querySelector('#formulario-cadastro-usuario')?.addEventListener('submit
 
     if (!form.checkValidity()) {
         mensagem.classList.add('is-error');
-        mensagem.textContent = 'Preencha RE, posto/graduação, nome e e-mail funcional.';
+        mensagem.textContent = 'Preencha RE, posto/graduação e nome.';
         form.reportValidity();
         return;
     }
@@ -1551,7 +1803,7 @@ document.querySelector('#formulario-cadastro-usuario')?.addEventListener('submit
         re: document.querySelector('#cadastro-re').value.trim(),
         postoGraduacao: document.querySelector('#cadastro-posto').value,
         nome: document.querySelector('#cadastro-nome').value.trim(),
-        email: document.querySelector('#cadastro-email').value.trim()
+        email: document.querySelector('#cadastro-email').value.trim() || null
     };
 
     await executarComEstadoDeEnvio(form.querySelector('button[type="submit"]'), 'Enviando...', async () => {
@@ -1568,11 +1820,15 @@ document.querySelector('#formulario-cadastro-usuario')?.addEventListener('submit
 });
 
 let usuarioConsultadoRe = null;
+let usuarioConsultado = null;
 
 function exibirUsuarioConsultado(usuario) {
+    usuarioConsultado = usuario;
     usuarioConsultadoRe = usuario.re;
     document.querySelector('#consulta-usuario-nome').textContent = `${usuario.postoGraduacao} ${usuario.nome}`;
-    document.querySelector('#consulta-usuario-info').textContent = `RE ${usuario.re} · ${usuario.email}`;
+    const email = usuario.email || 'E-mail não informado';
+    const situacaoSenha = usuario.trocaSenhaObrigatoria ? ' · Troca de senha pendente' : '';
+    document.querySelector('#consulta-usuario-info').textContent = `RE ${usuario.re} · ${email}${situacaoSenha}`;
 
     const status = document.querySelector('#consulta-usuario-status');
     status.textContent = usuario.ativo ? 'Ativo' : 'Inativo';
@@ -1599,6 +1855,7 @@ document.querySelector('#consultar-usuario')?.addEventListener('click', async ()
         mensagem.classList.remove('is-error');
         mensagem.textContent = '';
     } catch (erro) {
+        usuarioConsultado = null;
         usuarioConsultadoRe = null;
         document.querySelector('#registro-usuario-consultado').hidden = true;
         document.querySelector('#acoes-usuario-consultado').hidden = true;
@@ -1664,6 +1921,50 @@ document.querySelector('#conceder-acesso-tecnico')?.addEventListener('click', as
         mensagem.classList.add('is-error');
         mensagem.textContent = erro.message;
     }
+});
+
+function fecharModalDeResetDeSenha() {
+    if (resetPasswordModal?.open) resetPasswordModal.close();
+}
+
+document.querySelector('#abrir-reset-senha')?.addEventListener('click', (event) => {
+    if (!usuarioConsultado) return;
+    document.querySelector('#reset-senha-identificacao').textContent =
+        `Deseja realmente resetar a senha de ${usuarioConsultado.nome} — RE ${usuarioConsultado.re}?`;
+    document.querySelector('#mensagem-reset-senha').textContent = '';
+    resetPasswordModal.showModal();
+    document.querySelector('#confirmar-reset-senha').focus({ preventScroll: true });
+});
+
+document.querySelectorAll('[data-close-reset]').forEach((botao) => {
+    botao.addEventListener('click', fecharModalDeResetDeSenha);
+});
+
+document.querySelector('#confirmar-reset-senha')?.addEventListener('click', async (event) => {
+    if (!usuarioConsultadoRe) return;
+    const botao = event.currentTarget;
+    const mensagemModal = document.querySelector('#mensagem-reset-senha');
+    const mensagemControle = document.querySelector('#mensagem-controle-acesso');
+
+    await executarComEstadoDeEnvio(botao, 'Resetando...', async () => {
+        try {
+            const usuario = await apiFetch(`/usuarios/resetar-senha/${usuarioConsultadoRe}`, { method: 'PATCH' });
+            exibirUsuarioConsultado(usuario);
+            fecharModalDeResetDeSenha();
+            mensagemControle.classList.remove('is-error');
+            mensagemControle.textContent = 'Senha resetada. O usuário deverá entrar com RE/RE e criar uma nova senha.';
+        } catch (erro) {
+            mensagemModal.classList.add('is-error');
+            mensagemModal.textContent = erro.message;
+        }
+    });
+});
+
+resetPasswordModal?.addEventListener('close', () => {
+    const mensagem = document.querySelector('#mensagem-reset-senha');
+    mensagem.textContent = '';
+    mensagem.classList.remove('is-error');
+    document.querySelector('#abrir-reset-senha')?.focus({ preventScroll: true });
 });
 
 document.querySelector('#inativar-usuario')?.addEventListener('click', async () => {

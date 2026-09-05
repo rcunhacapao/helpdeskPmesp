@@ -32,13 +32,17 @@ public class UsuarioModel {
     @Column(name = "RE", unique = true, nullable = false)
     private String re;
 
-    // E-mail funcional, usado no primeiro acesso. Precisa ser do domínio @policiamilitar.sp.gov.br.
-    @Column(name = "email", unique = true, nullable = false)
+    // E-mail funcional opcional. Quando informado, continua sendo armazenado para o cadastro.
+    @Column(name = "email", unique = true)
     private String email;
 
-    // Fica nulo até o usuário definir a própria senha no primeiro acesso.
-    @Column(name = "senha_hash")
+    // Guarda somente o hash da senha; o valor original nunca é persistido.
+    @Column(name = "senha_hash", nullable = false)
     private String senhaHash;
+
+    // Impede o acesso ao restante do sistema até o usuário definir uma senha pessoal.
+    @Column(name = "troca_senha_obrigatoria", nullable = false)
+    private boolean trocaSenhaObrigatoria;
 
     // O usuario será considerado ativo automaticamente quando for cadastrado no BD.
     @Column(name = "ativo", nullable = false)

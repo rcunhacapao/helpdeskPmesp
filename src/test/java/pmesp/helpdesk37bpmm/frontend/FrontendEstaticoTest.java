@@ -34,9 +34,9 @@ class FrontendEstaticoTest {
 
                 // Telas principais continuam presentes
                 () -> assertTrue(pagina.contains("id=\"pagina-login\"")),
-                () -> assertTrue(pagina.contains("styles.css?v=0.0.1-beta.46")),
+                () -> assertTrue(pagina.contains("styles.css?v=0.0.1-beta.55")),
                 () -> assertTrue(pagina.contains("mike-triagem.js?v=0.0.1-beta.38")),
-                () -> assertTrue(pagina.contains("app.js?v=0.0.1-beta.40")),
+                () -> assertTrue(pagina.contains("app.js?v=0.0.1-beta.42")),
                 () -> assertTrue(pagina.contains("id=\"visao-geral\"")),
                 () -> assertTrue(pagina.contains("id=\"meus-chamados\"")),
                 () -> assertTrue(pagina.contains("id=\"abrir-chamado\"")),
@@ -47,14 +47,18 @@ class FrontendEstaticoTest {
                 () -> assertTrue(pagina.contains("data-profile=\"usuario\"")),
                 () -> assertTrue(pagina.contains("data-profile=\"tecnico\"")),
 
-                // Primeiro acesso: tela nova, precisa existir para o fluxo real de autenticação
-                () -> assertTrue(pagina.contains("id=\"formulario-primeiro-acesso\"")),
-                () -> assertTrue(pagina.contains("id=\"primeiro-acesso-re\"")),
-                () -> assertTrue(pagina.contains("id=\"primeiro-acesso-email\"")),
-                () -> assertTrue(pagina.contains("id=\"primeiro-acesso-senha\"")),
+                // Login mostra apenas a ajuda de senha esquecida; a criação de senha aparece
+                // depois que o backend autentica uma conta com troca obrigatória pendente.
+                () -> assertTrue(pagina.contains("id=\"mostrar-esqueci-senha\"")),
+                () -> assertTrue(pagina.contains("id=\"painel-esqueci-senha\"")),
+                () -> assertTrue(pagina.contains("id=\"formulario-troca-senha\"")),
+                () -> assertTrue(pagina.contains("id=\"confirmacao-nova-senha\"")),
+                () -> assertFalse(pagina.contains("formulario-primeiro-acesso")),
+                () -> assertFalse(pagina.contains("primeiro-acesso-email")),
 
-                // Cadastro de usuário agora exige e-mail funcional (contrato real do backend)
+                // O e-mail continua no cadastro, mas passou a ser opcional.
                 () -> assertTrue(pagina.contains("id=\"cadastro-email\"")),
+                () -> assertTrue(pagina.contains("E-mail funcional <span class=\"optional-label\">(opcional)</span>")),
                 () -> assertTrue(pagina.contains("value=\"SGT_3\"")),
 
                 // Motivo de cancelamento é um select com os códigos aceitos pelo backend, não mais texto livre
@@ -65,6 +69,10 @@ class FrontendEstaticoTest {
 
                 // Listas que antes eram estáticas agora são preenchidas via JavaScript
                 () -> assertTrue(pagina.contains("id=\"lista-meus-chamados\"")),
+                () -> assertTrue(pagina.contains("data-ticket-filter=\"em-andamento\"")),
+                () -> assertTrue(pagina.contains("id=\"modal-cancelamento\"")),
+                () -> assertTrue(pagina.contains("id=\"modal-reset-senha\"")),
+                () -> assertTrue(pagina.contains("id=\"carregar-mais-chamados\"")),
                 () -> assertTrue(pagina.contains("id=\"lista-tecnicos\"")),
                 () -> assertTrue(pagina.contains("id=\"transferir-responsavel\"")),
                 () -> assertFalse(pagina.contains("Histórico de chamados")),
@@ -119,10 +127,15 @@ class FrontendEstaticoTest {
                 () -> assertTrue(comportamento.contains("INTERVALO_DE_ATUALIZACAO_DO_USUARIO_EM_MS = 5000")),
                 () -> assertTrue(comportamento.contains("window.setInterval")),
                 () -> assertTrue(comportamento.contains("pararAtualizacaoAutomaticaDoUsuario")),
-                () -> assertTrue(comportamento.contains("apiFetch('/auth/primeiro-acesso'")),
+                () -> assertTrue(comportamento.contains("apiFetch('/auth/trocar-senha'")),
+                () -> assertFalse(comportamento.contains("apiFetch('/auth/primeiro-acesso'")),
                 () -> assertTrue(comportamento.contains("apiFetch('/logout'")),
                 () -> assertTrue(comportamento.contains("apiFetch('/chamados/cadastrar'")),
                 () -> assertTrue(comportamento.contains("apiFetch('/chamados/meus'")),
+                () -> assertTrue(comportamento.contains("meusChamadosForamCarregados")),
+                () -> assertTrue(comportamento.contains("indicador-sincronizacao-chamados")),
+                () -> assertTrue(comportamento.contains("modalCancelamento.showModal()")),
+                () -> assertFalse(comportamento.contains("cancelTicketForm.scrollIntoView")),
                 () -> assertTrue(comportamento.contains("apiFetch('/chamados/fila'")),
                 () -> assertTrue(comportamento.contains("apiFetch('/chamados/em-atendimento'")),
                 () -> assertTrue(comportamento.contains("/chamados/cancelar/")),
@@ -133,6 +146,7 @@ class FrontendEstaticoTest {
                 () -> assertTrue(comportamento.contains("/usuarios/buscar/")),
                 () -> assertTrue(comportamento.contains("/usuarios/atualizar-dados/")),
                 () -> assertTrue(comportamento.contains("/usuarios/inativar/")),
+                () -> assertTrue(comportamento.contains("/usuarios/resetar-senha/")),
                 () -> assertTrue(comportamento.contains("apiFetch('/tecnicos/cadastrar'")),
                 () -> assertTrue(comportamento.contains("apiFetch('/tecnicos/disponiveis'")),
                 () -> assertTrue(comportamento.contains("apiFetch('/tecnicos')")),
@@ -184,6 +198,8 @@ class FrontendEstaticoTest {
                 () -> assertTrue(estilos.contains("#visao-geral .page-heading .eyebrow { color: var(--primary); }")),
                 () -> assertTrue(estilos.contains("#meus-chamados .page-heading .eyebrow { color: var(--primary); }")),
                 () -> assertTrue(estilos.contains(".ticket-list-card .eyebrow { color: var(--primary); }")),
+                () -> assertTrue(estilos.contains("--colunas-meus-chamados: 110px minmax(300px, 1fr) 190px 155px 88px;")),
+                () -> assertTrue(estilos.contains(".meus-chamados-colunas, .meu-chamado-linha { align-items: center; column-gap: 16px; display: grid; grid-template-columns: var(--colunas-meus-chamados); }")),
                 () -> assertTrue(estilos.contains(".queue-position-value > strong { color: var(--danger);")),
                 () -> assertTrue(estilos.contains(".queue-position-value > strong.is-in-service { color: var(--success); font-size:")),
                 () -> assertTrue(estilos.contains(".mike-chat-formulario-cpf { flex-basis: 520px; }")),

@@ -154,6 +154,9 @@ h1 {
 .login-intro { margin: 8px 0 clamp(16px, 4vh, 28px); }
 
 .login-form { text-align: left; }
+.login-guidance h2, #formulario-troca-senha h2 { color: #FFFFFF; font-size: 1.2rem; margin: 0 0 12px; }
+.login-guidance p, .login-guidance-text { color: rgba(255, 255, 255, .72); font-size: .875rem; line-height: 1.55; margin: 0 0 12px; }
+.login-card .eyebrow { color: #E57373; margin-bottom: 6px; }
 .field-group { margin-bottom: clamp(12px, 2vh, 20px); }
 label { display: block; font-size: .9375rem; font-weight: 700; margin-bottom: 6px; }
 
@@ -255,7 +258,7 @@ label { display: block; font-size: .9375rem; font-weight: 700; margin-bottom: 6p
 
 .brand p { font-size: clamp(.75rem, 1vw, .875rem); font-weight: 700; margin: 0; }
 
-.side-navigation { display: grid; gap: 4px; margin-top: clamp(16px, 3vh, 24px); }
+.side-navigation { display: grid; gap: 6px; margin-top: clamp(16px, 3vh, 24px); }
 
 .nav-link {
     align-items: center;
@@ -265,27 +268,37 @@ label { display: block; font-size: .9375rem; font-weight: 700; margin-bottom: 6p
     color: rgba(255, 255, 255, .8);
     display: flex;
     font-weight: 700;
-    gap: 12px;
+    gap: 10px;
     min-height: clamp(36px, 5vh, 44px);
     padding: 8px 12px;
     transition: all 180ms ease;
     font-size: clamp(.8125rem, 1vw, .9375rem);
 }
 
-.nav-link:hover { background: rgba(255, 255, 255, .12); color: var(--surface); transform: translateX(2px); }
+.nav-link:hover { background: rgba(255, 255, 255, .12); color: var(--surface); }
 .nav-link.is-active { background: var(--primary); color: var(--surface); }
-.nav-link span { font-size: 1.1rem; width: 20px; }
+.nav-link:focus-visible { box-shadow: 0 0 0 3px rgba(255, 255, 255, .34); outline: 0; }
+.nav-icon { fill: none; flex: 0 0 18px; height: 18px; stroke: currentColor; stroke-linecap: round; stroke-linejoin: round; stroke-width: 1.8; width: 18px; }
+.nav-label { min-width: 0; }
+.nav-link-mike { background: transparent; border-color: transparent; box-shadow: none; }
+.nav-link-mike:hover { background: rgba(255, 255, 255, .12); }
+.nav-badge { align-items: center; background: rgba(255, 255, 255, .16); border: 1px solid rgba(255, 255, 255, .28); border-radius: 99px; color: var(--surface); display: inline-flex; font-size: .56rem; font-weight: 800; letter-spacing: .035em; line-height: 1; margin-left: auto; padding: 4px 6px; text-transform: uppercase; white-space: nowrap; }
 
 .sidebar-footer {
     border-top: 1px solid rgba(255, 255, 255, .18);
     color: rgba(255, 255, 255, .7);
     font-size: .7rem;
     margin-top: auto;
-    padding: clamp(12px, 2vh, 20px) 12px 0;
+    padding: clamp(12px, 2vh, 20px) 8px 0;
 }
 .sidebar-footer p { margin: 0; }
 .sidebar-footer .user-name { color: var(--surface); font-size: .8rem; font-weight: 750; margin-bottom: 2px; }
-.sidebar-footer .profile-label { color: rgba(255, 255, 255, .62); margin-bottom: 8px; }
+.sidebar-footer .profile-label { color: rgba(255, 255, 255, .62); margin-bottom: 10px; }
+.sidebar-footer .button-block { margin: 0 auto 8px; min-height: 36px; padding: 6px 14px; width: min(156px, 100%); }
+.sidebar-footer .button-secondary { background: rgba(255, 255, 255, .9); border-color: rgba(255, 255, 255, .45); color: var(--text); }
+.sidebar-footer .button-secondary:hover { background: var(--surface); border-color: var(--surface); color: var(--text); transform: translateY(-1px); }
+.sidebar-footer .button-secondary:focus-visible { box-shadow: 0 0 0 3px rgba(255, 255, 255, .34); outline: 0; }
+.sidebar-footer .button-secondary:active { background: rgba(255, 255, 255, .82); transform: translateY(0); }
 
 /* ============================================
    CONTENT AREA
@@ -568,7 +581,7 @@ h3 { font-size: clamp(.9rem, 1.2vw, 1rem); margin: 0; }
 }
 .progress-step p { font-size: .72rem; line-height: 1.3; margin: 8px auto 0; max-width: 130px; }
 .progress-step.is-complete span { background: var(--nav); border-color: var(--nav); color: var(--surface); }
-.progress-step.is-current { color: var(--info); font-weight: 750; }
+.progress-step.is-current { color: var(--text); font-weight: 750; }
 .progress-step.is-current span { background: var(--primary); border-color: var(--primary); color: var(--surface); box-shadow: 0 0 0 5px var(--focus); }
 .card-actions { align-items: center; display: flex; flex-wrap: wrap; gap: 14px; justify-content: space-between; }
 
@@ -583,12 +596,39 @@ h3 { font-size: clamp(.9rem, 1.2vw, 1rem); margin: 0; }
 .notice-list .text-button { color: var(--primary); justify-self: start; }
 
 .ticket-list-layout { align-items: start; display: grid; gap: clamp(16px, 2vw, 28px); grid-template-columns: minmax(0, 1fr); }
-.meu-chamado-item { border-top: 1px solid var(--border); padding: 16px 0; }
-.meu-chamado-item:first-child { border-top: 0; padding-top: 0; }
-.meu-chamado-item .card-heading { margin-bottom: 6px; }
-.meu-chamado-item p { color: var(--muted); font-size: .82rem; margin: 4px 0 0; }
-.meu-chamado-solucao { background: rgba(46, 125, 50, .06); border-left: 3px solid var(--success); border-radius: 4px; margin-top: 10px; padding: 8px 10px; }
-.lista-tecnicos-vazia, .lista-chamados-vazia { color: var(--muted); font-size: .82rem; padding: 8px 0; }
+.meus-chamados-cabecalho { align-items: flex-start; display: flex; gap: 16px; justify-content: space-between; }
+.indicador-sincronizacao { color: var(--muted); font-size: .72rem; font-weight: 700; padding-top: 4px; white-space: nowrap; }
+.meus-chamados-filtros { border-bottom: 1px solid var(--border); display: flex; flex-wrap: wrap; gap: 6px; margin: 20px 0 12px; padding-bottom: 12px; }
+.filtro-meus-chamados { background: transparent; border: 1px solid transparent; border-radius: 5px; color: var(--muted); font-size: .78rem; font-weight: 750; min-height: 34px; padding: 6px 10px; }
+.filtro-meus-chamados:hover { background: rgba(26, 29, 32, .05); color: var(--text); }
+.filtro-meus-chamados.is-active { background: rgba(139, 0, 0, .08); border-color: rgba(139, 0, 0, .22); color: var(--primary); }
+.resultado-meus-chamados { color: var(--muted); font-size: .76rem; margin: 0 0 10px; }
+.ticket-list-card { --colunas-meus-chamados: 110px minmax(300px, 1fr) 190px 155px 88px; }
+.meus-chamados-colunas, .meu-chamado-linha { align-items: center; column-gap: 16px; display: grid; grid-template-columns: var(--colunas-meus-chamados); }
+.meus-chamados-colunas { border-bottom: 1px solid var(--border); color: var(--muted-blue); font-size: .68rem; font-weight: 800; letter-spacing: .04em; padding: 0 0 8px; text-transform: uppercase; }
+.meu-chamado-item { border-bottom: 1px solid var(--border); padding: 12px 0; }
+.meus-chamados-colunas > span, .meu-chamado-linha > * { min-width: 0; }
+.meu-chamado-protocolo { color: var(--primary); font-size: .82rem; font-weight: 800; }
+.meu-chamado-assunto { min-width: 0; }
+.meu-chamado-assunto h3 { font-size: .9rem; line-height: 1.35; margin: 0; overflow-wrap: anywhere; }
+.meu-chamado-data { color: var(--muted); font-size: .76rem; line-height: 1.35; }
+.meu-chamado-linha .status-label { justify-self: start; }
+.meu-chamado-acoes { align-items: center; display: flex; flex-wrap: wrap; gap: 10px; justify-content: flex-start; }
+.meu-chamado-acoes .text-button { font-size: .76rem; white-space: nowrap; }
+.text-button-danger { color: var(--danger-text) !important; }
+.meu-chamado-detalhes { background: rgba(26, 29, 32, .025); border-left: 3px solid rgba(45, 95, 139, .45); margin-top: 12px; padding: 12px; }
+.meu-chamado-descricao, .meu-chamado-solucao, .meu-chamado-motivo-cancelamento { color: var(--muted); font-size: .78rem; line-height: 1.5; margin: 0; overflow-wrap: anywhere; white-space: pre-line; }
+.meu-chamado-fatos { display: grid; gap: 10px 16px; grid-template-columns: repeat(3, minmax(0, 1fr)); margin: 12px 0; }
+.meu-chamado-fatos dt { color: var(--muted-blue); font-size: .68rem; font-weight: 800; text-transform: uppercase; }
+.meu-chamado-fatos dd { font-size: .76rem; line-height: 1.4; margin: 3px 0 0; overflow-wrap: anywhere; }
+.meu-chamado-solucao { background: rgba(46, 125, 50, .06); border-left: 3px solid var(--success); margin-top: 10px; padding: 8px 10px; }
+.meu-chamado-motivo-cancelamento { margin-top: 10px; }
+.lista-tecnicos-vazia, .lista-chamados-vazia { color: var(--muted); font-size: .82rem; padding: 18px 0; }
+.carregar-mais-chamados { margin: 16px auto 0; }
+.meus-chamados-feedback { margin: 10px 0 0; }
+.skeleton-meus-chamados { display: grid; gap: 10px; padding: 4px 0; }
+.skeleton-meus-chamados span { animation: pulsar-carregamento 1.3s ease-in-out infinite; background: rgba(26, 29, 32, .08); border-radius: 4px; height: 48px; }
+@keyframes pulsar-carregamento { 50% { opacity: .45; } }
 #meus-chamados .page-heading .eyebrow { color: var(--primary); }
 .ticket-list-card { border-color: rgba(45, 95, 139, .24); }
 .ticket-list-card .eyebrow { color: var(--primary); }
@@ -596,11 +636,35 @@ h3 { font-size: clamp(.9rem, 1.2vw, 1rem); margin: 0; }
 .ticket-list-card .status-label.status-em_atendimento { background: rgba(199, 154, 50, .16); color: #88681F; }
 .ticket-list-card .status-label.status-fechado { background: rgba(46, 125, 50, .12); color: var(--success); }
 .ticket-list-card .status-label.status-cancelado { background: rgba(26, 29, 32, .08); color: var(--muted); }
-.ticket-list-card > .card-actions { margin-top: 20px; padding-top: 4px; }
-.cancel-ticket-form { border-top: 1px solid var(--border); margin-top: 20px; padding-top: 20px; }
+.modal-cancelamento { background: var(--surface); border: 1px solid rgba(26, 29, 32, .18); border-radius: 8px; box-shadow: 0 22px 56px rgba(26, 29, 32, .24); color: var(--text); max-width: min(520px, calc(100vw - 32px)); padding: 0; width: 100%; }
+.modal-cancelamento::backdrop { background: rgba(26, 29, 32, .42); }
+.cancel-ticket-form { display: grid; gap: 12px; padding: 24px; }
+.modal-cancelamento-conteudo { display: grid; gap: 12px; padding: 24px; }
+.modal-cancelamento-conteudo > p { line-height: 1.5; margin: 0; }
+.modal-cancelamento-cabecalho { align-items: flex-start; border-bottom: 1px solid var(--border); display: flex; gap: 16px; justify-content: space-between; padding-bottom: 14px; }
+.modal-cancelamento-cabecalho .eyebrow { color: var(--primary); margin: 0 0 4px; }
+.modal-cancelamento-cabecalho h2 { font-size: 1.2rem; margin: 0; }
+.modal-fechar { background: transparent; border: 0; border-radius: 4px; color: var(--muted); font-size: 1.5rem; line-height: 1; min-height: 32px; min-width: 32px; padding: 0; }
+.modal-fechar:hover { background: rgba(26, 29, 32, .08); color: var(--text); }
 .cancel-ticket-form label { display: block; font-size: .82rem; font-weight: 750; margin-bottom: 8px; }
-.cancel-ticket-form textarea { background: var(--surface); border: 1px solid var(--border); border-radius: 6px; min-height: 88px; padding: 10px; resize: vertical; width: 100%; }
-.cancel-ticket-form textarea:focus { border-color: var(--primary); box-shadow: 0 0 0 3px var(--focus); outline: 0; }
+.cancel-ticket-form .form-actions { justify-content: flex-end; margin-top: 4px; padding-top: 14px; }
+@media (max-width: 760px) {
+    .meus-chamados-cabecalho { display: block; }
+    .indicador-sincronizacao { display: inline-block; margin-top: 10px; }
+    .meus-chamados-colunas { display: none; }
+    .meu-chamado-linha { align-items: start; gap: 8px 12px; grid-template-columns: minmax(0, 1fr) auto; }
+    .meu-chamado-protocolo { grid-column: 1; grid-row: 1; }
+    .meu-chamado-assunto { grid-column: 1 / -1; grid-row: 2; }
+    .meu-chamado-data { grid-column: 1; grid-row: 3; }
+    .meu-chamado-linha .status-label { grid-column: 2; grid-row: 1; justify-self: end; }
+    .meu-chamado-acoes { grid-column: 1 / -1; grid-row: 4; justify-content: flex-start; }
+    .meu-chamado-fatos { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .meu-chamado-linha [data-label]::before { color: var(--muted-blue); content: attr(data-label) ': '; font-size: .68rem; font-weight: 800; text-transform: uppercase; }
+    .meu-chamado-protocolo::before, .meu-chamado-assunto::before, .meu-chamado-acoes::before { display: none; }
+}
+@media (min-width: 761px) and (max-width: 1100px) {
+    .ticket-list-card { --colunas-meus-chamados: 94px minmax(240px, 1fr) 170px 145px 80px; }
+}
 /* ============================================
    CENTRAL TÉCNICA
    ============================================ */
@@ -707,6 +771,7 @@ h3 { font-size: clamp(.9rem, 1.2vw, 1rem); margin: 0; }
 .compact-form input, .compact-form select { border: 1px solid var(--border); border-radius: 6px; min-height: 40px; padding: 0 10px; width: 100%; }
 .compact-form input:focus, .compact-form select:focus { border-color: var(--primary); box-shadow: 0 0 0 3px var(--focus); outline: 0; }
 .compact-form .button-block { margin-top: 18px; }
+.optional-label { color: var(--muted); font-weight: 500; }
 .registration-card { height: 100%; }
 .management-card-heading { align-items: flex-start; display: flex; gap: 16px; justify-content: space-between; }
 .management-card-heading > div > p:not(.eyebrow) { color: var(--muted); font-size: .78rem; line-height: 1.45; margin: 5px 0 0; }
@@ -926,7 +991,7 @@ button + .form-message, .form-actions + .form-message { margin-top: 12px; }
 #abrir-chamado .ticket-layout-com-mike,
 #abrir-chamado .abertura-usuario-layout { height: 100%; min-height: 0; }
 .ticket-layout-conteudo-tecnico { width: 100%; }
-.abertura-usuario-conteudo { display: grid; gap: 18px; min-width: 0; }
+.abertura-usuario-conteudo { display: flex; flex-direction: column; justify-content: center; height: 100%; min-height: 0; gap: 18px; min-width: 0; }
 .mike-abertura-persona { align-items: center; display: flex; justify-content: flex-end; min-height: 0; min-width: 0; }
 .mike-abertura-avatar { display: block; height: clamp(420px, 62vh, 720px); max-width: 100%; object-fit: contain; object-position: center; }
 .mike-abertura-persona-tecnico { align-self: stretch; }
@@ -945,6 +1010,9 @@ button + .form-message, .form-actions + .form-message { margin-top: 12px; }
 .mike-chat-cabecalho #mike-chat-cancelar { color: var(--surface); margin-left: auto; }
 .mike-chat-cabecalho #mike-chat-cancelar:focus-visible { outline-color: var(--surface); }
 .mike-chat-mensagens {
+    min-height: 0;
+    flex: 1 1 auto;
+    overflow-anchor: none;
     display: flex;
     flex-direction: column;
     gap: 10px;
@@ -954,6 +1022,11 @@ button + .form-message, .form-actions + .form-message { margin-top: 12px; }
     scrollbar-width: none;
 }
 .mike-chat-mensagens::-webkit-scrollbar { display: none; }
+/* A altura vem da área disponível: somente o histórico cede espaço às opções. */
+.mike-chat-card { height: 100%; max-height: 100%; }
+.mike-chat-cabecalho, .mike-chat-acoes, .mike-chat-card > .form-message { flex-shrink: 0; }
+.mike-chat-acoes.is-waiting { visibility: hidden; pointer-events: none; }
+.mike-chat-bolha { flex-shrink: 0; }
 .mike-chat-bolha { animation: mikeMensagemEntrando .2s ease-out; border-radius: 14px; font-size: .875rem; line-height: 1.5; max-width: 82%; overflow-wrap: anywhere; padding: 9px 13px; white-space: pre-line; }
 .mike-chat-bolha-mike { align-self: flex-start; background: rgba(45, 95, 139, .09); border-bottom-left-radius: 4px; color: var(--text); }
 .mike-chat-bolha-usuario { align-self: flex-end; background: var(--primary); border-bottom-right-radius: 4px; color: var(--surface); }
@@ -986,11 +1059,6 @@ button + .form-message, .form-actions + .form-message { margin-top: 12px; }
     width: 100%;
 }
 .mike-chat-campo-livre:focus { border-color: var(--primary); box-shadow: 0 0 0 3px var(--focus); outline: 0; }
-/* No tamanho legível (11px), "EM CRIAÇÃO" não cabe mais ao lado do rótulo dentro da
-   largura da barra lateral — o selo passa para uma segunda linha, alinhado com o texto. */
-.nav-link:has(.nav-badge) { flex-wrap: wrap; row-gap: 2px; }
-.nav-badge { background: rgba(255, 255, 255, .1); border: 1px solid rgba(255, 255, 255, .2); border-radius: 99px; color: rgba(255, 255, 255, .78); flex-basis: 100%; font-size: .6875rem; font-weight: 800; letter-spacing: .02em; margin-left: 32px; max-width: fit-content; padding: 3px 7px; text-transform: uppercase; white-space: nowrap; }
-
 /* ============================================
    ÁREA FUTURA DO MIKE IA
    ============================================ */

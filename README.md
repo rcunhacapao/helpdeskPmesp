@@ -29,37 +29,37 @@ validadas por testes automatizados e revisão de código.
 - Validação de RE: somente números, de 1 a 6 dígitos.
 - Inativação de usuários sem apagar seu histórico.
 - Cancelamento automático de chamados abertos quando o usuário é inativado.
-- Abertura integrada de chamado: o primeiro relato já é registrado e recebe diagnóstico inicial.
+- Triagem guiada do Mike IA antes da abertura, com uma pergunta por vez e opções simples.
 - Categorias: computador, monitor, impressora, rede/internet, e-mail e outro.
 - Prioridades: baixa, média, alta e urgente.
-- Fluxo de status: em diagnóstico, aberto, em atendimento, fechado, cancelado e abandonado.
-- Resolução registrada separadamente: pelo Mike IA ou por técnico.
+- Fluxo de chamado: aberto, em atendimento, fechado e cancelado.
+- A triagem resolvida pelo Mike é registrada como atendimento, sem criar chamado.
 - Histórico das orientações do Mike disponível no detalhe técnico do chamado encaminhado.
 - Cancelamento de chamado aberto com motivo registrado.
 - Fila de atendimento: urgentes primeiro, depois alta, média e baixa prioridade. Dentro da mesma prioridade, o chamado mais antigo vem antes.
 - Consulta de chamados em atendimento, separada da fila de chamados abertos.
-- Login com RE e senha, primeiro acesso com confirmação de e-mail funcional, e perfis de
+- Login inicial com RE/RE, troca obrigatória de senha, reset manual pelo técnico e perfis de
   usuário comum/técnico (veja [Autenticação](#autenticação)).
 - Banco H2 local para desenvolvimento e testes.
 
 ### Fluxo do chamado
 
 ```text
-Usuário ativo -> relata o problema -> EM_DIAGNOSTICO
-                                      |
-                                      +-> FECHADO + resolvidoPor=MIKE_IA
-                                      |
-                                      `-> ABERTO -> EM_ATENDIMENTO -> FECHADO + resolvidoPor=TECNICO
-                                            |
-                                            `-> CANCELADO, quando necessário
+Usuário ativo -> triagem guiada do Mike
+                  |
+                  +-> RESOLVIDO no atendimento do Mike, sem criar chamado
+                  |
+                  `-> envio do formulário final -> ABERTO -> EM_ATENDIMENTO -> FECHADO
+                                                     |
+                                                     `-> CANCELADO, quando necessário
 
-EM_DIAGNOSTICO -> ABANDONADO, quando não houver interação por 24 horas
+Triagem do Mike -> ABANDONADO, quando não houver interação por 24 horas
 ```
 
 Regras importantes:
 
-- Para usuário comum, um chamado novo começa como `EM_DIAGNOSTICO` depois do primeiro relato.
-- Somente o encaminhamento não resolvido muda esse mesmo chamado para `ABERTO`.
+- Escolher categoria, problema ou respostas não cria chamado.
+- O chamado `ABERTO` só nasce quando o usuário envia o formulário final de encaminhamento.
 - Técnico abre diretamente como `ABERTO`, inclusive quando registra em nome de outro RE.
 - Somente chamados `ABERTOS` aparecem na fila.
 - O técnico inicia o atendimento e muda o status para `EM_ATENDIMENTO`.
@@ -76,12 +76,14 @@ esse perfil.
 | Método | Rota | Finalidade | Acesso |
 | --- | --- | --- | --- |
 | `POST` | `/auth/login` | Autentica com RE e senha. | pública |
-| `POST` | `/auth/primeiro-acesso` | Confirma RE + e-mail funcional e define a senha. | pública |
+| `GET` | `/auth/sessao` | Recupera os dados da sessão atual. | logado |
+| `POST` | `/auth/trocar-senha` | Define a senha pessoal quando existe troca obrigatória pendente. | logado com troca pendente |
 | `POST` | `/logout` | Encerra a sessão. | logado |
-| `POST` | `/usuarios/cadastrar` | Cadastra um usuário. | técnico |
+| `POST` | `/usuarios/cadastrar` | Cadastra um usuário com e-mail opcional e senha inicial igual ao RE. | técnico |
 | `GET` | `/usuarios/buscar/{re}` | Busca usuário pelo RE. | técnico |
 | `PUT` | `/usuarios/atualizar-dados/{re}` | Atualiza nome e posto/graduação. | técnico |
 | `PATCH` | `/usuarios/inativar/{re}` | Inativa usuário e cancela seus chamados abertos. | técnico |
+| `PATCH` | `/usuarios/resetar-senha/{re}` | Volta a senha temporária para o RE e exige nova troca. | técnico |
 | `POST` | `/tecnicos/cadastrar` | Torna um usuário existente um técnico. | técnico |
 | `GET` | `/tecnicos` | Lista todos os técnicos, disponíveis ou não. | técnico |
 | `GET` | `/tecnicos/buscar/{re}` | Busca técnico pelo RE do usuário. | técnico |
@@ -98,21 +100,26 @@ esse perfil.
 | `PATCH` | `/chamados/transferir-responsavel/{id}?reTecnico={re}` | Transfere o chamado para outro técnico. | técnico |
 | `PATCH` | `/chamados/finalizar/{id}` | Finaliza um chamado em atendimento. | técnico |
 | `PATCH` | `/chamados/cancelar/{id}?motivoCancelamento=OUTRO` | Cancela um chamado aberto (usuário comum só o próprio). | logado |
-| `POST` | `/mike-ia/iniciar` | Cria o chamado em diagnóstico e devolve as orientações iniciais. | usuário comum |
+| `POST` | `/mike-ia/iniciar` | Registra temporariamente o início da triagem, sem criar chamado. | usuário comum |
 | `GET` | `/mike-ia/em-diagnostico` | Recupera o diagnóstico em andamento após recarregar a página. | usuário comum |
-| `PATCH` | `/mike-ia/concluir/{chamadoId}` | Fecha o mesmo chamado como resolvido pelo Mike IA. | usuário comum |
-| `PATCH` | `/mike-ia/encaminhar/{chamadoId}` | Completa e encaminha o mesmo chamado para a fila técnica. | usuário comum |
+| `PATCH` | `/mike-ia/concluir/{atendimentoId}` | Conclui uma triagem resolvida sem criar chamado. | usuário comum |
+| `PATCH` | `/mike-ia/encaminhar/{atendimentoId}` | Cria o chamado somente após o envio do formulário final. | usuário comum |
 | `GET` | `/mike-ia/chamado/{chamadoId}` | Consulta o histórico do Mike no detalhe técnico do chamado. | técnico |
 | `GET` | `/mike-ia/metricas` | Consulta totais e taxa inicial de resolução automática. | técnico |
 
 ## Autenticação
 
-O técnico cadastra o usuário previamente (RE, nome, posto/graduação e e-mail funcional
-`@policiamilitar.sp.gov.br`). Depois disso:
+O técnico cadastra o usuário previamente com RE, nome, posto/graduação e, se disponível,
+e-mail funcional `@policiamilitar.sp.gov.br`. O e-mail permanece no cadastro, mas é opcional
+e não participa da autenticação. Depois disso:
 
-1. O usuário chama `POST /auth/primeiro-acesso` com RE, e-mail funcional e a senha desejada.
-2. A partir daí, ele loga com `POST /auth/login` (RE + senha).
-3. O login fica valendo por sessão (cookie), por até 2 horas.
+1. O cadastro salva o hash do RE como senha temporária e marca a troca de senha como obrigatória.
+2. O usuário entra pela tela normal com RE como login e senha.
+3. A sessão fica limitada à rota `POST /auth/trocar-senha` até ele definir uma senha pessoal.
+4. Depois da troca, ele usa RE + senha pessoal e o RE deixa de funcionar como senha.
+5. Se esquecer a senha, procura a Telemática; um técnico usa `PATCH /usuarios/resetar-senha/{re}`
+   e o ciclo RE/RE com troca obrigatória acontece novamente.
+6. O login fica valendo por sessão (cookie), por até 2 horas.
 
 Existem dois perfis: **usuário comum** (só acessa os próprios chamados) e **técnico** (acessa
 tudo). Um usuário vira técnico quando alguém já técnico chama `POST /tecnicos/cadastrar` para
@@ -193,7 +200,7 @@ BOOTSTRAP_TECNICO_POSTO=SGT_3
 
 Com isso, já é possível logar em `POST /auth/login` com esse RE e senha e usar a tela de
 Gestão de usuários para cadastrar o restante da equipe. Usuários cadastrados por um técnico
-ainda precisam completar o primeiro acesso (`POST /auth/primeiro-acesso`) para poderem logar.
+entram inicialmente com RE/RE e precisam criar uma senha pessoal antes de acessar o sistema.
 
 ### Frontend
 
@@ -209,11 +216,11 @@ origem — acesse `http://localhost:8080/` no navegador. Ele já está conectado
 4. Implementar a posição do solicitante na fila.
 5. ~~Registrar solução ou observação ao finalizar um chamado.~~ ✅ concluído.
 6. ~~Conectar o frontend (hoje um protótipo visual) à API real.~~ ✅ concluído.
-7. ~~Criar login com primeiro acesso por RE e senha própria do Helpdesk.~~ ✅ concluído.
+7. ~~Criar login inicial RE/RE com troca obrigatória e reset manual pelo técnico.~~ ✅ concluído.
 8. Migrar o banco de H2 para PostgreSQL e preparar a aplicação para Docker.
 9. Criar relatórios de volume, tempo médio de atendimento, categorias mais frequentes e chamados por usuário/local. Os dados de diagnóstico, resolução pelo Mike e abandono já ficam registrados para essa etapa.
 10. Permitir alterar a prioridade de um chamado diretamente na tela de fila do técnico (o endpoint já existe: `PUT /chamados/atualizar-dados/{id}`).
-11. Registrar código de confirmação por e-mail no primeiro acesso e recuperação de senha (a estrutura já foi pensada para isso, veja [Autenticação](#autenticação)).
+11. Avaliar separadamente uma camada adicional de confirmação de identidade, sem dependência preparada no fluxo atual.
 
 ## Visão futura
 
@@ -223,7 +230,7 @@ O planejamento pode evoluir conforme os testes e as necessidades do setor, mas a
 - Painel do técnico com fila, chamados em atendimento, finalizados e filtros.
 - Indicadores para ajudar o setor a entender volume de trabalho, tempo médio e problemas mais frequentes.
 - Instalação independente para outras unidades.
-- **Mike IA** integrado à abertura do chamado, com motor inicial de regras e estrutura preparada para evoluir para base aprovada, RAG ou LLM.
+- **Mike IA** integrado à abertura com fluxo guiado por decisões e estrutura preparada para evoluir para uma base aprovada, RAG ou LLM.
 
 ## Identidade visual planejada
 

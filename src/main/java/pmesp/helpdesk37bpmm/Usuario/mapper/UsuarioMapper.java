@@ -28,6 +28,7 @@ public class UsuarioMapper {
         usuarioRespostaDTO.setRe(usuarioModel.getRe());
         usuarioRespostaDTO.setEmail(usuarioModel.getEmail());
         usuarioRespostaDTO.setAtivo(usuarioModel.isAtivo());
+        usuarioRespostaDTO.setTrocaSenhaObrigatoria(usuarioModel.isTrocaSenhaObrigatoria());
 
         return usuarioRespostaDTO;
     }

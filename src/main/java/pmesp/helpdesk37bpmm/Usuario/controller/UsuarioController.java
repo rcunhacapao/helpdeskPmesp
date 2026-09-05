@@ -41,4 +41,11 @@ public class UsuarioController {
          return usuarioServices.inativarPolicialPorRe(re);
     }
 
+
+    // Restaurar temporariamente a senha para o próprio RE e exigir uma nova senha pessoal
+    @PatchMapping("/resetar-senha/{re}")
+    public UsuarioRespostaDTO resetarSenha(@PathVariable String re) {
+        return usuarioServices.resetarSenha(re);
+    }
+
 }

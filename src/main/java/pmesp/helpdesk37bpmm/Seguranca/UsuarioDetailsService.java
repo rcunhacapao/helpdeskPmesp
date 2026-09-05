@@ -30,13 +30,12 @@ public class UsuarioDetailsService implements UserDetailsService {
         UsuarioModel usuario = usuarioRepository.findByRe(re)
                 .orElseThrow(() -> new UsernameNotFoundException("Usuário não encontrado."));
 
-        // Sem senha ainda = não completou o primeiro acesso, então não pode logar
-        boolean aindaNaoFezPrimeiroAcesso = usuario.getSenhaHash() == null;
+        boolean senhaAindaNaoFoiPreparada = usuario.getSenhaHash() == null;
 
         return User.withUsername(usuario.getRe())
-                .password(aindaNaoFezPrimeiroAcesso ? "" : usuario.getSenhaHash())
+                .password(senhaAindaNaoFoiPreparada ? "" : usuario.getSenhaHash())
                 .authorities(construirAutoridades(usuario))
-                .disabled(!usuario.isAtivo() || aindaNaoFezPrimeiroAcesso)
+                .disabled(!usuario.isAtivo() || senhaAindaNaoFoiPreparada)
                 .build();
     }
 
@@ -44,6 +43,13 @@ public class UsuarioDetailsService implements UserDetailsService {
     // Calculado aqui (não salvo em coluna) para facilitar adicionar um novo perfil no futuro.
     private List<GrantedAuthority> construirAutoridades(UsuarioModel usuario) {
         List<GrantedAuthority> autoridades = new ArrayList<>();
+
+        // A permissão limitada mantém a sessão autenticada somente para definir a nova senha.
+        if (usuario.isTrocaSenhaObrigatoria()) {
+            autoridades.add(new SimpleGrantedAuthority("ROLE_TROCA_SENHA"));
+            return autoridades;
+        }
+
         autoridades.add(new SimpleGrantedAuthority("ROLE_USUARIO"));
 
         if (tecnicoRepository.findByUsuario(usuario).isPresent()) {

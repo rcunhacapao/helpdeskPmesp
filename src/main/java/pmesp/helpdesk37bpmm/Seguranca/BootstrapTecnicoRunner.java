@@ -58,6 +58,7 @@ public class BootstrapTecnicoRunner implements CommandLineRunner {
         usuario.setPostoGraduacao(UsuarioPostoGraduacao.valueOf(posto));
         usuario.setAtivo(true);
         usuario.setSenhaHash(passwordEncoder.encode(senha));
+        usuario.setTrocaSenhaObrigatoria(false);
         usuarioRepository.save(usuario);
 
         TecnicoModel tecnico = new TecnicoModel();

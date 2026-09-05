@@ -1,6 +1,7 @@
 package pmesp.helpdesk37bpmm.Usuario.service;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import pmesp.helpdesk37bpmm.Chamado.service.ChamadoService;
@@ -34,6 +35,9 @@ public class UsuarioServices {
     @Autowired
     private UsuarioMapper usuarioMapper;
 
+    @Autowired
+    private PasswordEncoder passwordEncoder;
+
     // Cadastrar novo usuario
     public UsuarioRespostaDTO criar(UsuarioDTO usuarioDTO) {
         // Conferir se o corpo do cadastro foi enviado
@@ -54,7 +58,8 @@ public class UsuarioServices {
                     "Informe o posto ou graduação do usuário.");
         }
 
-        validarEmailFuncional(usuarioDTO.getEmail());
+        String email = normalizarEmail(usuarioDTO.getEmail());
+        validarEmailFuncional(email);
 
         // Impedir dois cadastros usando o mesmo RE
         if (usuarioRepository.findByRe(usuarioDTO.getRe()).isPresent()) {
@@ -62,16 +67,19 @@ public class UsuarioServices {
         }
 
         // Impedir dois cadastros usando o mesmo e-mail funcional
-        if (usuarioRepository.findByEmail(usuarioDTO.getEmail()).isPresent()) {
+        if (email != null && usuarioRepository.findByEmail(email).isPresent()) {
             throw new ConflitoException("EMAIL_JA_CADASTRADO", "Já existe um usuário cadastrado com este e-mail.");
         }
 
 
         // Transformar os dados do cadastro em usuario para salvar no banco
         UsuarioModel usuarioNovo = usuarioMapper.map(usuarioDTO);
+        usuarioNovo.setEmail(email);
 
-        // Todo novo usuario começa ativo
+        // Todo novo usuário começa ativo e entra temporariamente com RE/RE.
         usuarioNovo.setAtivo(true);
+        usuarioNovo.setSenhaHash(passwordEncoder.encode(usuarioNovo.getRe()));
+        usuarioNovo.setTrocaSenhaObrigatoria(true);
 
         // Transformar o usuario salvo em resposta para a API
         return usuarioMapper.map(usuarioRepository.save(usuarioNovo));
@@ -154,11 +162,33 @@ public class UsuarioServices {
     }
 
 
-    // O e-mail funcional é usado no primeiro acesso, por isso precisa ser do domínio institucional
+    // O reset técnico devolve a conta ao mesmo estado seguro de um novo cadastro.
+    public UsuarioRespostaDTO resetarSenha(String re) {
+        ValidadorDeRe.validar(re);
+        UsuarioModel usuario = usuarioRepository.findByRe(re)
+                .orElseThrow(() -> new RecursoNaoEncontradoException(
+                        "USUARIO_NAO_ENCONTRADO", "Usuário não encontrado."));
+
+        if (!usuario.isAtivo()) {
+            throw new RegraDeNegocioException("USUARIO_INATIVO",
+                    "Não é possível resetar a senha de um usuário inativo.");
+        }
+
+        usuario.setSenhaHash(passwordEncoder.encode(usuario.getRe()));
+        usuario.setTrocaSenhaObrigatoria(true);
+        return usuarioMapper.map(usuarioRepository.save(usuario));
+    }
+
+
+    // O e-mail é opcional, mas continua seguindo o domínio institucional quando informado.
     private void validarEmailFuncional(String email) {
-        if (email == null || !email.toLowerCase().endsWith("@policiamilitar.sp.gov.br")) {
+        if (email != null && !email.toLowerCase().endsWith("@policiamilitar.sp.gov.br")) {
             throw new RegraDeNegocioException("EMAIL_FUNCIONAL_INVALIDO",
                     "Informe um e-mail funcional válido, terminado em @policiamilitar.sp.gov.br.");
         }
+    }
+
+    private String normalizarEmail(String email) {
+        return email == null || email.isBlank() ? null : email.trim().toLowerCase();
     }
 }

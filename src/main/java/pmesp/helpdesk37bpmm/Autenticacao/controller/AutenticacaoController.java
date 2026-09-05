@@ -18,7 +18,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import pmesp.helpdesk37bpmm.Autenticacao.dto.LoginDTO;
 import pmesp.helpdesk37bpmm.Autenticacao.dto.LoginRespostaDTO;
-import pmesp.helpdesk37bpmm.Autenticacao.dto.PrimeiroAcessoDTO;
+import pmesp.helpdesk37bpmm.Autenticacao.dto.TrocaSenhaDTO;
 import pmesp.helpdesk37bpmm.Autenticacao.service.AutenticacaoService;
 import pmesp.helpdesk37bpmm.Exception.AcessoNegadoException;
 
@@ -62,9 +62,28 @@ public class AutenticacaoController {
         return autenticacaoService.montarRespostaDeLogin(autenticacao.getName());
     }
 
-    // Primeiro acesso: confirma RE + e-mail funcional e define a senha do usuário pré-cadastrado
-    @PostMapping("/primeiro-acesso")
-    public void primeiroAcesso(@Valid @RequestBody PrimeiroAcessoDTO primeiroAcessoDTO) {
-        autenticacaoService.realizarPrimeiroAcesso(primeiroAcessoDTO);
+    // A sessão limitada criada pelo login RE/RE só pode concluir esta troca de senha.
+    @PostMapping("/trocar-senha")
+    public LoginRespostaDTO trocarSenha(@Valid @RequestBody TrocaSenhaDTO trocaSenhaDTO,
+                                        Authentication autenticacao,
+                                        HttpServletRequest request,
+                                        HttpServletResponse response) {
+        LoginRespostaDTO resposta = autenticacaoService.trocarSenhaObrigatoria(
+                autenticacao.getName(), trocaSenhaDTO);
+
+        // Atualiza a sessão para liberar as permissões normais imediatamente após a troca.
+        Authentication autenticacaoAtualizada = authenticationManager.authenticate(
+                new UsernamePasswordAuthenticationToken(autenticacao.getName(), trocaSenhaDTO.getNovaSenha()));
+        salvarAutenticacaoNaSessao(autenticacaoAtualizada, request, response);
+        return resposta;
+    }
+
+    private void salvarAutenticacaoNaSessao(Authentication autenticacao,
+                                             HttpServletRequest request,
+                                             HttpServletResponse response) {
+        SecurityContext contexto = SecurityContextHolder.createEmptyContext();
+        contexto.setAuthentication(autenticacao);
+        SecurityContextHolder.setContext(contexto);
+        securityContextRepository.saveContext(contexto, request, response);
     }
 }

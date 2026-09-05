@@ -5,6 +5,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import pmesp.helpdesk37bpmm.Exception.ConflitoException;
 import pmesp.helpdesk37bpmm.Exception.RecursoNaoEncontradoException;
 import pmesp.helpdesk37bpmm.Exception.RegraDeNegocioException;
@@ -16,7 +17,12 @@ import pmesp.helpdesk37bpmm.Usuario.repository.UsuarioRepository;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -24,6 +30,12 @@ class UsuarioServicesTest {
 
     @Mock
     UsuarioRepository usuarioRepository;
+
+    @Mock
+    PasswordEncoder passwordEncoder;
+
+    @Mock
+    pmesp.helpdesk37bpmm.Usuario.mapper.UsuarioMapper usuarioMapper;
 
     @InjectMocks
     UsuarioServices usuarioServices;
@@ -75,6 +87,48 @@ class UsuarioServicesTest {
                 () -> usuarioServices.criar(usuarioDTO));
 
         assertEquals("EMAIL_JA_CADASTRADO", excecao.getCodigo());
+    }
+
+
+    @Test
+    void deveCadastrarSemEmailComHashDoReETrocaObrigatoria() {
+        UsuarioDTO usuarioDTO = criarUsuarioValido();
+        usuarioDTO.setEmail("  ");
+        UsuarioModel usuario = new UsuarioModel();
+        usuario.setRe("250861");
+
+        when(usuarioRepository.findByRe("250861")).thenReturn(Optional.empty());
+        when(usuarioMapper.map(usuarioDTO)).thenReturn(usuario);
+        when(passwordEncoder.encode("250861")).thenReturn("hash-do-re");
+        when(usuarioRepository.save(usuario)).thenReturn(usuario);
+        when(usuarioMapper.map(usuario)).thenReturn(new pmesp.helpdesk37bpmm.Usuario.dto.UsuarioRespostaDTO());
+
+        usuarioServices.criar(usuarioDTO);
+
+        assertEquals("hash-do-re", usuario.getSenhaHash());
+        assertTrue(usuario.isTrocaSenhaObrigatoria());
+        assertNull(usuario.getEmail());
+        verify(usuarioRepository, never()).findByEmail(anyString());
+    }
+
+
+    @Test
+    void deveResetarSenhaParaHashDoReEExigirNovaTroca() {
+        UsuarioModel usuario = new UsuarioModel();
+        usuario.setRe("250861");
+        usuario.setAtivo(true);
+        usuario.setSenhaHash("hash-antigo");
+
+        when(usuarioRepository.findByRe("250861")).thenReturn(Optional.of(usuario));
+        when(passwordEncoder.encode("250861")).thenReturn("novo-hash-do-re");
+        when(usuarioRepository.save(usuario)).thenReturn(usuario);
+        when(usuarioMapper.map(usuario)).thenReturn(new pmesp.helpdesk37bpmm.Usuario.dto.UsuarioRespostaDTO());
+
+        usuarioServices.resetarSenha("250861");
+
+        assertEquals("novo-hash-do-re", usuario.getSenhaHash());
+        assertTrue(usuario.isTrocaSenhaObrigatoria());
+        verify(usuarioRepository).save(usuario);
     }
 
 

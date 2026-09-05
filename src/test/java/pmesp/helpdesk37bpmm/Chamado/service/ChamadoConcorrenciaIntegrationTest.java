@@ -73,6 +73,7 @@ class ChamadoConcorrenciaIntegrationTest {
         usuario.setEmail(email);
         usuario.setPostoGraduacao(UsuarioPostoGraduacao.SD);
         usuario.setAtivo(true);
+        usuario.setSenhaHash(re);
         return usuarioRepository.save(usuario);
     }
 

@@ -22,6 +22,5 @@ public class UsuarioDTO {
     @NotBlank(message = "Informe o RE do usuário.")
     private String re;
 
-    @NotBlank(message = "Informe o e-mail funcional do usuário.")
     private String email;
 }

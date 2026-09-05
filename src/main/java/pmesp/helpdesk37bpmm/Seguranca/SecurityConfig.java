@@ -10,6 +10,7 @@ import org.springframework.security.config.annotation.web.configurers.HeadersCon
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.access.intercept.AuthorizationFilter;
 import org.springframework.security.web.context.HttpSessionSecurityContextRepository;
 import org.springframework.security.web.context.SecurityContextRepository;
 
@@ -65,7 +66,9 @@ public class SecurityConfig {
     }
 
     @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity http, SecurityContextRepository securityContextRepository) throws Exception {
+    public SecurityFilterChain securityFilterChain(HttpSecurity http,
+                                                   SecurityContextRepository securityContextRepository,
+                                                   TrocaSenhaObrigatoriaFilter trocaSenhaObrigatoriaFilter) throws Exception {
         http
                 // API própria (sem formulário HTML tradicional) autenticada por sessão/cookie;
                 // desligamos o CSRF nesta primeira versão para não travar as chamadas do
@@ -78,13 +81,17 @@ public class SecurityConfig {
                 // O console do H2 usa <iframe> e só existe quando o profile "dev" está ativo
                 .headers(headers -> headers.frameOptions(HeadersConfigurer.FrameOptionsConfig::sameOrigin))
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/auth/login", "/auth/primeiro-acesso").permitAll()
+                        .requestMatchers("/auth/login").permitAll()
+                        .requestMatchers("/auth/sessao", "/auth/trocar-senha", "/logout").authenticated()
                         .requestMatchers(ARQUIVOS_PUBLICOS_DO_FRONTEND).permitAll()
                         .requestMatchers(ROTAS_DE_DOCUMENTACAO_DA_API).permitAll()
                         .requestMatchers("/h2-console/**").permitAll()
                         .requestMatchers(ROTAS_EXCLUSIVAS_DE_TECNICO).hasRole("TECNICO")
-                        .anyRequest().authenticated()
+                        // Uma sessão com troca pendente não recebe ROLE_USUARIO e, portanto,
+                        // não consegue contornar a tela acessando outra API diretamente.
+                        .anyRequest().hasRole("USUARIO")
                 )
+                .addFilterBefore(trocaSenhaObrigatoriaFilter, AuthorizationFilter.class)
                 // Invalida a sessão e limpa o cookie; devolve 204 em vez do redirecionamento
                 // padrão, já que quem chama aqui é o frontend via fetch(), não um formulário.
                 .logout(logout -> logout
