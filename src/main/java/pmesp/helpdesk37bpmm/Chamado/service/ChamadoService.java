@@ -191,6 +191,7 @@ public class ChamadoService {
 
     // Iniciar atendimento e definir o técnico responsável pelo chamado
     public ChamadoRespostaDTO iniciarAtendimento(Long chamadoId, String reTecnico) {
+        garantirQueTecnicoAutenticadoCorrespondeAoRe(reTecnico);
         // Encontrar o chamado e o técnico que vai iniciar o atendimento
         ChamadoModel chamado = buscarChamadoPorId(chamadoId);
         TecnicoModel tecnico = buscarTecnicoPorRe(reTecnico);
@@ -404,5 +405,14 @@ public class ChamadoService {
     private boolean autenticadoETecnico() {
         return SecurityContextHolder.getContext().getAuthentication().getAuthorities().stream()
                 .anyMatch(autoridade -> autoridade.getAuthority().equals("ROLE_TECNICO"));
+    }
+
+    // Impede um técnico de informar o RE de outro na URL e assumir o chamado em nome dele.
+    private void garantirQueTecnicoAutenticadoCorrespondeAoRe(String reTecnico) {
+        String reAutenticado = SecurityContextHolder.getContext().getAuthentication().getName();
+        if (!reAutenticado.equals(reTecnico)) {
+            throw new AcessoNegadoException("IDENTIDADE_TECNICA_DIVERGENTE",
+                    "O atendimento só pode ser iniciado pelo técnico autenticado.");
+        }
     }
 }

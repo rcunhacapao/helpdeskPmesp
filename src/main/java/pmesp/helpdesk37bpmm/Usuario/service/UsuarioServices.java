@@ -182,7 +182,18 @@ public class UsuarioServices {
 
     // O e-mail é opcional, mas continua seguindo o domínio institucional quando informado.
     private void validarEmailFuncional(String email) {
-        if (email != null && !email.toLowerCase().endsWith("@policiamilitar.sp.gov.br")) {
+        if (email == null) {
+            return;
+        }
+
+        int primeiroArroba = email.indexOf('@');
+        int ultimoArroba = email.lastIndexOf('@');
+        boolean formatoValido = primeiroArroba > 0
+                && primeiroArroba == ultimoArroba
+                && ultimoArroba < email.length() - 1;
+        String dominio = formatoValido ? email.substring(ultimoArroba + 1) : "";
+
+        if (!formatoValido || !dominio.equalsIgnoreCase("policiamilitar.sp.gov.br")) {
             throw new RegraDeNegocioException("EMAIL_FUNCIONAL_INVALIDO",
                     "Informe um e-mail funcional válido, terminado em @policiamilitar.sp.gov.br.");
         }

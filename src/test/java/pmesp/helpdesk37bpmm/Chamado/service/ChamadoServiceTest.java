@@ -109,17 +109,29 @@ class ChamadoServiceTest {
 
     @Test
     void deveImpedirInicioQuandoTecnicoEstiverIndisponivel() {
+        autenticarComoTecnico();
         ChamadoModel chamado = new ChamadoModel();
         chamado.setStatus(ChamadoStatus.ABERTO);
         TecnicoModel tecnico = new TecnicoModel();
         when(chamadoRepository.findById(1L)).thenReturn(Optional.of(chamado));
-        when(tecnicoService.buscarPorReComoModel("250861")).thenReturn(Optional.of(tecnico));
+        when(tecnicoService.buscarPorReComoModel("999999")).thenReturn(Optional.of(tecnico));
         when(tecnicoService.estaDisponivel(tecnico)).thenReturn(false);
 
         RegraDeNegocioException excecao = assertThrows(RegraDeNegocioException.class,
-                () -> chamadoService.iniciarAtendimento(1L, "250861"));
+                () -> chamadoService.iniciarAtendimento(1L, "999999"));
 
         assertEquals("TECNICO_INDISPONIVEL", excecao.getCodigo());
+    }
+
+
+    @Test
+    void deveImpedirTecnicoDeIniciarAtendimentoEmNomeDeOutro() {
+        autenticarComoTecnico();
+
+        AcessoNegadoException excecao = assertThrows(AcessoNegadoException.class,
+                () -> chamadoService.iniciarAtendimento(1L, "250861"));
+
+        assertEquals("IDENTIDADE_TECNICA_DIVERGENTE", excecao.getCodigo());
     }
 
 

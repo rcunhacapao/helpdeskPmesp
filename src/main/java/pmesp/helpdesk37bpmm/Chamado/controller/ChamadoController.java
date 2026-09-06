@@ -1,7 +1,10 @@
 package pmesp.helpdesk37bpmm.Chamado.controller;
 
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Pattern;
+import jakarta.validation.constraints.Size;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import pmesp.helpdesk37bpmm.Chamado.dto.ChamadoDTO;
 import pmesp.helpdesk37bpmm.Chamado.dto.ChamadoRespostaDTO;
@@ -13,6 +16,7 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/chamados")
+@Validated
 public class ChamadoController {
 
     @Autowired
@@ -71,21 +75,29 @@ public class ChamadoController {
 
     // Iniciar atendimento do chamado
     @PatchMapping("/iniciar-atendimento/{chamadoId}")
-    public ChamadoRespostaDTO iniciarAtendimento(@PathVariable Long chamadoId, @RequestParam String reTecnico) {
+    public ChamadoRespostaDTO iniciarAtendimento(@PathVariable Long chamadoId,
+                                                  @RequestParam
+                                                  @Pattern(regexp = "[0-9]{1,6}", message = "Informe o RE sem o dígito.")
+                                                  String reTecnico) {
         return chamadoService.iniciarAtendimento(chamadoId, reTecnico);
     }
 
 
     // Transferir chamado para outro técnico
     @PatchMapping("/transferir-responsavel/{chamadoId}")
-    public ChamadoRespostaDTO transferirResponsavel(@PathVariable Long chamadoId, @RequestParam String reTecnico) {
+    public ChamadoRespostaDTO transferirResponsavel(@PathVariable Long chamadoId,
+                                                     @RequestParam
+                                                     @Pattern(regexp = "[0-9]{1,6}", message = "Informe o RE sem o dígito.")
+                                                     String reTecnico) {
         return chamadoService.transferirResponsavel(chamadoId, reTecnico);
     }
 
     // Finalizar atendimento do chamado; a solução é opcional
     @PatchMapping("/finalizar/{chamadoId}")
     public ChamadoRespostaDTO finalizarAtendimento(@PathVariable Long chamadoId,
-                                                    @RequestParam(required = false) String solucao) {
+                                                    @RequestParam(required = false)
+                                                    @Size(max = 5000, message = "A solução ultrapassou o tamanho permitido.")
+                                                    String solucao) {
         return chamadoService.finalizarAtendimento(chamadoId, solucao);
     }
 

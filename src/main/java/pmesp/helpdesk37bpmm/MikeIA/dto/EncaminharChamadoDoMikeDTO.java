@@ -18,6 +18,7 @@ public class EncaminharChamadoDoMikeDTO {
     private ChamadoCategoria categoria;
 
     @NotBlank(message = "Informe o local ou setor para encaminhar o chamado.")
+    @Size(max = 200, message = "O local de atendimento ultrapassou o tamanho permitido.")
     private String localAtendimento;
 
     @NotNull(message = "Selecione a prioridade para encaminhar o chamado.")

@@ -1,7 +1,9 @@
 package pmesp.helpdesk37bpmm.Tecnico.service;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
+import pmesp.helpdesk37bpmm.Exception.AcessoNegadoException;
 import pmesp.helpdesk37bpmm.Exception.ConflitoException;
 import pmesp.helpdesk37bpmm.Exception.RecursoNaoEncontradoException;
 import pmesp.helpdesk37bpmm.Exception.RegraDeNegocioException;
@@ -104,6 +106,7 @@ public class TecnicoService {
 
     // Permitir que o técnico receba chamados neste momento
     public TecnicoRespostaDTO ficarDisponivel(String re) {
+        garantirQueTecnicoAlteraAPropriaDisponibilidade(re);
         TecnicoModel tecnico = buscarTecnicoPorRe(re);
 
         // Confirmar que o usuário desse técnico ainda está ativo
@@ -119,6 +122,7 @@ public class TecnicoService {
 
     // Parar de receber novos chamados neste momento
     public TecnicoRespostaDTO ficarIndisponivel(String re) {
+        garantirQueTecnicoAlteraAPropriaDisponibilidade(re);
         TecnicoModel tecnico = buscarTecnicoPorRe(re);
         tecnico.setDisponivel(false);
 
@@ -176,5 +180,14 @@ public class TecnicoService {
         }
 
         throw new RecursoNaoEncontradoException("TECNICO_NAO_ENCONTRADO", "Técnico não encontrado.");
+    }
+
+    // O RE da URL é apenas o alvo da operação; a identidade confiável vem da sessão.
+    private void garantirQueTecnicoAlteraAPropriaDisponibilidade(String re) {
+        String reAutenticado = SecurityContextHolder.getContext().getAuthentication().getName();
+        if (!reAutenticado.equals(re)) {
+            throw new AcessoNegadoException("DISPONIBILIDADE_DE_OUTRO_TECNICO",
+                    "Cada técnico só pode alterar a própria disponibilidade.");
+        }
     }
 }

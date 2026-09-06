@@ -1,6 +1,7 @@
 package pmesp.helpdesk37bpmm.RelatoErro.dto;
 
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -15,5 +16,6 @@ public class RelatarErroDTO {
     @NotNull(message = "Selecione o tipo do erro encontrado.")
     private TipoDeErro tipoErro;
 
+    @Size(max = 2000, message = "A observação ultrapassou o tamanho permitido.")
     private String observacao;
 }
