@@ -42,7 +42,7 @@ Existem dois caminhos de entrada. O usuário comum inicia uma abertura orientada
 
 ## Interface
 
-| Atendimento guiado ao usuário |
+### Atendimento guiado ao usuário 
 
 ![Atendimento guiado pelo Mike para abertura de chamado](docs/screenshots/abertura-chamado-mike.png)
 
