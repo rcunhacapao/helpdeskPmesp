@@ -1,3 +1,5 @@
+### PROJETO NÃO OFICIAL
+
 # Helpdesk Telemática - PMESP
 
 ## Tecnologias e ferramentas
