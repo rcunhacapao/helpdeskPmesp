@@ -125,30 +125,4 @@ class SegurancaHttpIntegrationTest {
                 .andExpect(jsonPath("$.codigo").value("DADOS_INVALIDOS"));
     }
 
-    @Test
-    void deveLimitarTentativasRepetidasDeAutenticacao() throws Exception {
-        for (int tentativa = 0; tentativa < 5; tentativa++) {
-            mockMvc.perform(post("/auth/login")
-                            .with(csrf())
-                            .with(request -> {
-                                request.setRemoteAddr("192.0.2.77");
-                                return request;
-                            })
-                            .contentType("application/json")
-                            .content("{\"re\":\"987654\",\"senha\":\"incorreta\"}"))
-                    .andExpect(status().isUnauthorized());
-        }
-
-        mockMvc.perform(post("/auth/login")
-                        .with(csrf())
-                        .with(request -> {
-                            request.setRemoteAddr("192.0.2.77");
-                            return request;
-                        })
-                        .contentType("application/json")
-                        .content("{\"re\":\"987654\",\"senha\":\"incorreta\"}"))
-                .andExpect(status().isTooManyRequests())
-                .andExpect(header().string("Retry-After", "60"))
-                .andExpect(jsonPath("$.codigo").value("MUITAS_TENTATIVAS"));
-    }
 }

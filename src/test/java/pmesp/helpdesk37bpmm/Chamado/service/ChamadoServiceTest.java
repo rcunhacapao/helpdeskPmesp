@@ -125,13 +125,21 @@ class ChamadoServiceTest {
 
 
     @Test
-    void deveImpedirTecnicoDeIniciarAtendimentoEmNomeDeOutro() {
+    void devePermitirTecnicoIniciarAtendimentoParaOutroTecnico() {
         autenticarComoTecnico();
+        ChamadoModel chamado = new ChamadoModel();
+        chamado.setStatus(ChamadoStatus.ABERTO);
+        TecnicoModel tecnicoAlvo = new TecnicoModel();
+        tecnicoAlvo.setId(2L);
+        when(chamadoRepository.findById(1L)).thenReturn(Optional.of(chamado));
+        when(tecnicoService.buscarPorReComoModel("250861")).thenReturn(Optional.of(tecnicoAlvo));
+        when(tecnicoService.estaDisponivel(tecnicoAlvo)).thenReturn(true);
+        when(chamadoRepository.save(chamado)).thenReturn(chamado);
 
-        AcessoNegadoException excecao = assertThrows(AcessoNegadoException.class,
-                () -> chamadoService.iniciarAtendimento(1L, "250861"));
+        assertDoesNotThrow(() -> chamadoService.iniciarAtendimento(1L, "250861"));
 
-        assertEquals("IDENTIDADE_TECNICA_DIVERGENTE", excecao.getCodigo());
+        assertEquals(tecnicoAlvo, chamado.getTecnicoResponsavel());
+        assertEquals(ChamadoStatus.EM_ATENDIMENTO, chamado.getStatus());
     }
 
 

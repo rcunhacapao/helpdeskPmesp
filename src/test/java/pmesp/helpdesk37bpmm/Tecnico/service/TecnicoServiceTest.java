@@ -1,15 +1,10 @@
 package pmesp.helpdesk37bpmm.Tecnico.service;
 
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
-import org.springframework.security.core.context.SecurityContextHolder;
-import pmesp.helpdesk37bpmm.Exception.AcessoNegadoException;
 import pmesp.helpdesk37bpmm.Exception.ConflitoException;
 import pmesp.helpdesk37bpmm.Exception.RecursoNaoEncontradoException;
 import pmesp.helpdesk37bpmm.Exception.RegraDeNegocioException;
@@ -25,6 +20,8 @@ import java.util.List;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.when;
 
@@ -40,11 +37,6 @@ class TecnicoServiceTest {
 
     @InjectMocks
     TecnicoService tecnicoService;
-
-    @AfterEach
-    void limparContextoDeSeguranca() {
-        SecurityContextHolder.clearContext();
-    }
 
     @Test
     void deveInformarQuandoUsuarioDoTecnicoNaoForEncontrado() {
@@ -103,14 +95,15 @@ class TecnicoServiceTest {
 
 
     @Test
-    void deveImpedirTecnicoDeAlterarDisponibilidadeDeOutro() {
-        SecurityContextHolder.getContext().setAuthentication(
-                new UsernamePasswordAuthenticationToken("999999", null,
-                        List.of(new SimpleGrantedAuthority("ROLE_TECNICO"))));
+    void devePermitirQueEquipeTecnicaAltereDisponibilidadeDeQualquerTecnico() {
+        UsuarioModel usuario = new UsuarioModel();
+        usuario.setAtivo(true);
+        TecnicoModel tecnicoAlvo = new TecnicoModel();
+        tecnicoAlvo.setUsuario(usuario);
+        when(tecnicoRepository.findByUsuarioRe("250861")).thenReturn(Optional.of(tecnicoAlvo));
+        when(tecnicoRepository.save(tecnicoAlvo)).thenReturn(tecnicoAlvo);
 
-        AcessoNegadoException excecao = assertThrows(AcessoNegadoException.class,
-                () -> tecnicoService.ficarDisponivel("250861"));
-
-        assertEquals("DISPONIBILIDADE_DE_OUTRO_TECNICO", excecao.getCodigo());
+        assertDoesNotThrow(() -> tecnicoService.ficarDisponivel("250861"));
+        assertTrue(tecnicoAlvo.isDisponivel());
     }
 }

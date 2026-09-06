@@ -22,7 +22,6 @@ import pmesp.helpdesk37bpmm.Autenticacao.dto.LoginRespostaDTO;
 import pmesp.helpdesk37bpmm.Autenticacao.dto.TrocaSenhaDTO;
 import pmesp.helpdesk37bpmm.Autenticacao.service.AutenticacaoService;
 import pmesp.helpdesk37bpmm.Exception.AcessoNegadoException;
-import pmesp.helpdesk37bpmm.Seguranca.LimiteTentativasLogin;
 
 import java.util.Map;
 
@@ -36,8 +35,6 @@ public class AutenticacaoController {
     private SecurityContextRepository securityContextRepository;
     @Autowired
     private AutenticacaoService autenticacaoService;
-    @Autowired
-    private LimiteTentativasLogin limiteTentativasLogin;
 
     // Entrega ao frontend o token anti-CSRF da sessão sem expor nenhum dado de autenticação.
     @GetMapping("/csrf")
@@ -48,11 +45,9 @@ public class AutenticacaoController {
     // Autentica com RE + senha e guarda o login na sessão para as próximas requisições
     @PostMapping("/login")
     public LoginRespostaDTO login(@Valid @RequestBody LoginDTO loginDTO, HttpServletRequest request, HttpServletResponse response) {
-        limiteTentativasLogin.consumirTentativa(request.getRemoteAddr(), loginDTO.getRe());
         Authentication autenticacao = authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(loginDTO.getRe(), loginDTO.getSenha()));
 
-        limiteTentativasLogin.registrarSucesso(request.getRemoteAddr(), loginDTO.getRe());
         salvarAutenticacaoNaSessao(autenticacao, request, response);
 
         return autenticacaoService.montarRespostaDeLogin(loginDTO.getRe());

@@ -73,16 +73,6 @@ public class TratadorDeExcecoes {
         return criarResposta(HttpStatus.UNAUTHORIZED, "CREDENCIAIS_INVALIDAS", "RE ou senha inválidos.");
     }
 
-    // O tempo de espera é informado também no cabeçalho padrão para clientes automatizados.
-    @ExceptionHandler(MuitasTentativasException.class)
-    public ResponseEntity<RespostaErroDTO> tratarMuitasTentativas(MuitasTentativasException excecao) {
-        RespostaErroDTO resposta = new RespostaErroDTO(HttpStatus.TOO_MANY_REQUESTS.value(),
-                "MUITAS_TENTATIVAS", excecao.getMessage(), LocalDateTime.now());
-        return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS)
-                .header("Retry-After", "60")
-                .body(resposta);
-    }
-
     // Responder com 400 quando o JSON estiver mal preenchido
     @ExceptionHandler(HttpMessageNotReadableException.class)
     public ResponseEntity<RespostaErroDTO> tratarDadosInvalidos() {
