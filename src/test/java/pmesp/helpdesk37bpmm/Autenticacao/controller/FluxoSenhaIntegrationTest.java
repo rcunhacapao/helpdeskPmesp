@@ -20,6 +20,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 import static org.springframework.test.web.servlet.setup.MockMvcBuilders.webAppContextSetup;
@@ -60,6 +61,7 @@ class FluxoSenhaIntegrationTest {
         MockHttpSession sessaoDoTecnico = autenticar("100001", "senha123");
 
         mockMvc.perform(post("/usuarios/cadastrar")
+                        .with(csrf())
                         .session(sessaoDoTecnico)
                         .contentType("application/json")
                         .content("""
@@ -74,6 +76,7 @@ class FluxoSenhaIntegrationTest {
         assertTrue(passwordEncoder.matches("250861", usuarioNovo.getSenhaHash()));
 
         MvcResult primeiroLogin = mockMvc.perform(post("/auth/login")
+                        .with(csrf())
                         .contentType("application/json")
                         .content("{\"re\":\"250861\",\"senha\":\"250861\"}"))
                 .andExpect(status().isOk())
@@ -85,6 +88,7 @@ class FluxoSenhaIntegrationTest {
                 .andExpect(status().isForbidden());
 
         mockMvc.perform(post("/auth/trocar-senha")
+                        .with(csrf())
                         .session(sessaoDoUsuario)
                         .contentType("application/json")
                         .content("""
@@ -94,6 +98,7 @@ class FluxoSenhaIntegrationTest {
                 .andExpect(jsonPath("$.codigo").value("SENHA_IGUAL_AO_RE"));
 
         mockMvc.perform(post("/auth/trocar-senha")
+                        .with(csrf())
                         .session(sessaoDoUsuario)
                         .contentType("application/json")
                         .content("""
@@ -109,7 +114,7 @@ class FluxoSenhaIntegrationTest {
         recusarLogin("250861", "250861");
         autenticar("250861", "senhaNova1");
 
-        mockMvc.perform(patch("/usuarios/resetar-senha/250861").session(sessaoDoTecnico))
+        mockMvc.perform(patch("/usuarios/resetar-senha/250861").with(csrf()).session(sessaoDoTecnico))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.trocaSenhaObrigatoria").value(true));
 
@@ -119,6 +124,7 @@ class FluxoSenhaIntegrationTest {
                 .andExpect(jsonPath("$.codigo").value("TROCA_SENHA_OBRIGATORIA"));
 
         MvcResult loginDepoisDoReset = mockMvc.perform(post("/auth/login")
+                        .with(csrf())
                         .contentType("application/json")
                         .content("{\"re\":\"250861\",\"senha\":\"250861\"}"))
                 .andExpect(status().isOk())
@@ -136,6 +142,7 @@ class FluxoSenhaIntegrationTest {
 
     private MockHttpSession autenticar(String re, String senha) throws Exception {
         MvcResult resultado = mockMvc.perform(post("/auth/login")
+                        .with(csrf())
                         .contentType("application/json")
                         .content("{\"re\":\"" + re + "\",\"senha\":\"" + senha + "\"}"))
                 .andExpect(status().isOk())
@@ -145,6 +152,7 @@ class FluxoSenhaIntegrationTest {
 
     private void recusarLogin(String re, String senha) throws Exception {
         mockMvc.perform(post("/auth/login")
+                        .with(csrf())
                         .contentType("application/json")
                         .content("{\"re\":\"" + re + "\",\"senha\":\"" + senha + "\"}"))
                 .andExpect(status().isUnauthorized());
@@ -152,6 +160,7 @@ class FluxoSenhaIntegrationTest {
 
     private void trocarSenha(MockHttpSession sessao, String novaSenha) throws Exception {
         mockMvc.perform(post("/auth/trocar-senha")
+                        .with(csrf())
                         .session(sessao)
                         .contentType("application/json")
                         .content("{\"novaSenha\":\"" + novaSenha

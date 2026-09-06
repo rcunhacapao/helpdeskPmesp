@@ -62,11 +62,23 @@ const filtrosDaFila = document.querySelectorAll('[data-queue-filter]');
 // fácil de mostrar na tela.
 // ============================================================
 async function apiFetch(caminho, opcoes = {}) {
+    const metodo = (opcoes.method || 'GET').toUpperCase();
     const configuracao = {
-        method: opcoes.method || 'GET',
-        credentials: 'include',
+        method: metodo,
+        credentials: 'same-origin',
         headers: { 'Content-Type': 'application/json', ...(opcoes.headers || {}) }
     };
+
+    // Como a autenticação usa cookie de sessão, toda alteração envia também um token
+    // anti-CSRF. O token é buscado a cada operação para continuar válido após login/logout.
+    if (!['GET', 'HEAD', 'OPTIONS'].includes(metodo)) {
+        const respostaCsrf = await fetch('/auth/csrf', { credentials: 'same-origin' });
+        if (!respostaCsrf.ok) {
+            throw new Error('Não foi possível validar a segurança da operação. Atualize a página e tente novamente.');
+        }
+        const csrf = await respostaCsrf.json();
+        configuracao.headers[csrf.headerName] = csrf.token;
+    }
     if (opcoes.body !== undefined) {
         configuracao.body = JSON.stringify(opcoes.body);
     }

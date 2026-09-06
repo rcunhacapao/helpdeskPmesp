@@ -13,6 +13,7 @@ import org.springframework.web.context.WebApplicationContext;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 import static org.springframework.test.web.servlet.setup.MockMvcBuilders.webAppContextSetup;
@@ -50,6 +51,7 @@ class SessaoAutenticadaIntegrationTest {
     @Test
     void deveManterASessaoDepoisDoLogin() throws Exception {
         MvcResult resultadoDoLogin = mockMvc.perform(post("/auth/login")
+                        .with(csrf())
                         .contentType("application/json")
                         .content("{\"re\":\"100001\",\"senha\":\"senha123\"}"))
                 .andExpect(status().isOk())

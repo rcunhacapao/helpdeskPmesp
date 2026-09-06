@@ -13,6 +13,7 @@ import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.access.intercept.AuthorizationFilter;
 import org.springframework.security.web.context.HttpSessionSecurityContextRepository;
 import org.springframework.security.web.context.SecurityContextRepository;
+import org.springframework.security.web.header.writers.StaticHeadersWriter;
 
 import jakarta.servlet.http.HttpServletResponse;
 
@@ -29,9 +30,8 @@ public class SecurityConfig {
             "/*.css", "/*.js", "/*.png", "/*.jpeg"
     };
 
-    // Documentação da API (Swagger UI). Só descreve os endpoints, não expõe dados —
-    // por isso fica pública, como a página de login. Se o projeto for exposto fora da
-    // rede interna da PMESP, reavaliar se isso deve continuar público.
+    // A documentação só é habilitada pelo perfil de desenvolvimento. Quando estiver
+    // desabilitada, estes caminhos não existem; a regra mantém o Swagger utilizável no dev.
     private static final String[] ROTAS_DE_DOCUMENTACAO_DA_API = {
             "/swagger-ui.html", "/swagger-ui/**", "/v3/api-docs/**", "/v3/api-docs.yaml"
     };
@@ -70,16 +70,13 @@ public class SecurityConfig {
                                                    SecurityContextRepository securityContextRepository,
                                                    TrocaSenhaObrigatoriaFilter trocaSenhaObrigatoriaFilter) throws Exception {
         http
-                // API própria (sem formulário HTML tradicional) autenticada por sessão/cookie;
-                // desligamos o CSRF nesta primeira versão para não travar as chamadas do
-                // frontend antes de ele enviar o token — reavaliar quando o login estiver
-                // integrado de ponta a ponta.
-                .csrf(AbstractHttpConfigurer::disable)
+                // A proteção CSRF padrão usa um token vinculado à sessão. O frontend busca
+                // esse valor em /auth/csrf e o envia em toda operação que altera dados.
                 .formLogin(AbstractHttpConfigurer::disable)
                 .httpBasic(AbstractHttpConfigurer::disable)
                 .securityContext(security -> security.securityContextRepository(securityContextRepository))
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/auth/login").permitAll()
+                        .requestMatchers("/auth/csrf", "/auth/login").permitAll()
                         .requestMatchers("/auth/sessao", "/auth/trocar-senha", "/logout").authenticated()
                         .requestMatchers(ARQUIVOS_PUBLICOS_DO_FRONTEND).permitAll()
                         .requestMatchers(ROTAS_DE_DOCUMENTACAO_DA_API).permitAll()
@@ -91,14 +88,40 @@ public class SecurityConfig {
                         .anyRequest().hasRole("USUARIO")
                 )
                 .addFilterBefore(trocaSenhaObrigatoriaFilter, AuthorizationFilter.class)
+                .headers(headers -> headers
+                        .addHeaderWriter(new StaticHeadersWriter("Content-Security-Policy",
+                                "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; "
+                                        + "img-src 'self' data:; connect-src 'self'; font-src 'self'; "
+                                        + "object-src 'none'; base-uri 'self'; frame-ancestors 'none'; "
+                                        + "form-action 'self'"))
+                        .addHeaderWriter(new StaticHeadersWriter("Referrer-Policy", "no-referrer"))
+                        .addHeaderWriter(new StaticHeadersWriter("Permissions-Policy",
+                                "camera=(), microphone=(), geolocation=()")))
+                .exceptionHandling(excecoes -> excecoes
+                        .authenticationEntryPoint((request, response, exception) ->
+                                escreverErroDeSeguranca(response, HttpServletResponse.SC_UNAUTHORIZED,
+                                        "AUTENTICACAO_NECESSARIA", "Faça login para acessar este recurso."))
+                        .accessDeniedHandler((request, response, exception) ->
+                                escreverErroDeSeguranca(response, HttpServletResponse.SC_FORBIDDEN,
+                                        "ACESSO_NEGADO", "Você não tem permissão para realizar esta ação.")))
                 // Invalida a sessão e limpa o cookie; devolve 204 em vez do redirecionamento
                 // padrão, já que quem chama aqui é o frontend via fetch(), não um formulário.
                 .logout(logout -> logout
                         .logoutUrl("/logout")
+                        .deleteCookies("JSESSIONID")
                         .logoutSuccessHandler((request, response, authentication) ->
                                 response.setStatus(HttpServletResponse.SC_NO_CONTENT))
                 );
 
         return http.build();
+    }
+
+    private void escreverErroDeSeguranca(HttpServletResponse response, int status,
+                                         String codigo, String mensagem) throws java.io.IOException {
+        response.setStatus(status);
+        response.setCharacterEncoding("UTF-8");
+        response.setContentType("application/json");
+        response.getWriter().write("{\"status\":" + status + ",\"codigo\":\"" + codigo
+                + "\",\"mensagem\":\"" + mensagem + "\"}");
     }
 }

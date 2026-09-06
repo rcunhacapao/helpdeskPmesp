@@ -120,7 +120,9 @@ class FrontendEstaticoTest {
 
                 // Comunicação real com a API, não mais dados simulados em memória
                 () -> assertTrue(comportamento.contains("async function apiFetch")),
-                () -> assertTrue(comportamento.contains("credentials: 'include'")),
+                () -> assertTrue(comportamento.contains("credentials: 'same-origin'")),
+                () -> assertTrue(comportamento.contains("fetch('/auth/csrf'")),
+                () -> assertTrue(comportamento.contains("configuracao.headers[csrf.headerName] = csrf.token")),
                 () -> assertTrue(comportamento.contains("apiFetch('/auth/login'")),
                 () -> assertTrue(comportamento.contains("apiFetch('/auth/sessao'")),
                 () -> assertTrue(comportamento.contains("configurarAtualizacaoAutomaticaDoUsuario")),

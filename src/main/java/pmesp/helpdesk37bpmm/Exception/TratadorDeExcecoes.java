@@ -1,5 +1,6 @@
 package pmesp.helpdesk37bpmm.Exception;
 
+import jakarta.validation.ConstraintViolationException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.dao.OptimisticLockingFailureException;
@@ -13,6 +14,8 @@ import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
+import org.springframework.web.method.annotation.HandlerMethodValidationException;
+import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 import java.time.LocalDateTime;
 import java.util.stream.Collectors;
@@ -27,6 +30,14 @@ public class TratadorDeExcecoes {
     @ExceptionHandler(RecursoNaoEncontradoException.class)
     public ResponseEntity<RespostaErroDTO> tratarRecursoNaoEncontrado(RecursoNaoEncontradoException excecao) {
         return criarResposta(HttpStatus.NOT_FOUND, excecao.getCodigo(), excecao.getMessage());
+    }
+
+    // Uma URL sem controller ou arquivo estático correspondente também é 404. Sem este
+    // caso, o handler genérico convertia a ausência do recurso em erro interno 500.
+    @ExceptionHandler(NoResourceFoundException.class)
+    public ResponseEntity<RespostaErroDTO> tratarRotaNaoEncontrada() {
+        return criarResposta(HttpStatus.NOT_FOUND, "ROTA_NAO_ENCONTRADA",
+                "O recurso solicitado não foi encontrado.");
     }
 
     // Responder com 400 quando uma regra do sistema não permitir a ação
@@ -62,6 +73,16 @@ public class TratadorDeExcecoes {
         return criarResposta(HttpStatus.UNAUTHORIZED, "CREDENCIAIS_INVALIDAS", "RE ou senha inválidos.");
     }
 
+    // O tempo de espera é informado também no cabeçalho padrão para clientes automatizados.
+    @ExceptionHandler(MuitasTentativasException.class)
+    public ResponseEntity<RespostaErroDTO> tratarMuitasTentativas(MuitasTentativasException excecao) {
+        RespostaErroDTO resposta = new RespostaErroDTO(HttpStatus.TOO_MANY_REQUESTS.value(),
+                "MUITAS_TENTATIVAS", excecao.getMessage(), LocalDateTime.now());
+        return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS)
+                .header("Retry-After", "60")
+                .body(resposta);
+    }
+
     // Responder com 400 quando o JSON estiver mal preenchido
     @ExceptionHandler(HttpMessageNotReadableException.class)
     public ResponseEntity<RespostaErroDTO> tratarDadosInvalidos() {
@@ -92,6 +113,14 @@ public class TratadorDeExcecoes {
     public ResponseEntity<RespostaErroDTO> tratarValorInvalido() {
         return criarResposta(HttpStatus.BAD_REQUEST, "VALOR_INVALIDO",
                 "O valor informado não é válido para este campo.");
+    }
+
+    // Validações aplicadas diretamente em parâmetros de rota e query string também
+    // precisam produzir um 400 controlado, nunca cair no erro interno genérico.
+    @ExceptionHandler({HandlerMethodValidationException.class, ConstraintViolationException.class})
+    public ResponseEntity<RespostaErroDTO> tratarParametroForaDosLimites() {
+        return criarResposta(HttpStatus.BAD_REQUEST, "DADOS_INVALIDOS",
+                "Um dos valores informados não respeita o formato ou o tamanho permitido.");
     }
 
     // Evitar expor detalhes internos do Java ou do banco de dados na resposta da API,
