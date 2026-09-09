@@ -1,6 +1,6 @@
 package pmesp.helpdesk37bpmm.Chamado.service;
 
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import pmesp.helpdesk37bpmm.Chamado.dto.ChamadoDTO;
@@ -29,18 +29,15 @@ import java.util.List;
 import java.util.Optional;
 
 @Service
+@RequiredArgsConstructor
 public class ChamadoService {
 
-    @Autowired
-    private ChamadoRepository chamadoRepository;
-    @Autowired
-    private UsuarioRepository usuarioRepository;
-    @Autowired
-    private ChamadoMapper chamadoMapper;
-    @Autowired
-    private TecnicoService tecnicoService;
+    private final ChamadoRepository chamadoRepository;
+    private final UsuarioRepository usuarioRepository;
+    private final ChamadoMapper chamadoMapper;
+    private final TecnicoService tecnicoService;
 
-    // Cadastrar novo chamado usando os dados do ChamadoDTO
+
     public ChamadoRespostaDTO criar(ChamadoDTO chamadoDTO) {
         // Usuários comuns iniciam pelo fluxo integrado com o Mike IA. Esta validação no
         // backend impede que alguém burle a interface e pule o diagnóstico.
@@ -49,10 +46,8 @@ public class ChamadoService {
                     "O atendimento deve ser iniciado pela tela de abertura de chamado.");
         }
 
-        // Conferir se todos os dados obrigatórios foram enviados
         validarDadosParaAbrirChamado(chamadoDTO);
 
-        // Encontrar quem está abrindo o chamado
         Optional<UsuarioModel> buscarRe = usuarioRepository.findByRe(chamadoDTO.getRe());
         if (buscarRe.isEmpty()) {
             throw new RecursoNaoEncontradoException("USUARIO_NAO_ENCONTRADO",
@@ -74,11 +69,9 @@ public class ChamadoService {
                     "Somente um técnico pode abrir um chamado em nome de outra pessoa.");
         }
 
-        // Definir responsável automático somente quando houver um técnico disponível
         TecnicoModel tecnicoResponsavel = tecnicoService.buscarTecnicoDisponivelParaNovoChamado();
         ChamadoModel chamadoNovo = chamadoMapper.map(chamadoDTO);
 
-        // Definir os dados que são regras do sistema
         chamadoNovo.setSolicitante(solicitante);
         // "Aberto por" só é preenchido quando o técnico registra em nome de outra pessoa
         chamadoNovo.setAbertoPor(abrindoParaOutraPessoa ? usuarioAutenticado : null);
@@ -88,20 +81,15 @@ public class ChamadoService {
         chamadoNovo.setStatus(ChamadoStatus.ABERTO);
         chamadoNovo.setMotivoCancelamento(null);
 
-        // Transformar o chamado salvo em resposta para a API
         return chamadoMapper.map(chamadoRepository.save(chamadoNovo));
     }
 
-
-    // Pesquisar chamado por ID
     public ChamadoRespostaDTO buscarPorId(Long chamadoId) {
         ChamadoModel chamado = buscarChamadoPorId(chamadoId);
         garantirAcessoAoChamado(chamado);
         return chamadoMapper.map(chamado);
     }
 
-
-    // Listar todos os chamados do usuário autenticado (tela "Meus chamados")
     public List<ChamadoRespostaDTO> listarChamadosDoUsuarioAutenticado() {
         UsuarioModel usuarioAutenticado = usuarioAutenticado();
         List<ChamadoModel> chamados = chamadoRepository.findBySolicitanteOrderByDataAberturaDesc(usuarioAutenticado);
@@ -114,8 +102,6 @@ public class ChamadoService {
         return resposta;
     }
 
-
-    // Mostrar chamados abertos na ordem correta da fila de atendimento
     public List<ChamadoRespostaDTO> listarFilaAtendimento() {
         List<ChamadoModel> chamadosAbertos = chamadoRepository.findByStatusOrderByDataAberturaAsc(ChamadoStatus.ABERTO);
         List<ChamadoRespostaDTO> fila = new ArrayList<>();
@@ -128,8 +114,6 @@ public class ChamadoService {
         return fila;
     }
 
-
-    // Mostrar chamados que já estão sendo atendidos
     public List<ChamadoRespostaDTO> listarChamadosEmAtendimento() {
         List<ChamadoModel> chamadosEmAtendimento = chamadoRepository.findByStatusOrderByDataAberturaAsc(ChamadoStatus.EM_ATENDIMENTO);
         List<ChamadoRespostaDTO> resposta = new ArrayList<>();
@@ -140,7 +124,6 @@ public class ChamadoService {
 
         return resposta;
     }
-
 
     // Contar chamados abertos hoje, nesta semana e neste mês, para os cartões da Central
     // Técnica. Chamados cancelados nunca contam, em nenhum dos três períodos: um chamado
@@ -158,10 +141,8 @@ public class ChamadoService {
         return new ResumoChamadosDTO(chamadosHoje, chamadosSemana, chamadosMes);
     }
 
-
     // Adicionar na fila somente os chamados de uma prioridade
-    private void adicionarChamadosDaPrioridadeNaFila(List<ChamadoModel> chamadosAbertos,
-                                                     ChamadoPrioridade prioridade, List<ChamadoRespostaDTO> fila) {
+    private void adicionarChamadosDaPrioridadeNaFila(List<ChamadoModel> chamadosAbertos, ChamadoPrioridade prioridade, List<ChamadoRespostaDTO> fila) {
         for (ChamadoModel chamado : chamadosAbertos) {
             if (chamado.getPrioridade() == prioridade) {
                 fila.add(chamadoMapper.map(chamado));
@@ -169,8 +150,6 @@ public class ChamadoService {
         }
     }
 
-
-    // Atualizar a prioridade do chamado
     public ChamadoRespostaDTO atualizarPrioridade(Long chamadoId, ChamadoPrioridade prioridade) {
         // Não permitir atualizar sem escolher uma prioridade
         if (prioridade == null) {
@@ -188,10 +167,7 @@ public class ChamadoService {
         return chamadoMapper.map(chamadoRepository.save(chamado));
     }
 
-
-    // Iniciar atendimento e definir o técnico responsável pelo chamado
     public ChamadoRespostaDTO iniciarAtendimento(Long chamadoId, String reTecnico) {
-        // Encontrar o chamado e o técnico que vai iniciar o atendimento
         ChamadoModel chamado = buscarChamadoPorId(chamadoId);
         TecnicoModel tecnico = buscarTecnicoPorRe(reTecnico);
 
@@ -214,16 +190,12 @@ public class ChamadoService {
                     "Este chamado já está atribuído a outro técnico. Use a transferência de responsável.");
         }
 
-        // Registrar o responsável e alterar o status para em atendimento
         chamado.setTecnicoResponsavel(tecnico);
         chamado.setStatus(ChamadoStatus.EM_ATENDIMENTO);
         return chamadoMapper.map(chamadoRepository.save(chamado));
     }
 
-
-    // Transferir chamado para outro técnico ativo
     public ChamadoRespostaDTO transferirResponsavel(Long chamadoId, String reTecnico) {
-        // Encontrar o chamado e o novo técnico responsável
         ChamadoModel chamado = buscarChamadoPorId(chamadoId);
         TecnicoModel tecnico = buscarTecnicoPorRe(reTecnico);
 
@@ -244,7 +216,6 @@ public class ChamadoService {
         return chamadoMapper.map(chamadoRepository.save(chamado));
     }
 
-
     // Finalizar atendimento do chamado. A solução é opcional: o técnico pode registrar
     // o que foi feito, mas isso não impede a finalização quando não for informada.
     public ChamadoRespostaDTO finalizarAtendimento(Long chamadoId, String solucao) {
@@ -256,7 +227,6 @@ public class ChamadoService {
                     "Somente chamados em atendimento podem ser finalizados.");
         }
 
-        // Registrar a data final e marcar o chamado como fechado
         chamado.finalizarAtendimento();
         chamado.setStatus(ChamadoStatus.FECHADO);
         chamado.setResolvidoPor(ChamadoResolvidoPor.TECNICO);
@@ -266,8 +236,6 @@ public class ChamadoService {
         return chamadoMapper.map(chamadoRepository.save(chamado));
     }
 
-
-    // Cancelar apenas chamado que ainda está aberto
     public ChamadoRespostaDTO cancelarChamado(Long chamadoId, String motivoCancelamento) {
         ChamadoModel chamado = buscarChamadoPorId(chamadoId);
         garantirAcessoAoChamado(chamado);
@@ -290,15 +258,12 @@ public class ChamadoService {
         return chamadoMapper.map(chamadoRepository.save(chamado));
     }
 
-
-    // Motivos aceitos para cancelamento
     private boolean motivoCancelamentoValido(String motivoCancelamento) {
         return "RESOLVIDO_NO_LOCAL".equals(motivoCancelamento)
                 || "NAO_HA_MAIS_NECESSIDADE".equals(motivoCancelamento)
                 || "CHAMADO_DUPLICADO".equals(motivoCancelamento)
                 || "OUTRO".equals(motivoCancelamento);
     }
-
 
     // Cancelar chamados abertos quando o usuário for inativado
     public void cancelarChamadosAbertosDoUsuario(UsuarioModel usuario) {
@@ -313,7 +278,6 @@ public class ChamadoService {
         }
     }
 
-
     // Verificar se técnico ainda possui chamados para atender
     public boolean temChamadosPendentesDoTecnico(TecnicoModel tecnico) {
         List<ChamadoModel> chamadosAbertos = chamadoRepository.findByTecnicoResponsavelAndStatus(tecnico, ChamadoStatus.ABERTO);
@@ -322,16 +286,12 @@ public class ChamadoService {
         return !chamadosAbertos.isEmpty() || !chamadosEmAtendimento.isEmpty();
     }
 
-
-    // Validar os dados obrigatórios para abrir um chamado
     private void validarDadosParaAbrirChamado(ChamadoDTO chamadoDTO) {
-        // Conferir se o corpo do cadastro foi enviado
         if (chamadoDTO == null) {
             throw new RegraDeNegocioException("DADOS_CHAMADO_INVALIDOS",
                     "Envie os dados necessários para abrir o chamado.");
         }
 
-        // Conferir cada campo que a pessoa precisa informar
         ValidadorDeRe.validar(chamadoDTO.getRe());
 
         if (chamadoDTO.getDescricao() == null || chamadoDTO.getDescricao().isBlank()) {
@@ -352,8 +312,6 @@ public class ChamadoService {
         }
     }
 
-
-    // Buscar chamado e informar quando ele não existir
     private ChamadoModel buscarChamadoPorId(Long chamadoId) {
         Optional<ChamadoModel> chamado = chamadoRepository.findById(chamadoId);
 
@@ -364,8 +322,6 @@ public class ChamadoService {
         throw new RecursoNaoEncontradoException("CHAMADO_NAO_ENCONTRADO", "Chamado não encontrado.");
     }
 
-
-    // Buscar técnico pelo RE e informar quando ele não existir
     private TecnicoModel buscarTecnicoPorRe(String reTecnico) {
         Optional<TecnicoModel> tecnico = tecnicoService.buscarPorReComoModel(reTecnico);
 
@@ -375,7 +331,6 @@ public class ChamadoService {
 
         throw new RecursoNaoEncontradoException("TECNICO_NAO_ENCONTRADO", "Técnico não encontrado.");
     }
-
 
     // Um usuário comum só pode acessar os próprios chamados; o técnico pode acessar todos.
     // Fica centralizado aqui para que, quando existir separação por equipe/unidade no futuro,
@@ -391,16 +346,12 @@ public class ChamadoService {
         }
     }
 
-
-    // Descobrir, pela sessão autenticada, qual usuário está fazendo a requisição
     private UsuarioModel usuarioAutenticado() {
         String re = SecurityContextHolder.getContext().getAuthentication().getName();
         return usuarioRepository.findByRe(re)
                 .orElseThrow(() -> new RecursoNaoEncontradoException("USUARIO_NAO_ENCONTRADO", "Usuário não encontrado."));
     }
 
-
-    // Confirmar se quem está autenticado tem o perfil de técnico
     private boolean autenticadoETecnico() {
         return SecurityContextHolder.getContext().getAuthentication().getAuthorities().stream()
                 .anyMatch(autoridade -> autoridade.getAuthority().equals("ROLE_TECNICO"));

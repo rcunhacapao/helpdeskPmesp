@@ -1,6 +1,6 @@
 package pmesp.helpdesk37bpmm.Usuario.service;
 
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -21,32 +21,21 @@ import pmesp.helpdesk37bpmm.Usuario.repository.UsuarioRepository;
 import java.util.Optional;
 
 @Service
+@RequiredArgsConstructor
 public class UsuarioServices {
 
-    @Autowired
-    private UsuarioRepository usuarioRepository;
+    private final UsuarioRepository usuarioRepository;
+    private final ChamadoService chamadoService;
+    private final TecnicoService tecnicoService;
+    private final UsuarioMapper usuarioMapper;
+    private final PasswordEncoder passwordEncoder;
 
-    @Autowired
-    private ChamadoService chamadoService;
-
-    @Autowired
-    private TecnicoService tecnicoService;
-
-    @Autowired
-    private UsuarioMapper usuarioMapper;
-
-    @Autowired
-    private PasswordEncoder passwordEncoder;
-
-    // Cadastrar novo usuario
     public UsuarioRespostaDTO criar(UsuarioDTO usuarioDTO) {
-        // Conferir se o corpo do cadastro foi enviado
         if (usuarioDTO == null) {
             throw new RegraDeNegocioException("DADOS_USUARIO_INVALIDOS",
                     "Envie os dados necessários para cadastrar o usuário.");
         }
 
-        // Conferir os dados que o usuário precisa preencher
         ValidadorDeRe.validar(usuarioDTO.getRe());
 
         if (usuarioDTO.getNome() == null || usuarioDTO.getNome().isBlank()) {
@@ -72,7 +61,6 @@ public class UsuarioServices {
         }
 
 
-        // Transformar os dados do cadastro em usuario para salvar no banco
         UsuarioModel usuarioNovo = usuarioMapper.map(usuarioDTO);
         usuarioNovo.setEmail(email);
 
@@ -81,14 +69,11 @@ public class UsuarioServices {
         usuarioNovo.setSenhaHash(passwordEncoder.encode(usuarioNovo.getRe()));
         usuarioNovo.setTrocaSenhaObrigatoria(true);
 
-        // Transformar o usuario salvo em resposta para a API
         return usuarioMapper.map(usuarioRepository.save(usuarioNovo));
     }
 
 
-    // Pesquisar usuario por RE
     public UsuarioRespostaDTO buscarPorRe(String re)  {
-        // Conferir se o RE informado pode ser pesquisado
         ValidadorDeRe.validar(re);
         Optional<UsuarioModel> buscarRe = usuarioRepository.findByRe(re);
         if (buscarRe.isPresent()) {
@@ -104,7 +89,6 @@ public class UsuarioServices {
     // nada fica salvo pela metade.
     @Transactional
     public boolean inativarPolicialPorRe(String re) {
-        // Conferir o RE antes de procurar o usuário
         ValidadorDeRe.validar(re);
         Optional<UsuarioModel> policial = usuarioRepository.findByRe(re);
         if (policial.isPresent()) {
@@ -130,9 +114,7 @@ public class UsuarioServices {
     }
 
 
-    // Atualizar apenas nome e posto/graduação do usuario
     public UsuarioRespostaDTO atualizarUsuario(String re, UsuarioAtualizacaoDTO dadosAtualizados) {
-        // Conferir o RE e os novos dados antes de atualizar no banco
         ValidadorDeRe.validar(re);
 
         if (dadosAtualizados == null) {
@@ -155,7 +137,6 @@ public class UsuarioServices {
             usuario.setNome(dadosAtualizados.getNome());
             usuario.setPostoGraduacao(dadosAtualizados.getPostoGraduacao());
 
-            // Transformar o usuario atualizado em resposta para a API
             return usuarioMapper.map(usuarioRepository.save(usuario));
         }
         throw new RecursoNaoEncontradoException("USUARIO_NAO_ENCONTRADO", "Usuário não encontrado.");

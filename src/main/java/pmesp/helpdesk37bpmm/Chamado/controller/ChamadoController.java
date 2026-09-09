@@ -1,7 +1,7 @@
 package pmesp.helpdesk37bpmm.Chamado.controller;
 
 import jakarta.validation.Valid;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 import pmesp.helpdesk37bpmm.Chamado.dto.ChamadoDTO;
 import pmesp.helpdesk37bpmm.Chamado.dto.ChamadoRespostaDTO;
@@ -13,84 +13,61 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/chamados")
+@RequiredArgsConstructor
 public class ChamadoController {
 
-    @Autowired
-    private ChamadoService chamadoService;
+    private final ChamadoService chamadoService;
 
-    // Cadastrar novo chamado
     @PostMapping("/cadastrar")
     public ChamadoRespostaDTO cadastrarChamado(@Valid @RequestBody ChamadoDTO chamadoDTO) {
         return chamadoService.criar(chamadoDTO);
     }
 
-
-    // Buscar chamado por ID
     @GetMapping("/buscar/{chamadoId}")
     public ChamadoRespostaDTO buscarChamadoPorId(@PathVariable Long chamadoId) {
         return chamadoService.buscarPorId(chamadoId);
     }
 
-
-    // Listar os chamados do usuário autenticado (tela "Meus chamados")
     @GetMapping("/meus")
     public List<ChamadoRespostaDTO> listarMeusChamados() {
         return chamadoService.listarChamadosDoUsuarioAutenticado();
     }
 
-
-    // Mostrar fila de chamados que aguardam atendimento
     @GetMapping("/fila")
     public List<ChamadoRespostaDTO> listarFilaAtendimento() {
         return chamadoService.listarFilaAtendimento();
     }
 
-
-    // Mostrar chamados que já estão sendo atendidos
     @GetMapping("/em-atendimento")
     public List<ChamadoRespostaDTO> listarChamadosEmAtendimento() {
         return chamadoService.listarChamadosEmAtendimento();
     }
 
-
-    // Contagem de chamados hoje/semana/mês para os cartões da Central Técnica
     @GetMapping("/resumo")
     public ResumoChamadosDTO obterResumoDeChamados() {
         return chamadoService.obterResumoDeChamados();
     }
 
-
-    // Atualizar prioridade do chamado
-    // Nome do metodo mais específico que o da rota (/atualizar-dados) de propósito: hoje só
-    // a prioridade é atualizável por aqui. A URL não muda para não quebrar o frontend.
     @PutMapping("/atualizar-dados/{chamadoId}")
     public ChamadoRespostaDTO atualizarPrioridadeDoChamado(@PathVariable Long chamadoId, @RequestParam ChamadoPrioridade prioridade) {
         return chamadoService.atualizarPrioridade(chamadoId, prioridade);
     }
 
-
-    // Iniciar atendimento do chamado
     @PatchMapping("/iniciar-atendimento/{chamadoId}")
     public ChamadoRespostaDTO iniciarAtendimento(@PathVariable Long chamadoId, @RequestParam String reTecnico) {
         return chamadoService.iniciarAtendimento(chamadoId, reTecnico);
     }
 
-
-    // Transferir chamado para outro técnico
     @PatchMapping("/transferir-responsavel/{chamadoId}")
     public ChamadoRespostaDTO transferirResponsavel(@PathVariable Long chamadoId, @RequestParam String reTecnico) {
         return chamadoService.transferirResponsavel(chamadoId, reTecnico);
     }
 
-    // Finalizar atendimento do chamado; a solução é opcional
     @PatchMapping("/finalizar/{chamadoId}")
-    public ChamadoRespostaDTO finalizarAtendimento(@PathVariable Long chamadoId,
-                                                    @RequestParam(required = false) String solucao) {
+    public ChamadoRespostaDTO finalizarAtendimento(@PathVariable Long chamadoId, @RequestParam(required = false) String solucao) {
         return chamadoService.finalizarAtendimento(chamadoId, solucao);
     }
 
-
-    // Cancelar Chamado
     @PatchMapping("/cancelar/{chamadoId}")
     public ChamadoRespostaDTO cancelarChamado(@PathVariable Long chamadoId, @RequestParam String motivoCancelamento) {
         return chamadoService.cancelarChamado(chamadoId, motivoCancelamento);

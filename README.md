@@ -4,7 +4,7 @@
 
 ## Tecnologias e ferramentas
 
-- **Backend:** Java 26, Spring Boot 4.1.1, Spring Web MVC, Spring Data JPA, Hibernate e Spring Security.
+- **Backend:** Java 26, Spring Boot 4.1.1, Spring Web MVC, Spring Data JPA, Hibernate, Spring Security e MapStruct.
 - **Frontend:** HTML, CSS e JavaScript sem framework.
 - **Banco e migrations:** PostgreSQL 16 e Flyway.
 - **Build e infraestrutura local:** Maven e Docker Compose para o PostgreSQL.
@@ -145,8 +145,13 @@ src/main/java
     └── Usuario
 
 src/main/resources
-├── db/migration                    # migrations SQL V1 a V6
-└── static                          # frontend servido pelo Spring Boot
+├── db/migration                    # migrations SQL V1 a V6 e V9
+└── static
+    ├── app.js                      # sessão, navegação e funções compartilhadas
+    ├── chamados-usuario.js         # chamados e telas do usuário
+    ├── mike-atendimento.js         # atendimento guiado
+    ├── atendimento-tecnico.js      # fila e atendimento técnico
+    └── gestao.js                   # usuários, técnicos e relatos
 ```
 
 ## Decisões de engenharia
@@ -161,7 +166,11 @@ O PostgreSQL foi escolhido como banco principal porque o domínio possui dados r
 
 ### Flyway
 
-As mudanças estruturais que exigiram controle explícito são mantidas nas migrations V1 a V8. O Flyway registra e aplica essas alterações em ordem conhecida, permitindo reproduzi-las em ambientes diferentes e consultar o histórico de evolução. No estado atual, esse versionamento complementa o `spring.jpa.hibernate.ddl-auto=update`, que também sincroniza o mapeamento das entidades com o schema. A combinação atende à primeira versão, mas a preparação de uma implantação definitiva ainda inclui consolidar toda a estrutura inicial em migrations.
+As migrations V1 a V9 mantêm toda a estrutura do banco sob controle do Flyway. Elas são aplicadas em ordem conhecida e permitem reproduzir o mesmo schema em uma instalação nova ou já existente. O Hibernate usa `spring.jpa.hibernate.ddl-auto=validate`: ele apenas confere se as entidades correspondem ao banco, sem criar nem alterar tabelas automaticamente.
+
+### MapStruct
+
+Os mappers são interfaces declarativas geradas durante a compilação. Eles concentram a conversão entre entidades e DTOs sem repetição de `setXxx()`, enquanto as regras de negócio permanecem nos services.
 
 ### Docker Compose
 

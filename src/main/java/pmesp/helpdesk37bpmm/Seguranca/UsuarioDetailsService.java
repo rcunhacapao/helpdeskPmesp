@@ -1,6 +1,6 @@
 package pmesp.helpdesk37bpmm.Seguranca;
 
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.User;
@@ -18,12 +18,11 @@ import java.util.List;
 // Ensina o Spring Security a carregar um usuário do nosso banco. O "username" usado em
 // todo o login é sempre o RE (sem dígito), do mesmo jeito que o resto do sistema já usa.
 @Service
+@RequiredArgsConstructor
 public class UsuarioDetailsService implements UserDetailsService {
 
-    @Autowired
-    private UsuarioRepository usuarioRepository;
-    @Autowired
-    private TecnicoRepository tecnicoRepository;
+    private final UsuarioRepository usuarioRepository;
+    private final TecnicoRepository tecnicoRepository;
 
     @Override
     public UserDetails loadUserByUsername(String re) throws UsernameNotFoundException {

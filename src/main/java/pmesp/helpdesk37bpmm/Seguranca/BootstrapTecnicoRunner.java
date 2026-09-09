@@ -2,7 +2,7 @@ package pmesp.helpdesk37bpmm.Seguranca;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -17,16 +17,14 @@ import pmesp.helpdesk37bpmm.Usuario.repository.UsuarioRepository;
 // todo o resto. Roda uma vez ao subir a aplicação e só cria algo se ainda não existir
 // nenhum técnico e as variáveis de ambiente de bootstrap estiverem preenchidas.
 @Component
+@RequiredArgsConstructor
 public class BootstrapTecnicoRunner implements CommandLineRunner {
 
     private static final Logger log = LoggerFactory.getLogger(BootstrapTecnicoRunner.class);
 
-    @Autowired
-    private TecnicoRepository tecnicoRepository;
-    @Autowired
-    private UsuarioRepository usuarioRepository;
-    @Autowired
-    private PasswordEncoder passwordEncoder;
+    private final TecnicoRepository tecnicoRepository;
+    private final UsuarioRepository usuarioRepository;
+    private final PasswordEncoder passwordEncoder;
 
     @Value("${bootstrap.tecnico.re:}")
     private String re;

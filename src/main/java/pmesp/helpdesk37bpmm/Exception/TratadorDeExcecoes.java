@@ -17,60 +17,49 @@ import org.springframework.web.method.annotation.MethodArgumentTypeMismatchExcep
 import java.time.LocalDateTime;
 import java.util.stream.Collectors;
 
-// Transformar exceções do sistema em respostas claras para a API
 @RestControllerAdvice
 public class TratadorDeExcecoes {
 
     private static final Logger log = LoggerFactory.getLogger(TratadorDeExcecoes.class);
 
-    // Responder com 404 quando o dado procurado não existir
     @ExceptionHandler(RecursoNaoEncontradoException.class)
     public ResponseEntity<RespostaErroDTO> tratarRecursoNaoEncontrado(RecursoNaoEncontradoException excecao) {
         return criarResposta(HttpStatus.NOT_FOUND, excecao.getCodigo(), excecao.getMessage());
     }
 
-    // Responder com 400 quando uma regra do sistema não permitir a ação
     @ExceptionHandler(RegraDeNegocioException.class)
     public ResponseEntity<RespostaErroDTO> tratarRegraDeNegocio(RegraDeNegocioException excecao) {
         return criarResposta(HttpStatus.BAD_REQUEST, excecao.getCodigo(), excecao.getMessage());
     }
 
-    // Responder com 409 quando o cadastro já existir
     @ExceptionHandler(ConflitoException.class)
     public ResponseEntity<RespostaErroDTO> tratarConflito(ConflitoException excecao) {
         return criarResposta(HttpStatus.CONFLICT, excecao.getCodigo(), excecao.getMessage());
     }
 
-    // Responder com 403 quando o usuário autenticado não puder acessar o recurso
     @ExceptionHandler(AcessoNegadoException.class)
     public ResponseEntity<RespostaErroDTO> tratarAcessoNegado(AcessoNegadoException excecao) {
         return criarResposta(HttpStatus.FORBIDDEN, excecao.getCodigo(), excecao.getMessage());
     }
 
-    // Responder com 409 quando dois usuários tentam alterar o mesmo registro ao mesmo
-    // tempo (ex.: dois técnicos assumindo o mesmo chamado). Sem isso, o segundo a salvar
-    // sobrescreveria o primeiro em silêncio.
+    // Evita sobrescrita silenciosa quando duas pessoas alteram o mesmo chamado.
     @ExceptionHandler(OptimisticLockingFailureException.class)
     public ResponseEntity<RespostaErroDTO> tratarConflitoDeConcorrencia() {
         return criarResposta(HttpStatus.CONFLICT, "REGISTRO_ALTERADO_POR_OUTRA_ACAO",
                 "Este chamado foi alterado por outra ação enquanto você o acessava. Atualize a página e tente novamente.");
     }
 
-    // Responder com 401 quando o RE ou a senha do login estiverem incorretos
     @ExceptionHandler(AuthenticationException.class)
     public ResponseEntity<RespostaErroDTO> tratarFalhaDeAutenticacao() {
         return criarResposta(HttpStatus.UNAUTHORIZED, "CREDENCIAIS_INVALIDAS", "RE ou senha inválidos.");
     }
 
-    // Responder com 400 quando o JSON estiver mal preenchido
     @ExceptionHandler(HttpMessageNotReadableException.class)
     public ResponseEntity<RespostaErroDTO> tratarDadosInvalidos() {
         return criarResposta(HttpStatus.BAD_REQUEST, "DADOS_INVALIDOS",
                 "Os dados enviados estão em um formato inválido.");
     }
 
-    // Responder com 400 quando os campos enviados no corpo da requisição (@Valid) não passarem
-    // nas validações estruturais dos DTOs, como campos obrigatórios em branco
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<RespostaErroDTO> tratarCamposInvalidos(MethodArgumentNotValidException excecao) {
         String mensagem = excecao.getBindingResult().getFieldErrors().stream()
@@ -80,23 +69,19 @@ public class TratadorDeExcecoes {
         return criarResposta(HttpStatus.BAD_REQUEST, "DADOS_INVALIDOS", mensagem);
     }
 
-    // Responder com 400 quando faltar uma informação na URL
     @ExceptionHandler(MissingServletRequestParameterException.class)
     public ResponseEntity<RespostaErroDTO> tratarParametroObrigatorioAusente() {
         return criarResposta(HttpStatus.BAD_REQUEST, "PARAMETRO_OBRIGATORIO",
                 "Informe o parâmetro obrigatório para realizar esta operação.");
     }
 
-    // Responder com 400 quando a informação estiver no formato errado
     @ExceptionHandler(MethodArgumentTypeMismatchException.class)
     public ResponseEntity<RespostaErroDTO> tratarValorInvalido() {
         return criarResposta(HttpStatus.BAD_REQUEST, "VALOR_INVALIDO",
                 "O valor informado não é válido para este campo.");
     }
 
-    // Evitar expor detalhes internos do Java ou do banco de dados na resposta da API,
-    // mas registrar o erro completo no log — sem isso, fica impossível descobrir depois
-    // o que realmente quebrou (só aparecia "erro interno" para todo mundo).
+    // Registra o detalhe no servidor sem expor informações internas na resposta.
     @ExceptionHandler(Exception.class)
     public ResponseEntity<RespostaErroDTO> tratarErroInesperado(Exception excecao) {
         log.error("Erro inesperado não tratado por um handler específico", excecao);
@@ -104,7 +89,6 @@ public class TratadorDeExcecoes {
                 "Ocorreu um erro interno. Tente novamente mais tarde.");
     }
 
-    // Montar todas as respostas de erro no mesmo formato
     private ResponseEntity<RespostaErroDTO> criarResposta(HttpStatus status, String codigo, String mensagem) {
         RespostaErroDTO resposta = new RespostaErroDTO(status.value(), codigo, mensagem, LocalDateTime.now());
         return ResponseEntity.status(status).body(resposta);

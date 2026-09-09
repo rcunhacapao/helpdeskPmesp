@@ -3,7 +3,7 @@ package pmesp.helpdesk37bpmm.Autenticacao.controller;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -24,14 +24,12 @@ import pmesp.helpdesk37bpmm.Exception.AcessoNegadoException;
 
 @RestController
 @RequestMapping("/auth")
+@RequiredArgsConstructor
 public class AutenticacaoController {
 
-    @Autowired
-    private AuthenticationManager authenticationManager;
-    @Autowired
-    private SecurityContextRepository securityContextRepository;
-    @Autowired
-    private AutenticacaoService autenticacaoService;
+    private final AuthenticationManager authenticationManager;
+    private final SecurityContextRepository securityContextRepository;
+    private final AutenticacaoService autenticacaoService;
 
     // Autentica com RE + senha e guarda o login na sessão para as próximas requisições
     @PostMapping("/login")
@@ -64,10 +62,7 @@ public class AutenticacaoController {
 
     // A sessão limitada criada pelo login RE/RE só pode concluir esta troca de senha.
     @PostMapping("/trocar-senha")
-    public LoginRespostaDTO trocarSenha(@Valid @RequestBody TrocaSenhaDTO trocaSenhaDTO,
-                                        Authentication autenticacao,
-                                        HttpServletRequest request,
-                                        HttpServletResponse response) {
+    public LoginRespostaDTO trocarSenha(@Valid @RequestBody TrocaSenhaDTO trocaSenhaDTO, Authentication autenticacao, HttpServletRequest request, HttpServletResponse response) {
         LoginRespostaDTO resposta = autenticacaoService.trocarSenhaObrigatoria(
                 autenticacao.getName(), trocaSenhaDTO);
 
@@ -78,9 +73,7 @@ public class AutenticacaoController {
         return resposta;
     }
 
-    private void salvarAutenticacaoNaSessao(Authentication autenticacao,
-                                             HttpServletRequest request,
-                                             HttpServletResponse response) {
+    private void salvarAutenticacaoNaSessao(Authentication autenticacao, HttpServletRequest request, HttpServletResponse response) {
         SecurityContext contexto = SecurityContextHolder.createEmptyContext();
         contexto.setAuthentication(autenticacao);
         SecurityContextHolder.setContext(contexto);

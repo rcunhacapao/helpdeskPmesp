@@ -1,47 +1,24 @@
 package pmesp.helpdesk37bpmm.Chamado.mapper;
 
-import org.springframework.stereotype.Component;
+import org.mapstruct.BeanMapping;
+import org.mapstruct.Mapper;
+import org.mapstruct.Mapping;
 import pmesp.helpdesk37bpmm.Chamado.dto.ChamadoDTO;
 import pmesp.helpdesk37bpmm.Chamado.dto.ChamadoRespostaDTO;
 import pmesp.helpdesk37bpmm.Chamado.model.ChamadoModel;
 
-@Component
-public class ChamadoMapper {
+@Mapper(componentModel = "spring")
+public interface ChamadoMapper {
 
-    // Transformar os dados do cadastro em chamado para salvar no banco
-    public ChamadoModel map(ChamadoDTO chamadoDTO) {
-        ChamadoModel chamadoModel = new ChamadoModel();
-        chamadoModel.setDescricao(chamadoDTO.getDescricao());
-        chamadoModel.setCategoria(chamadoDTO.getCategoria());
-        chamadoModel.setLocalAtendimento(chamadoDTO.getLocalAtendimento());
-        chamadoModel.setPrioridade(chamadoDTO.getPrioridade());
+    @BeanMapping(ignoreByDefault = true)
+    @Mapping(target = "descricao", source = "descricao")
+    @Mapping(target = "categoria", source = "categoria")
+    @Mapping(target = "localAtendimento", source = "localAtendimento")
+    @Mapping(target = "prioridade", source = "prioridade")
+    ChamadoModel map(ChamadoDTO chamadoDTO);
 
-        return chamadoModel;
-    }
-
-    // Transformar um chamado do banco em dados para responder na API
-    public ChamadoRespostaDTO map(ChamadoModel chamadoModel) {
-        ChamadoRespostaDTO chamadoRespostaDTO = new ChamadoRespostaDTO();
-        chamadoRespostaDTO.setId(chamadoModel.getId());
-        chamadoRespostaDTO.setSolicitante(chamadoModel.getSolicitante().getIdentificacaoCompleta());
-        if (chamadoModel.getAbertoPor() != null) {
-            chamadoRespostaDTO.setAbertoPor(chamadoModel.getAbertoPor().getIdentificacaoCompleta());
-        }
-        if (chamadoModel.getTecnicoResponsavel() != null) {
-            chamadoRespostaDTO.setTecnicoResponsavel(chamadoModel.getTecnicoResponsavel().getUsuario().getIdentificacaoCompleta());
-        }
-        chamadoRespostaDTO.setDescricao(chamadoModel.getDescricao());
-        chamadoRespostaDTO.setCategoria(chamadoModel.getCategoria());
-        chamadoRespostaDTO.setLocalAtendimento(chamadoModel.getLocalAtendimento());
-        chamadoRespostaDTO.setMotivoCancelamento(chamadoModel.getMotivoCancelamento());
-        chamadoRespostaDTO.setSolucao(chamadoModel.getSolucao());
-        chamadoRespostaDTO.setPrioridade(chamadoModel.getPrioridade());
-        chamadoRespostaDTO.setStatus(chamadoModel.getStatus());
-        chamadoRespostaDTO.setResolvidoPor(chamadoModel.getResolvidoPor());
-        chamadoRespostaDTO.setDataAbertura(chamadoModel.getDataAbertura());
-        chamadoRespostaDTO.setDataUltimaInteracao(chamadoModel.getDataUltimaInteracao());
-        chamadoRespostaDTO.setDataFinalizacao(chamadoModel.getDataFinalizacao());
-
-        return chamadoRespostaDTO;
-    }
+    @Mapping(target = "solicitante", source = "solicitante.identificacaoCompleta")
+    @Mapping(target = "abertoPor", source = "abertoPor.identificacaoCompleta")
+    @Mapping(target = "tecnicoResponsavel", source = "tecnicoResponsavel.usuario.identificacaoCompleta")
+    ChamadoRespostaDTO map(ChamadoModel chamadoModel);
 }

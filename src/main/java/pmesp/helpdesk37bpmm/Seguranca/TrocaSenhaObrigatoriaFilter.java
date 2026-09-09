@@ -4,7 +4,7 @@ import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -18,14 +18,13 @@ import java.time.LocalDateTime;
 // Reconfere a pendência no banco em cada API protegida. Isso também bloqueia uma
 // sessão antiga imediatamente quando o técnico reseta a senha de um usuário logado.
 @Component
+@RequiredArgsConstructor
 public class TrocaSenhaObrigatoriaFilter extends OncePerRequestFilter {
 
-    @Autowired
-    private UsuarioRepository usuarioRepository;
+    private final UsuarioRepository usuarioRepository;
 
     @Override
-    protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response,
-                                    FilterChain filterChain) throws ServletException, IOException {
+    protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
         Authentication autenticacao = SecurityContextHolder.getContext().getAuthentication();
 
         if (autenticacao != null && autenticacao.isAuthenticated()

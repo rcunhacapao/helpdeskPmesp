@@ -1,6 +1,6 @@
 package pmesp.helpdesk37bpmm.MikeIA.service;
 
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
@@ -29,15 +29,16 @@ import java.util.Optional;
 // Orquestra o diagnóstico do Mike. Só existe chamado quando o usuário envia
 // o encaminhamento final para a equipe técnica.
 @Service
+@RequiredArgsConstructor
 public class MikeIAService {
 
     private static final int HORAS_PARA_CONSIDERAR_ABANDONO = 24;
 
-    @Autowired private AtendimentoMikeIARepository atendimentoMikeIARepository;
-    @Autowired private ChamadoRepository chamadoRepository;
-    @Autowired private UsuarioRepository usuarioRepository;
-    @Autowired private TecnicoService tecnicoService;
-    @Autowired private AtendimentoMikeIAMapper atendimentoMikeIAMapper;
+    private final AtendimentoMikeIARepository atendimentoMikeIARepository;
+    private final ChamadoRepository chamadoRepository;
+    private final UsuarioRepository usuarioRepository;
+    private final TecnicoService tecnicoService;
+    private final AtendimentoMikeIAMapper atendimentoMikeIAMapper;
 
     // O primeiro relato não cria chamado: ele apenas inicia o diagnóstico temporário.
     @Transactional

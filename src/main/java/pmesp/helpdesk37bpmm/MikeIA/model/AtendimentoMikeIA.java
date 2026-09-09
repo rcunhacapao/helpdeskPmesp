@@ -1,9 +1,9 @@
 package pmesp.helpdesk37bpmm.MikeIA.model;
 
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Data;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
 import pmesp.helpdesk37bpmm.Chamado.enums.ChamadoCategoria;
 import pmesp.helpdesk37bpmm.Chamado.model.ChamadoModel;
 import pmesp.helpdesk37bpmm.MikeIA.enums.AtendimentoMikeIAResultado;
@@ -11,13 +11,12 @@ import pmesp.helpdesk37bpmm.Usuario.model.UsuarioModel;
 
 import java.time.LocalDateTime;
 
-// Guarda as orientações apresentadas pelo Mike e o resultado do diagnóstico.
-// O chamado só é criado quando o usuário envia o encaminhamento para a equipe técnica.
+// O chamado só existe quando o diagnóstico é encaminhado à equipe técnica.
 @Entity
 @Table(name = "tb_atendimento_mike_ia")
 @NoArgsConstructor
-@AllArgsConstructor
-@Data
+@Getter
+@Setter
 public class AtendimentoMikeIA {
 
     @Id
@@ -29,7 +28,6 @@ public class AtendimentoMikeIA {
     @JoinColumn(name = "usuario_id", nullable = false)
     private UsuarioModel usuario;
 
-    // Pode ficar nulo quando o usuário não informou e o Mike não conseguiu identificar
     @Enumerated(EnumType.STRING)
     private ChamadoCategoria categoria;
 
@@ -42,13 +40,9 @@ public class AtendimentoMikeIA {
     @Column(name = "possui_orientacao_testavel", nullable = false)
     private boolean possuiOrientacaoTestavel;
 
-    // Fica nulo enquanto a conversa ainda não terminou (usuário ainda não respondeu
-    // se funcionou ou não)
     @Enumerated(EnumType.STRING)
     private AtendimentoMikeIAResultado resultado;
 
-    // Permanece nulo quando o Mike resolve ou o usuário abandona a conversa.
-    // Só aponta para um chamado quando há encaminhamento à equipe técnica.
     @OneToOne
     @JoinColumn(name = "chamado_gerado_id", nullable = true)
     private ChamadoModel chamado;

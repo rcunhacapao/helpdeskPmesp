@@ -16,11 +16,9 @@ class FrontendEstaticoTest {
 
     @Test
     void deveManterAsTelasPrincipaisEASIdentidadeVisualDoProtótipo() throws IOException {
-        // Normaliza quebras de linha (o arquivo pode estar em CRLF ou LF conforme o sistema) para que
-        // as comparações de trechos com múltiplas linhas não dependam do fim de linha do disco.
         String pagina = Files.readString(DIRETORIO_ESTATICO.resolve("index.html")).replace("\r\n", "\n");
         String estilos = Files.readString(DIRETORIO_ESTATICO.resolve("styles.css")).replace("\r\n", "\n");
-        String comportamento = Files.readString(DIRETORIO_ESTATICO.resolve("app.js")).replace("\r\n", "\n");
+        String comportamento = lerComportamento();
         String fluxoMike = Files.readString(DIRETORIO_ESTATICO.resolve("mike-triagem.js")).replace("\r\n", "\n");
 
         assertAll(
@@ -36,7 +34,11 @@ class FrontendEstaticoTest {
                 () -> assertTrue(pagina.contains("id=\"pagina-login\"")),
                 () -> assertTrue(pagina.contains("styles.css?v=0.0.1-beta.56")),
                 () -> assertTrue(pagina.contains("mike-triagem.js?v=0.0.1-beta.38")),
-                () -> assertTrue(pagina.contains("app.js?v=0.0.1-beta.42")),
+                () -> assertTrue(pagina.contains("app.js?v=0.0.1-beta.43")),
+                () -> assertTrue(pagina.contains("chamados-usuario.js?v=0.0.1-beta.1")),
+                () -> assertTrue(pagina.contains("mike-atendimento.js?v=0.0.1-beta.1")),
+                () -> assertTrue(pagina.contains("atendimento-tecnico.js?v=0.0.1-beta.1")),
+                () -> assertTrue(pagina.contains("gestao.js?v=0.0.1-beta.1")),
                 () -> assertTrue(pagina.contains("id=\"visao-geral\"")),
                 () -> assertTrue(pagina.contains("id=\"meus-chamados\"")),
                 () -> assertTrue(pagina.contains("id=\"abrir-chamado\"")),
@@ -259,5 +261,15 @@ class FrontendEstaticoTest {
                 () -> assertTrue(comportamento.contains("apiFetch('/mike-ia/metricas'")),
                 () -> assertTrue(comportamento.contains("Ainda não há atendimentos registrados pelo Mike IA."))
         );
+    }
+
+    private String lerComportamento() throws IOException {
+        return String.join("\n",
+                Files.readString(DIRETORIO_ESTATICO.resolve("app.js")),
+                Files.readString(DIRETORIO_ESTATICO.resolve("chamados-usuario.js")),
+                Files.readString(DIRETORIO_ESTATICO.resolve("mike-atendimento.js")),
+                Files.readString(DIRETORIO_ESTATICO.resolve("atendimento-tecnico.js")),
+                Files.readString(DIRETORIO_ESTATICO.resolve("gestao.js")))
+                .replace("\r\n", "\n");
     }
 }

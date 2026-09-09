@@ -11,13 +11,18 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class LoginVisualEstaticoTest {
 
+    private static final Path DIRETORIO_ESTATICO = Path.of("src", "main", "resources", "static");
+
     @Test
     void deveAutenticarDeVerdadeAntesDeMostrarOAppShell() throws IOException {
-        String comportamento = Files.readString(Path.of("src", "main", "resources", "static", "app.js"));
-        String estilos = Files.readString(Path.of("src", "main", "resources", "static", "styles.css"));
+        String comportamento = String.join("\n",
+                Files.readString(DIRETORIO_ESTATICO.resolve("app.js")),
+                Files.readString(DIRETORIO_ESTATICO.resolve("chamados-usuario.js")),
+                Files.readString(DIRETORIO_ESTATICO.resolve("mike-atendimento.js")),
+                Files.readString(DIRETORIO_ESTATICO.resolve("atendimento-tecnico.js")),
+                Files.readString(DIRETORIO_ESTATICO.resolve("gestao.js")));
+        String estilos = Files.readString(DIRETORIO_ESTATICO.resolve("styles.css"));
 
-        // O login não usa mais checkValidity/dados simulados: ele depende do resultado
-        // real de POST /auth/login. Só mostra o app se a API confirmar a sessão.
         assertFalse(comportamento.contains("loginForm.checkValidity()"));
         assertTrue(comportamento.contains("apiFetch('/auth/login'"));
         assertTrue(comportamento.contains("apiFetch('/auth/sessao'"));

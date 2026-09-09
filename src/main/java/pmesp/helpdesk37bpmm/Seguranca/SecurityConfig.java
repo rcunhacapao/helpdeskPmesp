@@ -16,28 +16,18 @@ import org.springframework.security.web.context.SecurityContextRepository;
 
 import jakarta.servlet.http.HttpServletResponse;
 
-// Configuração central de segurança: quem precisa estar logado, quem precisa ser técnico,
-// e como a senha é conferida. Este é o primeiro lugar a olhar para entender autenticação
-// e autorização no projeto.
 @Configuration
 public class SecurityConfig {
 
-    // Rotas de arquivos estáticos do frontend (precisam continuar públicas, senão
-    // ninguém conseguiria nem carregar a tela de login).
     private static final String[] ARQUIVOS_PUBLICOS_DO_FRONTEND = {
             "/", "/index.html", "/favicon.png", "/apple-touch-icon.png",
             "/*.css", "/*.js", "/*.png", "/*.jpeg"
     };
 
-    // Documentação da API (Swagger UI). Só descreve os endpoints, não expõe dados —
-    // por isso fica pública, como a página de login. Se o projeto for exposto fora da
-    // rede interna da PMESP, reavaliar se isso deve continuar público.
     private static final String[] ROTAS_DE_DOCUMENTACAO_DA_API = {
             "/swagger-ui.html", "/swagger-ui/**", "/v3/api-docs/**", "/v3/api-docs.yaml"
     };
 
-    // Rotas exclusivas de técnico: cadastro/gestão de usuários, gestão de técnicos
-    // e as ações que conduzem a fila de atendimento.
     private static final String[] ROTAS_EXCLUSIVAS_DE_TECNICO = {
             "/usuarios/**", "/tecnicos/**",
             "/chamados/fila", "/chamados/em-atendimento", "/chamados/resumo",
@@ -51,29 +41,19 @@ public class SecurityConfig {
         return new BCryptPasswordEncoder();
     }
 
-    // Guarda o login do usuário na sessão HTTP entre uma requisição e outra
     @Bean
     public SecurityContextRepository securityContextRepository() {
         return new HttpSessionSecurityContextRepository();
     }
 
-    // O Spring Security já monta a autenticação sozinho a partir do UsuarioDetailsService
-    // (é um UserDetailsService) e do PasswordEncoder acima; só precisamos expor o
-    // AuthenticationManager para o AutenticacaoController poder usá-lo no /auth/login.
     @Bean
     public AuthenticationManager authenticationManager(AuthenticationConfiguration configuracao) throws Exception {
         return configuracao.getAuthenticationManager();
     }
 
     @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity http,
-                                                   SecurityContextRepository securityContextRepository,
-                                                   TrocaSenhaObrigatoriaFilter trocaSenhaObrigatoriaFilter) throws Exception {
+    public SecurityFilterChain securityFilterChain(HttpSecurity http, SecurityContextRepository securityContextRepository, TrocaSenhaObrigatoriaFilter trocaSenhaObrigatoriaFilter) throws Exception {
         http
-                // API própria (sem formulário HTML tradicional) autenticada por sessão/cookie;
-                // desligamos o CSRF nesta primeira versão para não travar as chamadas do
-                // frontend antes de ele enviar o token — reavaliar quando o login estiver
-                // integrado de ponta a ponta.
                 .csrf(AbstractHttpConfigurer::disable)
                 .formLogin(AbstractHttpConfigurer::disable)
                 .httpBasic(AbstractHttpConfigurer::disable)
@@ -83,16 +63,12 @@ public class SecurityConfig {
                         .requestMatchers("/auth/sessao", "/auth/trocar-senha", "/logout").authenticated()
                         .requestMatchers(ARQUIVOS_PUBLICOS_DO_FRONTEND).permitAll()
                         .requestMatchers(ROTAS_DE_DOCUMENTACAO_DA_API).permitAll()
-                        // Relatar um erro é livre a qualquer pessoa logada; só a consulta (GET) é do técnico.
                         .requestMatchers(HttpMethod.GET, "/relatos-erro").hasRole("TECNICO")
                         .requestMatchers(ROTAS_EXCLUSIVAS_DE_TECNICO).hasRole("TECNICO")
-                        // Uma sessão com troca pendente não recebe ROLE_USUARIO e, portanto,
-                        // não consegue contornar a tela acessando outra API diretamente.
+                        // A sessão limitada não possui ROLE_USUARIO.
                         .anyRequest().hasRole("USUARIO")
                 )
                 .addFilterBefore(trocaSenhaObrigatoriaFilter, AuthorizationFilter.class)
-                // Invalida a sessão e limpa o cookie; devolve 204 em vez do redirecionamento
-                // padrão, já que quem chama aqui é o frontend via fetch(), não um formulário.
                 .logout(logout -> logout
                         .logoutUrl("/logout")
                         .logoutSuccessHandler((request, response, authentication) ->

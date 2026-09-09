@@ -1,7 +1,7 @@
 package pmesp.helpdesk37bpmm.RelatoErro.controller;
 
 import jakarta.validation.Valid;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 import pmesp.helpdesk37bpmm.RelatoErro.dto.RelatarErroDTO;
 import pmesp.helpdesk37bpmm.RelatoErro.dto.RelatoErroRespostaDTO;
@@ -11,18 +11,16 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/relatos-erro")
+@RequiredArgsConstructor
 public class RelatoErroController {
 
-    @Autowired
-    private RelatoErroService relatoErroService;
+    private final RelatoErroService relatoErroService;
 
-    // Registrar um erro encontrado no sistema (qualquer pessoa logada)
     @PostMapping
     public RelatoErroRespostaDTO relatar(@Valid @RequestBody RelatarErroDTO relatarErroDTO) {
         return relatoErroService.relatar(relatarErroDTO);
     }
 
-    // Consultar todos os relatos enviados (somente técnico)
     @GetMapping
     public List<RelatoErroRespostaDTO> listarTodos() {
         return relatoErroService.listarTodos();

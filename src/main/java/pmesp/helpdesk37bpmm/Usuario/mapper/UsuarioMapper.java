@@ -1,35 +1,21 @@
 package pmesp.helpdesk37bpmm.Usuario.mapper;
 
-import org.springframework.stereotype.Component;
+import org.mapstruct.BeanMapping;
+import org.mapstruct.Mapper;
+import org.mapstruct.Mapping;
 import pmesp.helpdesk37bpmm.Usuario.dto.UsuarioDTO;
 import pmesp.helpdesk37bpmm.Usuario.dto.UsuarioRespostaDTO;
 import pmesp.helpdesk37bpmm.Usuario.model.UsuarioModel;
 
-@Component
-public class UsuarioMapper {
+@Mapper(componentModel = "spring")
+public interface UsuarioMapper {
 
-    // Transformar os dados do cadastro em um usuario para salvar no banco
-    public UsuarioModel map(UsuarioDTO usuarioDTO) {
-        UsuarioModel usuarioModel = new UsuarioModel();
-        usuarioModel.setPostoGraduacao(usuarioDTO.getPostoGraduacao());
-        usuarioModel.setNome(usuarioDTO.getNome());
-        usuarioModel.setRe(usuarioDTO.getRe());
-        usuarioModel.setEmail(usuarioDTO.getEmail());
+    @BeanMapping(ignoreByDefault = true)
+    @Mapping(target = "postoGraduacao", source = "postoGraduacao")
+    @Mapping(target = "nome", source = "nome")
+    @Mapping(target = "re", source = "re")
+    @Mapping(target = "email", source = "email")
+    UsuarioModel map(UsuarioDTO usuarioDTO);
 
-        return usuarioModel;
-    }
-
-    // Transformar um usuario do banco em dados para responder na API
-    public UsuarioRespostaDTO map(UsuarioModel usuarioModel) {
-        UsuarioRespostaDTO usuarioRespostaDTO = new UsuarioRespostaDTO();
-        usuarioRespostaDTO.setId(usuarioModel.getId());
-        usuarioRespostaDTO.setPostoGraduacao(usuarioModel.getPostoGraduacao());
-        usuarioRespostaDTO.setNome(usuarioModel.getNome());
-        usuarioRespostaDTO.setRe(usuarioModel.getRe());
-        usuarioRespostaDTO.setEmail(usuarioModel.getEmail());
-        usuarioRespostaDTO.setAtivo(usuarioModel.isAtivo());
-        usuarioRespostaDTO.setTrocaSenhaObrigatoria(usuarioModel.isTrocaSenhaObrigatoria());
-
-        return usuarioRespostaDTO;
-    }
+    UsuarioRespostaDTO map(UsuarioModel usuarioModel);
 }

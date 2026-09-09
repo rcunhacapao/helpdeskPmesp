@@ -1,6 +1,6 @@
 package pmesp.helpdesk37bpmm.Autenticacao.service;
 
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import pmesp.helpdesk37bpmm.Autenticacao.dto.LoginRespostaDTO;
@@ -12,14 +12,12 @@ import pmesp.helpdesk37bpmm.Usuario.model.UsuarioModel;
 import pmesp.helpdesk37bpmm.Usuario.repository.UsuarioRepository;
 
 @Service
+@RequiredArgsConstructor
 public class AutenticacaoService {
 
-    @Autowired
-    private UsuarioRepository usuarioRepository;
-    @Autowired
-    private TecnicoRepository tecnicoRepository;
-    @Autowired
-    private PasswordEncoder passwordEncoder;
+    private final UsuarioRepository usuarioRepository;
+    private final TecnicoRepository tecnicoRepository;
+    private final PasswordEncoder passwordEncoder;
 
     // Concluir a troca exigida depois do primeiro login ou de um reset técnico.
     public LoginRespostaDTO trocarSenhaObrigatoria(String re, TrocaSenhaDTO dto) {
@@ -53,7 +51,6 @@ public class AutenticacaoService {
         return montarRespostaDeLogin(re);
     }
 
-    // Montar os dados devolvidos depois de um login com sucesso
     public LoginRespostaDTO montarRespostaDeLogin(String re) {
         UsuarioModel usuario = usuarioRepository.findByRe(re)
                 .orElseThrow(() -> new RecursoNaoEncontradoException("USUARIO_NAO_ENCONTRADO", "Usuário não encontrado."));
@@ -62,4 +59,5 @@ public class AutenticacaoService {
         return new LoginRespostaDTO(usuario.getIdentificacaoCompleta(), usuario.getRe(), tecnico,
                 usuario.isTrocaSenhaObrigatoria());
     }
+
 }

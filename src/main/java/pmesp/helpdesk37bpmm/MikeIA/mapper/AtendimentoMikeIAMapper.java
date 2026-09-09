@@ -1,28 +1,15 @@
 package pmesp.helpdesk37bpmm.MikeIA.mapper;
 
-import org.springframework.stereotype.Component;
+import org.mapstruct.Mapper;
+import org.mapstruct.Mapping;
 import pmesp.helpdesk37bpmm.MikeIA.dto.AtendimentoMikeIARespostaDTO;
 import pmesp.helpdesk37bpmm.MikeIA.model.AtendimentoMikeIA;
 
-@Component
-public class AtendimentoMikeIAMapper {
+@Mapper(componentModel = "spring")
+public interface AtendimentoMikeIAMapper {
 
-    // Transformar um atendimento do banco em resposta para a API
-    public AtendimentoMikeIARespostaDTO map(AtendimentoMikeIA atendimento) {
-        AtendimentoMikeIARespostaDTO resposta = new AtendimentoMikeIARespostaDTO();
-        resposta.setAtendimentoId(atendimento.getId());
-        // Somente atendimentos encaminhados para a equipe técnica possuem chamado.
-        if (atendimento.getChamado() != null) {
-            resposta.setChamadoId(atendimento.getChamado().getId());
-        }
-        resposta.setDescricaoProblema(atendimento.getDescricaoProblema());
-        resposta.setCategoria(atendimento.getCategoria());
-        resposta.setSugestoes(atendimento.getSugestoesApresentadas());
-        resposta.setPossuiOrientacaoTestavel(atendimento.isPossuiOrientacaoTestavel());
-        resposta.setResultado(atendimento.getResultado());
-        resposta.setDataInicio(atendimento.getDataInicio());
-        resposta.setDataConclusao(atendimento.getDataConclusao());
-
-        return resposta;
-    }
+    @Mapping(target = "atendimentoId", source = "id")
+    @Mapping(target = "chamadoId", source = "chamado.id")
+    @Mapping(target = "sugestoes", source = "sugestoesApresentadas")
+    AtendimentoMikeIARespostaDTO map(AtendimentoMikeIA atendimento);
 }

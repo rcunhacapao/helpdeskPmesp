@@ -1,21 +1,20 @@
 package pmesp.helpdesk37bpmm.RelatoErro.model;
 
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Data;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
 import pmesp.helpdesk37bpmm.RelatoErro.enums.TipoDeErro;
 import pmesp.helpdesk37bpmm.Usuario.model.UsuarioModel;
 
 import java.time.LocalDateTime;
 
-// Feedback de quem está usando o sistema em fase de testes, sobre o próprio sistema
-// (não confundir com Chamado, que é um pedido de suporte de TI do dia a dia).
+// Feedback sobre o sistema; não representa um chamado de suporte.
 @Entity
 @Table(name = "tb_relato_erro")
 @NoArgsConstructor
-@AllArgsConstructor
-@Data
+@Getter
+@Setter
 public class RelatoDeErro {
 
     @Id

@@ -1,6 +1,6 @@
 package pmesp.helpdesk37bpmm.RelatoErro.service;
 
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import pmesp.helpdesk37bpmm.Exception.AcessoNegadoException;
@@ -20,16 +20,13 @@ import java.util.ArrayList;
 import java.util.List;
 
 @Service
+@RequiredArgsConstructor
 public class RelatoErroService {
 
-    @Autowired
-    private RelatoErroRepository relatoErroRepository;
-    @Autowired
-    private UsuarioRepository usuarioRepository;
-    @Autowired
-    private RelatoErroMapper relatoErroMapper;
+    private final RelatoErroRepository relatoErroRepository;
+    private final UsuarioRepository usuarioRepository;
+    private final RelatoErroMapper relatoErroMapper;
 
-    // Qualquer pessoa logada (usuário comum ou técnico) pode relatar um erro do sistema
     public RelatoErroRespostaDTO relatar(RelatarErroDTO relatarErroDTO) {
         if (relatarErroDTO == null || relatarErroDTO.getTipoErro() == null) {
             throw new RegraDeNegocioException("TIPO_DE_ERRO_OBRIGATORIO",
@@ -50,7 +47,6 @@ public class RelatoErroService {
         return relatoErroMapper.map(relatoErroRepository.save(relato));
     }
 
-    // Somente técnicos acompanham os relatos enviados pelo time durante os testes
     public List<RelatoErroRespostaDTO> listarTodos() {
         if (!autenticadoEhTecnico()) {
             throw new AcessoNegadoException("RELATOS_DE_ERRO_RESTRITOS_A_TECNICO",
